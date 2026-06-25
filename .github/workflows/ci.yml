@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+env:
+  DATABASE_URL: postgresql://life:life@localhost:5432/life_management
+  AUTH_SECRET: ci-auth-secret
+  API_URL: http://localhost:4000
+  WEB_URL: http://localhost:3000
+  ALLOWED_EMAILS: test@example.com
+  NEXT_PUBLIC_API_URL: http://localhost:4000
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: life
+          POSTGRES_PASSWORD: life
+          POSTGRES_DB: life_management
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U life -d life_management"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run db:migrate:deploy -w @life/db
+
+      - run: npm run typecheck
+
+      - run: npm run lint
+
+      - run: npm test
+
+      - run: npm run build
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run test:e2e

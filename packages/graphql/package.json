@@ -1,0 +1,25 @@
+{
+  "name": "@life/graphql",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts",
+    "./context": "./src/context.ts",
+    "./resolvers": "./src/resolvers.ts",
+    "./schema": "./src/schema.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@apollo/server": "^4.11.3",
+    "@life/db": "*",
+    "@life/shared": "*",
+    "graphql": "^16.11.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
