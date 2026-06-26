@@ -3,10 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "dependencies": {
+    "date-fns": "^4.4.0"
+  },
   "exports": {
     ".": "./src/index.ts",
     "./allowlist": "./src/allowlist.ts",
-    "./auth": "./src/auth.ts"
+    "./auth": "./src/auth.ts",
+    "./dates": "./src/dates.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

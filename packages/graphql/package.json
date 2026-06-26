@@ -8,7 +8,8 @@
     "./server": "./src/server.ts",
     "./context": "./src/context.ts",
     "./resolvers": "./src/resolvers.ts",
-    "./schema": "./src/schema.ts"
+    "./schema": "./src/schema.ts",
+    "./typeDefs": "./src/typeDefs.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

@@ -18,4 +18,4 @@ COPY . .
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npm run dev -w @life/web -- --hostname 0.0.0.0"]
+CMD ["sh", "-c", "npm install && npm run dev -w @life/web -- --hostname 0.0.0.0"]

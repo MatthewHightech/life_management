@@ -23,3 +23,5 @@ export const typeDefs = `#graphql
     ping: String!
   }
 `;
+
+export { taskTypeDefs } from "./tasks/schema";

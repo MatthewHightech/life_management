@@ -1,9 +1,8 @@
 import { AUTH_COOKIE_NAME } from "@life/shared";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { HomeDashboard } from "@/components/home-dashboard";
 
-export default async function HomePage() {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_COOKIE_NAME);
 
@@ -11,5 +10,5 @@ export default async function HomePage() {
     redirect("/sign-in");
   }
 
-  return <HomeDashboard />;
+  return <>{children}</>;
 }

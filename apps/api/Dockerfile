@@ -18,4 +18,4 @@ COPY . .
 
 EXPOSE 4000
 
-CMD ["sh", "-c", "npm run db:migrate:deploy -w @life/db && npm run db:seed -w @life/db && npm run dev -w @life/api"]
+CMD ["sh", "-c", "npm install && npm run db:migrate:deploy -w @life/db && npm run db:generate -w @life/db && npm run db:seed -w @life/db && npm run dev -w @life/api"]

@@ -1,0 +1,26 @@
+---
+description: Use date-fns for date/time logic via @life/shared/dates
+alwaysApply: true
+---
+
+# Date and time handling
+
+Use **date-fns** for date manipulation, parsing, and formatting. Do not hand-roll helpers like `startOfDay`, `setHours`, or `toLocaleDateString` patterns.
+
+## Where to import from
+
+- Add shared date helpers to `packages/shared/src/dates.ts`
+- Import from `@life/shared` (or `@life/shared/dates` subpath) in apps and packages
+- Add new date-fns usage to `packages/shared` when both API and web need the same logic
+
+## Prefer date-fns for
+
+- Day boundaries (`startOfDay`, `endOfDay`) — use `dayBounds()`
+- Parsing ISO/date strings — use `parseISO` via `parseOptionalDate()`
+- Formatting for UI — use `format()` via shared formatters
+- Comparisons and arithmetic — `isBefore`, `addDays`, `addWeeks`, etc.
+
+## Exceptions
+
+- `new Date()` for "now" timestamps (e.g. `completedAt`) is fine without date-fns
+- Household timezone logic (future) — use `date-fns-tz` in shared when added

@@ -7,12 +7,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum RecurrenceFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
 model Household {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   name      String
   users     User[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  projects  TaskProject[]
+  tasks     Task[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
 
 model User {
@@ -25,6 +46,8 @@ model User {
   household     Household? @relation(fields: [householdId], references: [id])
   accounts      Account[]
   sessions      Session[]
+  assignedTasks Task[]     @relation("AssignedTasks")
+  createdTasks  Task[]     @relation("CreatedTasks")
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 }
@@ -61,4 +84,68 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model TaskProject {
+  id          String    @id @default(cuid())
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  name        String
+  tasks       Task[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([householdId])
+}
+
+model Task {
+  id          String        @id @default(cuid())
+  householdId String
+  household   Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     TaskProject?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  parentId    String?
+  parent      Task?         @relation("Subtasks", fields: [parentId], references: [id], onDelete: Cascade)
+  subtasks    Task[]        @relation("Subtasks")
+
+  title       String
+  description String?
+  status      TaskStatus    @default(TODO)
+  priority    TaskPriority  @default(MEDIUM)
+  isShared    Boolean       @default(true)
+
+  assigneeId  String?
+  assignee    User?         @relation("AssignedTasks", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdById String
+  createdBy   User          @relation("CreatedTasks", fields: [createdById], references: [id], onDelete: Cascade)
+
+  dueDate     DateTime?
+  completedAt DateTime?
+  remindAt    DateTime?
+
+  isRecurringTemplate Boolean              @default(false)
+  recurrenceFrequency RecurrenceFrequency?
+  recurrenceInterval  Int?
+  recurrenceWeekdays  Int[]
+
+  blockedBy TaskDependency[] @relation("BlockedTask")
+  blocking  TaskDependency[] @relation("BlockingTask")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([householdId, dueDate])
+  @@index([householdId, status])
+  @@index([assigneeId])
+  @@index([parentId])
+}
+
+model TaskDependency {
+  id              String @id @default(cuid())
+  taskId          String
+  task            Task   @relation("BlockedTask", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOnTaskId String
+  dependsOnTask   Task   @relation("BlockingTask", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependsOnTaskId])
 }
