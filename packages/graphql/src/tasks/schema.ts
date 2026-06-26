@@ -1,7 +1,9 @@
 export const taskTypeDefs = `#graphql
   enum TaskStatus {
+    BACKLOG
     TODO
     IN_PROGRESS
+    WAITING
     DONE
   }
 
@@ -23,6 +25,7 @@ export const taskTypeDefs = `#graphql
     CALENDAR
     KANBAN
     BY_PERSON
+    LIST
   }
 
   type TaskProject {
@@ -36,6 +39,12 @@ export const taskTypeDefs = `#graphql
   type TaskDependency {
     id: ID!
     dependsOnTask: Task!
+  }
+
+  type SubtaskProgress {
+    completed: Int!
+    total: Int!
+    percent: Int!
   }
 
   type Task {
@@ -54,11 +63,13 @@ export const taskTypeDefs = `#graphql
     recurrenceWeekdays: [Int!]!
     project: TaskProject
     parentId: ID
-    assignee: User
+    assignees: [User!]!
     createdBy: User!
     subtasks: [Task!]!
+    subtaskProgress: SubtaskProgress!
     blockedBy: [TaskDependency!]!
     isBlocked: Boolean!
+    isOverdue: Boolean!
     createdAt: String!
     updatedAt: String!
   }
@@ -81,7 +92,7 @@ export const taskTypeDefs = `#graphql
     remindAt: String
     projectId: ID
     parentId: ID
-    assigneeId: ID
+    assigneeIds: [ID!]
     isRecurringTemplate: Boolean
     recurrenceFrequency: RecurrenceFrequency
     recurrenceInterval: Int
@@ -98,7 +109,7 @@ export const taskTypeDefs = `#graphql
     remindAt: String
     projectId: ID
     parentId: ID
-    assigneeId: ID
+    assigneeIds: [ID!]
     isRecurringTemplate: Boolean
     recurrenceFrequency: RecurrenceFrequency
     recurrenceInterval: Int
@@ -114,6 +125,7 @@ export const taskTypeDefs = `#graphql
   extend type Mutation {
     createTask(input: CreateTaskInput!): Task!
     updateTask(id: ID!, input: UpdateTaskInput!): Task!
+    moveTask(id: ID!, status: TaskStatus!): Task!
     deleteTask(id: ID!): Boolean!
     completeTask(id: ID!, completed: Boolean!): Task!
     createTaskProject(name: String!): TaskProject!

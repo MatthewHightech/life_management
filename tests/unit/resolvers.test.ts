@@ -18,6 +18,7 @@ describe("graphql resolvers", () => {
 
   it("merges task mutation resolvers", () => {
     expect(resolvers.Mutation.createTask).toBe(taskResolvers.Mutation.createTask);
+    expect(resolvers.Mutation.moveTask).toBe(taskResolvers.Mutation.moveTask);
     expect(resolvers.Mutation.completeTask).toBe(taskResolvers.Mutation.completeTask);
   });
 

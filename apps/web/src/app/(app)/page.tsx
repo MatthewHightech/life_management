@@ -1,10 +1,5 @@
-import { AppShell } from "@/components/app-shell";
-import { TaskList } from "@/components/task-list";
+import { redirect } from "next/navigation";
 
-export default function TodayPage() {
-  return (
-    <AppShell title="Today" subtitle="Tasks due today and inbox items">
-      <TaskList view="TODAY" />
-    </AppShell>
-  );
+export default function HomePage() {
+  redirect("/tasks");
 }

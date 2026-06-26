@@ -1,0 +1,24 @@
+import { cn } from "@/lib/cn";
+
+type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: "primary" | "secondary" | "ghost";
+};
+
+const variants = {
+  primary: "bg-primary-container text-on-primary hover:bg-primary",
+  secondary: "bg-sage text-primary hover:bg-sage/80",
+  ghost: "border border-transparent text-text-main hover:border-border-subtle hover:bg-surface",
+};
+
+export function Button({ className, variant = "primary", ...props }: ButtonProps) {
+  return (
+    <button
+      className={cn(
+        "inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50",
+        variants[variant],
+        className,
+      )}
+      {...props}
+    />
+  );
+}

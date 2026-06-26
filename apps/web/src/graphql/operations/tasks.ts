@@ -1,36 +1,61 @@
 import { gql } from "@apollo/client";
 
-export const TASKS_QUERY = gql`
-  query Tasks($filter: TaskFilterInput) {
-    tasks(filter: $filter) {
-      id
-      title
-      description
-      status
-      priority
-      isShared
-      dueDate
-      completedAt
-      isBlocked
-      assignee {
-        id
-        name
-        email
-      }
-      project {
-        id
-        name
-      }
-      subtasks {
-        id
-        title
-        status
-      }
+const TASK_FIELDS = gql`
+  fragment TaskFields on Task {
+    id
+    title
+    description
+    status
+    priority
+    isShared
+    dueDate
+    completedAt
+    isBlocked
+    isOverdue
+    subtaskProgress {
+      completed
+      total
+      percent
     }
+    assignees {
+      id
+      name
+      email
+      image
+    }
+    project {
+      id
+      name
+    }
+  }
+`;
+
+export const HOUSEHOLD_SHELL_QUERY = gql`
+  query HouseholdShell {
     me {
       id
       name
       email
+      image
+    }
+    household {
+      id
+      name
+      users {
+        id
+        name
+        email
+        image
+      }
+    }
+  }
+`;
+
+export const TASKS_BOARD_QUERY = gql`
+  ${TASK_FIELDS}
+  query TasksBoard($filter: TaskFilterInput) {
+    tasks(filter: $filter) {
+      ...TaskFields
     }
     household {
       id
@@ -38,33 +63,26 @@ export const TASKS_QUERY = gql`
         id
         name
         email
+        image
       }
     }
   }
 `;
 
 export const CREATE_TASK_MUTATION = gql`
+  ${TASK_FIELDS}
   mutation CreateTask($input: CreateTaskInput!) {
     createTask(input: $input) {
-      id
-      title
-      status
-      priority
-      dueDate
-      assignee {
-        id
-        name
-      }
+      ...TaskFields
     }
   }
 `;
 
-export const COMPLETE_TASK_MUTATION = gql`
-  mutation CompleteTask($id: ID!, $completed: Boolean!) {
-    completeTask(id: $id, completed: $completed) {
-      id
-      status
-      completedAt
+export const MOVE_TASK_MUTATION = gql`
+  ${TASK_FIELDS}
+  mutation MoveTask($id: ID!, $status: TaskStatus!) {
+    moveTask(id: $id, status: $status) {
+      ...TaskFields
     }
   }
 `;
@@ -76,11 +94,10 @@ export const DELETE_TASK_MUTATION = gql`
 `;
 
 export const UPDATE_TASK_MUTATION = gql`
+  ${TASK_FIELDS}
   mutation UpdateTask($id: ID!, $input: UpdateTaskInput!) {
     updateTask(id: $id, input: $input) {
-      id
-      status
-      priority
+      ...TaskFields
     }
   }
 `;

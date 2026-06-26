@@ -1,25 +1,59 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --muted: #64748b;
-  --accent: #2563eb;
+  --primary: #16342d;
+  --primary-container: #2d4b43;
+  --on-primary: #ffffff;
+  --inverse-primary: #adcec3;
+  --secondary: #126876;
+  --background: #f8f9fa;
+  --surface: #ffffff;
+  --sage: #e9f0ee;
+  --muted-blue: #e3f1f4;
+  --warm-amber: #fef5ed;
+  --border-subtle: #e9ecef;
+  --text-main: #212529;
+  --text-muted: #6c757d;
+  --error: #ba1a1a;
+  --error-container: #ffdad6;
+  --status-backlog: #9ca3af;
+  --status-todo: #3b82f6;
+  --status-in-progress: #f97316;
+  --status-waiting: #ef4444;
+  --status-done: #2d4b43;
+  --sidebar-width: 260px;
+  --sidebar-collapsed: 72px;
 }
 
 @theme inline {
+  --color-primary: var(--primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary: var(--on-primary);
+  --color-inverse-primary: var(--inverse-primary);
+  --color-secondary: var(--secondary);
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-muted: var(--muted);
-  --color-accent: var(--accent);
+  --color-surface: var(--surface);
+  --color-sage: var(--sage);
+  --color-muted-blue: var(--muted-blue);
+  --color-warm-amber: var(--warm-amber);
+  --color-border-subtle: var(--border-subtle);
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-error: var(--error);
+  --color-error-container: var(--error-container);
+  --color-status-backlog: var(--status-backlog);
+  --color-status-todo: var(--status-todo);
+  --color-status-in-progress: var(--status-in-progress);
+  --color-status-waiting: var(--status-waiting);
+  --color-status-done: var(--status-done);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --width-sidebar: var(--sidebar-width);
+  --width-sidebar-collapsed: var(--sidebar-collapsed);
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
+  color: var(--text-main);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
