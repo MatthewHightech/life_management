@@ -1,8 +1,9 @@
 # Life Management Suite — Requirements
 
-> **Status:** Living document · **Last updated:** 2026-06-24  
+> **Status:** Living document · **Last updated:** 2026-06-25  
 > **Audience:** Project owner, future contributors, and LLM coding agents  
-> **Purpose:** Single source of truth for what this product is, what it must do, and what it must not do.
+> **Purpose:** Single source of truth for what this product is, what it must do, and what it must not do.  
+> **UI spec:** [`docs/design/DESIGN.md`](design/DESIGN.md)
 
 ---
 
@@ -140,9 +141,13 @@ See §5 Phased Roadmap for priorities.
 
 ### 4.1 Application shell
 
-**REQ-SHELL-01 (P0):** Default home screen displays the **task list** (today-focused view).
+**REQ-SHELL-01 (P0):** Default home screen (`/`) opens **Tasks → Kanban** view. Visual and navigation spec: [`docs/design/DESIGN.md`](design/DESIGN.md).
 
 **REQ-SHELL-02 (P1):** Responsive web UI usable on phone, tablet, and desktop with equal priority.
+
+**REQ-SHELL-03 (P0):** Primary navigation is **module-based** in a collapsible sidebar: Tasks · Finance · Calendar · Meal Planning. Finance, Calendar, and Meal Planning may be disabled placeholders until their modules ship. Task-specific views (Kanban, List, etc.) live **inside** the Tasks module, not as top-level sidebar items.
+
+> **Rollout note:** REQ-TASK-10 (Today), REQ-TASK-11 (task calendar), and REQ-TASK-13 (by person) remain P0 for Phase 1 but ship **after** the initial Kanban + List UI pass. See [`docs/design/DESIGN.md`](design/DESIGN.md) §9.
 
 ---
 
@@ -158,17 +163,25 @@ See §5 Phased Roadmap for priorities.
 
 **REQ-TASK-04 (P0):** Support **dependencies** between tasks (blocked-by / blocks).
 
-**REQ-TASK-05 (P0):** Tasks support **assignees**, **due dates**, **priorities**, and **subtasks**.
+**REQ-TASK-05 (P0):** Tasks support **one or more assignees**, **due dates**, **priorities**, and **subtasks**.
+
+**REQ-TASK-06 (P0):** Task **status** values: `BACKLOG` · `TODO` · `IN_PROGRESS` · `WAITING` · `DONE`. Kanban board uses the first four as columns; `DONE` is a **collapsible** column (hidden by default).
+
+**REQ-TASK-07 (P0):** **Kanban drag-and-drop** — moving a card between columns updates task status.
 
 #### 4.2.2 Task views
 
-**REQ-TASK-10 (P0):** **Today / inbox** view.
+**REQ-TASK-10 (P0):** **Today / inbox** view. *(Initial UI pass: deferred — see DESIGN.md §9.)*
 
-**REQ-TASK-11 (P0):** **Calendar** view.
+**REQ-TASK-11 (P0):** **Calendar** view (tasks grouped by due date; not Google Calendar). *(Initial UI pass: deferred.)*
 
-**REQ-TASK-12 (P0):** **Kanban** view.
+**REQ-TASK-12 (P0):** **Kanban** view — default Tasks landing. Drag-and-drop between status columns (REQ-TASK-07).
 
-**REQ-TASK-13 (P0):** **By person** view (filter/group by assignee).
+**REQ-TASK-13 (P0):** **By person** view (filter/group by assignee). *(Initial UI pass: deferred.)*
+
+**REQ-TASK-14 (P0):** **List** view — table with columns for task name, status, priority, assignee(s), and due date. Toggle with Kanban inside Tasks module.
+
+**REQ-TASK-15 (P1):** Task list/kanban **filters** (assignee, priority, and extended filters). *(Deferred from initial UI pass.)*
 
 #### 4.2.3 Task notifications
 
@@ -179,6 +192,7 @@ See §5 Phased Roadmap for priorities.
 | Feature | Priority | Notes |
 |---------|----------|-------|
 | Cross-entity links (task ↔ bill ↔ calendar event) | P2 | Maybe later |
+| Task category labels / colored row accents on list view | P2 | Defer — use projects later; see DESIGN.md |
 | Quick capture (voice, widget, email-in, share sheet) | P2 | Maybe later |
 | GTD workflows (contexts, someday/maybe, weekly review) | P3 | Too complex for now |
 
@@ -271,7 +285,7 @@ Not needed yet. Do not implement until this document is updated.
 
 | Module | Deliverables |
 |--------|--------------|
-| **Tasks** | CRUD, all fields, four views, recurring, dependencies, per-task reminders |
+| **Tasks** | CRUD, all fields, Kanban + List (first UI pass), then Today/calendar/by-person views; recurring, dependencies, per-task reminders; multi-assignee; extended statuses |
 | **Finance** | Manual income/expense, categories + limits, recurring bills, monthly joint budget, basic reports |
 | **Calendar** | Google OAuth for Calendar API, multi-calendar aggregation, two-way sync |
 
@@ -544,6 +558,7 @@ All open questions are resolved. Reference for agents and future you:
 
 | Date | Change |
 |------|--------|
+| 2026-06-25 | UI alignment: Kanban default home (REQ-SHELL-01); module sidebar nav (REQ-SHELL-03); multi-assignee (REQ-TASK-05); statuses BACKLOG/WAITING/DONE collapsible (REQ-TASK-06); kanban DnD (REQ-TASK-07); List view (REQ-TASK-14); filters deferred (REQ-TASK-15). See `docs/design/DESIGN.md`. |
 | 2026-06-24 | Production hosting: **Oracle Cloud VM** (Docker Compose + Caddy); deploy guide at `docs/deployment/oracle-vm.md` |
 | 2026-06-24 | Monorepo split: `apps/api`, `apps/web`, `packages/{db,graphql,shared}`; API auth via Google OAuth + JWT |
 | 2026-06-24 | Resolved open questions OQ-01–02, OQ-05–09; added Postgres and GraphQL/ORM comparisons (§9.4–9.5); removed audit trail requirement |
@@ -559,8 +574,8 @@ All open questions are resolved. Reference for agents and future you:
 **Vision:** REQ-VISION-01, REQ-VISION-02  
 **Users:** REQ-USER-01 … REQ-USER-06  
 **Permissions:** REQ-PERM-01 … REQ-PERM-03  
-**Shell:** REQ-SHELL-01, REQ-SHELL-02  
-**Tasks:** REQ-TASK-01 … REQ-TASK-05, REQ-TASK-10 … REQ-TASK-13, REQ-TASK-20  
+**Shell:** REQ-SHELL-01 … REQ-SHELL-03  
+**Tasks:** REQ-TASK-01 … REQ-TASK-07, REQ-TASK-10 … REQ-TASK-15, REQ-TASK-20  
 **Finance:** REQ-FIN-01 … REQ-FIN-06, REQ-FIN-20  
 **Calendar:** REQ-CAL-01 … REQ-CAL-05  
 **Meals:** REQ-MEAL-01 … REQ-MEAL-03  
