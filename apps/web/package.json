@@ -5,8 +5,11 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "codegen": "npm run codegen --prefix ../..",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint .",
+    "prebuild": "npm run codegen",
+    "pretypecheck": "npm run codegen",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

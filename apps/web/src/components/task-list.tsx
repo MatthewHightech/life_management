@@ -13,9 +13,12 @@ import {
   CREATE_TASK_MUTATION,
   DELETE_TASK_MUTATION,
   TASKS_QUERY,
-} from "@/graphql/tasks";
+  type TasksQuery,
+} from "@/graphql";
 
 type TaskView = "TODAY" | "CALENDAR" | "KANBAN" | "BY_PERSON";
+
+type TaskListItem = TasksQuery["tasks"][number];
 
 type TaskListProps = {
   view: TaskView;
@@ -158,7 +161,7 @@ export function TaskList({ view, groupBy }: TaskListProps) {
                     {task.project && <span>{task.project.name}</span>}
                     {task.subtasks.length > 0 && (
                       <span>
-                        {task.subtasks.filter((s: { status: string }) => s.status === "DONE").length}/
+                        {task.subtasks.filter((s) => s.status === "DONE").length}/
                         {task.subtasks.length} subtasks
                       </span>
                     )}
@@ -180,21 +183,7 @@ export function TaskList({ view, groupBy }: TaskListProps) {
   );
 }
 
-function groupTasks(
-  tasks: Array<{
-    id: string;
-    title: string;
-    status: string;
-    priority: string;
-    isShared: boolean;
-    dueDate?: string | null;
-    isBlocked: boolean;
-    assignee?: { name?: string | null; email: string } | null;
-    project?: { name: string } | null;
-    subtasks: Array<{ status: string }>;
-  }>,
-  groupBy?: "status" | "assignee" | "date",
-) {
+function groupTasks(tasks: TaskListItem[], groupBy?: "status" | "assignee" | "date") {
   if (!groupBy) {
     return { Tasks: tasks };
   }

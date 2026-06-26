@@ -22,11 +22,17 @@
     "db:migrate:deploy": "npm run db:migrate:deploy -w @life/db",
     "db:seed": "npm run db:seed -w @life/db",
     "db:studio": "npm run db:studio -w @life/db",
+    "schema:print": "npm run schema:print -w @life/graphql",
+    "codegen": "npm run schema:print && graphql-codegen --config codegen.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^5.0.7",
+    "@graphql-codegen/typed-document-node": "^5.1.2",
+    "@graphql-codegen/typescript": "^4.1.6",
+    "@graphql-codegen/typescript-operations": "^4.6.1",
     "@playwright/test": "^1.53.0",
     "typescript": "^5.8.3",
     "vitest": "^3.2.0"

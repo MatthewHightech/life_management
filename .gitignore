@@ -43,3 +43,6 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# graphql codegen (regenerate with: npm run codegen)
+apps/web/src/graphql/generated/

@@ -1,0 +1,33 @@
+---
+description: GraphQL codegen workflow for typed frontend operations
+alwaysApply: true
+---
+
+# GraphQL codegen
+
+Frontend GraphQL operations must be type-safe via codegen.
+
+## Where things live
+
+- **Schema source:** `packages/graphql/src/` (TypeScript typeDefs)
+- **Printed schema:** `packages/graphql/schema.graphql` (generated, do not edit by hand)
+- **Web operations:** `apps/web/src/graphql/operations/**/*.ts` (gql documents only)
+- **Generated types:** `apps/web/src/graphql/generated/` (gitignored — run `npm run codegen`)
+- **Public imports:** `@/graphql` re-exports typed documents and types
+
+## When to run
+
+```bash
+npm run codegen
+```
+
+Run after changing GraphQL schema, resolvers' exposed types, or web operations.
+
+## Adding a new operation
+
+1. Add `gql` document in `apps/web/src/graphql/operations/`
+2. Run `npm run codegen`
+3. Re-export from `apps/web/src/graphql/index.ts` if needed
+4. Use the generated `*Document` (aliased in index) with `useQuery` / `useMutation`
+
+Do not import from `operations/` in components — import from `@/graphql`.
