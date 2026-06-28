@@ -49,6 +49,12 @@ export const priorityLabels: Record<string, string> = {
   URGENT: "Urgent",
 };
 
+export const taskPriorities = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
+
+export function statusLabel(status: string) {
+  return status.replaceAll("_", " ").toLowerCase().replace(/^\w/, (character) => character.toUpperCase());
+}
+
 export function priorityChipClass(priority: string) {
   if (priority === "URGENT") {
     return "bg-error-container text-error";

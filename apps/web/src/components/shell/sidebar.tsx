@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { moduleNav } from "@/config/navigation";
+import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/cn";
 
 type SidebarProps = {
@@ -11,6 +12,7 @@ type SidebarProps = {
   onToggle: () => void;
   householdName?: string;
   userName?: string | null;
+  userEmail?: string;
   userImage?: string | null;
   onSignOut: () => void;
 };
@@ -20,6 +22,7 @@ export function Sidebar({
   onToggle,
   householdName = "Household",
   userName,
+  userEmail,
   userImage,
   onSignOut,
 }: SidebarProps) {
@@ -91,13 +94,7 @@ export function Sidebar({
         </button>
         {!collapsed && userName && (
           <div className="flex items-center gap-2 px-3 py-2">
-            {userImage ? (
-              <img src={userImage} alt="" className="h-8 w-8 rounded-full object-cover" />
-            ) : (
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-sage text-xs font-semibold text-primary-container">
-                {userName[0]}
-              </span>
-            )}
+            <Avatar name={userName} email={userEmail} image={userImage} className="h-8 w-8 text-xs" />
             <span className="truncate text-sm">{userName}</span>
           </div>
         )}

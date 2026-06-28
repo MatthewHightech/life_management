@@ -39,6 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         onToggle={handleToggle}
         householdName={data?.household?.name ?? "Household"}
         userName={data?.me?.name ?? data?.me?.email}
+        userEmail={data?.me?.email}
         userImage={data?.me?.image}
         onSignOut={handleSignOut}
       />
