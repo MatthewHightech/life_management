@@ -12,12 +12,12 @@ import { useMutation, useQuery } from "@apollo/client";
 import { useCallback, useMemo, useState } from "react";
 import type { TaskStatus, TasksBoardQuery, TasksBoardQueryVariables, UpdateTaskMutationVariables } from "@/graphql";
 import {
+  CREATE_TASK_MUTATION,
   DELETE_TASK_MUTATION,
   MOVE_TASK_MUTATION,
   TASKS_BOARD_QUERY,
   UPDATE_TASK_MUTATION,
 } from "@/graphql";
-import { CreateTaskModal } from "@/components/tasks/create-task-modal";
 import { KanbanCard } from "@/components/tasks/kanban-card";
 import { KanbanColumnView } from "@/components/tasks/kanban-column";
 import { TasksPageLayout } from "@/components/tasks/tasks-page-layout";
@@ -29,13 +29,15 @@ type BoardTask = TasksBoardQuery["tasks"][number];
 const kanbanQuery = tasksBoardKanbanQuery;
 
 export function KanbanBoard() {
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createStatus, setCreateStatus] = useState<TaskStatus>("TODO");
   const [doneCollapsed, setDoneCollapsed] = useState(true);
   const [activeTask, setActiveTask] = useState<BoardTask | null>(null);
 
   const { data, loading, error } = useQuery<TasksBoardQuery, TasksBoardQueryVariables>(TASKS_BOARD_QUERY, {
     variables: kanbanQuery.variables,
+  });
+
+  const [createTask] = useMutation(CREATE_TASK_MUTATION, {
+    refetchQueries: tasksBoardRefetchQueries,
   });
 
   const [moveTask] = useMutation(MOVE_TASK_MUTATION, {
@@ -86,11 +88,24 @@ export function KanbanBoard() {
   ) as Record<TaskStatus, string>;
 
   const users = data?.household?.users ?? [];
+  const currentUserId = data?.me?.id;
 
-  function openCreate(status: TaskStatus = "TODO") {
-    setCreateStatus(status);
-    setCreateOpen(true);
-  }
+  const handleAddTask = useCallback(
+    async (status: TaskStatus) => {
+      await createTask({
+        variables: {
+          input: {
+            title: "Untitled",
+            status,
+            priority: "LOW",
+            assigneeIds: currentUserId ? [currentUserId] : undefined,
+            isShared: true,
+          },
+        },
+      });
+    },
+    [createTask, currentUserId],
+  );
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -112,57 +127,48 @@ export function KanbanBoard() {
   }
 
   return (
-    <>
-      <TasksPageLayout onNewTask={() => openCreate("TODO")}>
-        {loading && <p className="text-sm text-text-muted">Loading board…</p>}
-        {error && <p className="text-sm text-error">Could not load tasks: {error.message}</p>}
+    <TasksPageLayout>
+      {loading && <p className="text-sm text-text-muted">Loading board…</p>}
+      {error && <p className="text-sm text-error">Could not load tasks: {error.message}</p>}
 
-        {!loading && !error && (
-          <DndContext
-            sensors={sensors}
-            onDragStart={(event) => {
-              const task = data?.tasks.find((item: BoardTask) => item.id === event.active.id);
-              setActiveTask(task ?? null);
-            }}
-            onDragEnd={handleDragEnd}
-            onDragCancel={() => setActiveTask(null)}
-          >
-            <div className="flex gap-4 overflow-x-auto pb-4">
-              {kanbanColumns.map((column) => (
-                <KanbanColumnView
-                  key={column.status}
-                  column={column}
-                  tasks={tasksByStatus[column.status] ?? []}
-                  users={users}
-                  collapsed={column.collapsible ? doneCollapsed : false}
-                  onToggleCollapsed={
-                    column.collapsible ? () => setDoneCollapsed((value) => !value) : undefined
-                  }
-                  onAddTask={openCreate}
-                  onUpdateTask={handleUpdate}
-                  onDeleteTask={handleDelete}
-                />
-              ))}
-            </div>
-            <DragOverlay>
-              {activeTask ? (
-                <KanbanCard
-                  task={activeTask}
-                  accentClass={accentByStatus[activeTask.status]}
-                  overlay
-                />
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-        )}
-      </TasksPageLayout>
-
-      <CreateTaskModal
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        users={users}
-        defaultStatus={createStatus}
-      />
-    </>
+      {!loading && !error && (
+        <DndContext
+          sensors={sensors}
+          onDragStart={(event) => {
+            const task = data?.tasks.find((item: BoardTask) => item.id === event.active.id);
+            setActiveTask(task ?? null);
+          }}
+          onDragEnd={handleDragEnd}
+          onDragCancel={() => setActiveTask(null)}
+        >
+          <div className="flex gap-4 overflow-x-auto pb-4">
+            {kanbanColumns.map((column) => (
+              <KanbanColumnView
+                key={column.status}
+                column={column}
+                tasks={tasksByStatus[column.status] ?? []}
+                users={users}
+                collapsed={column.collapsible ? doneCollapsed : false}
+                onToggleCollapsed={
+                  column.collapsible ? () => setDoneCollapsed((value) => !value) : undefined
+                }
+                onAddTask={handleAddTask}
+                onUpdateTask={handleUpdate}
+                onDeleteTask={handleDelete}
+              />
+            ))}
+          </div>
+          <DragOverlay>
+            {activeTask ? (
+              <KanbanCard
+                task={activeTask}
+                accentClass={accentByStatus[activeTask.status]}
+                overlay
+              />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      )}
+    </TasksPageLayout>
   );
 }

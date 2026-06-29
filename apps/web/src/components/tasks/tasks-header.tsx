@@ -3,14 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutGrid, List } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
-type TasksHeaderProps = {
-  onNewTask: () => void;
-};
-
-export function TasksHeader({ onNewTask }: TasksHeaderProps) {
+export function TasksHeader() {
   const pathname = usePathname();
   const isList = pathname === "/tasks/list";
 
