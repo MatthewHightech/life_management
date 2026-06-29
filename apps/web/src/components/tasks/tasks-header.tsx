@@ -42,7 +42,6 @@ export function TasksHeader({ onNewTask }: TasksHeaderProps) {
             </Link>
           </div>
         </div>
-        <Button onClick={onNewTask}>+ New Task</Button>
       </div>
     </div>
   );
