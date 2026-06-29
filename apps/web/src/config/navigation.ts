@@ -11,7 +11,7 @@ export type ModuleNavItem = {
 
 export const moduleNav: ModuleNavItem[] = [
   { id: "tasks", label: "Tasks", href: "/tasks", icon: CheckSquare, enabled: true },
-  { id: "finance", label: "Finance", href: "/finance", icon: Wallet, enabled: false },
+  { id: "finance", label: "Finance", href: "/finance", icon: Wallet, enabled: true },
   { id: "calendar", label: "Calendar", href: "/calendar", icon: Calendar, enabled: false },
-  { id: "meals", label: "Meal Planning", href: "/meals", icon: UtensilsCrossed, enabled: false },
+  { id: "meals", label: "Meal Planning", href: "/meals", icon: UtensilsCrossed, enabled: true },
 ];

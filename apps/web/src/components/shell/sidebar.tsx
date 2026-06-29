@@ -39,7 +39,7 @@ export function Sidebar({
         {!collapsed ? (
           <>
             <p className="text-xs font-semibold uppercase tracking-wider text-inverse-primary/80">
-              Life Management
+              Welcome Home
             </p>
             <h1 className="mt-1 text-lg font-semibold">{householdName}</h1>
           </>
