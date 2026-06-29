@@ -51,7 +51,7 @@ export function KanbanColumnView({
 
   return (
     <section className="flex min-w-[260px] flex-1 flex-col rounded-xl bg-background">
-      <header className="flex items-center justify-between px-3 py-3">
+      <header className="flex items-center justify-between px-3 py-2">
         <div className="flex items-center gap-2">
           <span className={cn("h-2.5 w-2.5 rounded-full", column.dotClass)} />
           <h2 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
@@ -82,7 +82,7 @@ export function KanbanColumnView({
       <div
         ref={setNodeRef}
         className={cn(
-          "flex min-h-[420px] flex-1 flex-col gap-3 px-3 pb-3",
+          "flex min-h-[420px] flex-1 flex-col gap-2 px-3 pb-2",
           isOver && "rounded-lg bg-sage/60",
         )}
       >

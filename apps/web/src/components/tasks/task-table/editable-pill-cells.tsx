@@ -11,12 +11,11 @@ import {
 
 type EditableStatusProps = {
   value: TaskStatus;
-  overdue: boolean;
   onSave: (value: TaskStatus) => Promise<void>;
 };
 
-export function EditableStatus({ value, overdue, onSave }: EditableStatusProps) {
-  const trigger = statusTriggerDisplay(value, overdue);
+export function EditableStatus({ value, onSave }: EditableStatusProps) {
+  const trigger = statusTriggerDisplay(value);
 
   return (
     <PillSelect
@@ -32,9 +31,11 @@ export function EditableStatus({ value, overdue, onSave }: EditableStatusProps) 
 type EditablePriorityProps = {
   value: TaskPriority;
   onSave: (value: TaskPriority) => Promise<void>;
+  triggerClassName?: string;
+  chipClassName?: string;
 };
 
-export function EditablePriority({ value, onSave }: EditablePriorityProps) {
+export function EditablePriority({ value, onSave, triggerClassName, chipClassName }: EditablePriorityProps) {
   return (
     <PillSelect
       value={value}
@@ -42,6 +43,8 @@ export function EditablePriority({ value, onSave }: EditablePriorityProps) {
       triggerChipClassName={priorityChipClass(value)}
       options={prioritySelectOptions()}
       onSelect={onSave}
+      triggerClassName={triggerClassName}
+      chipClassName={chipClassName}
     />
   );
 }

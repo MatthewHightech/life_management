@@ -23,13 +23,13 @@ export function TaskListTable({ tasks, users, emptyMessage, onDelete, onUpdate }
       </colgroup>
       <thead className="border-b border-border-subtle bg-background text-xs uppercase tracking-wide text-text-muted">
         <tr>
-          <th className="px-4 py-3 font-semibold">Task name</th>
-          <th className="px-4 py-3 font-semibold">Status</th>
-          <th className="px-4 py-3 font-semibold">Priority</th>
-          <th className="px-4 py-3 font-semibold">Assignees</th>
-          <th className="px-4 py-3 font-semibold">Due date</th>
-          <th className="px-4 py-3 font-semibold">Description</th>
-          <th className="px-4 py-3 font-semibold" />
+          <th className="px-4 py-2 font-semibold">Task name</th>
+          <th className="px-4 py-2 font-semibold">Status</th>
+          <th className="px-4 py-2 font-semibold">Priority</th>
+          <th className="px-4 py-2 font-semibold">Assignees</th>
+          <th className="px-4 py-2 font-semibold">Due date</th>
+          <th className="px-4 py-2 font-semibold">Description</th>
+          <th className="px-4 py-2 font-semibold" />
         </tr>
       </thead>
       <tbody>

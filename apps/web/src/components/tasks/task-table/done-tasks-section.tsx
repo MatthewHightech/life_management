@@ -20,7 +20,7 @@ export function DoneTasksSection({ tasks, users, onDelete, onUpdate }: DoneTasks
       <button
         type="button"
         onClick={() => setCollapsed((current) => !current)}
-        className="flex w-full items-center gap-2 border-b border-border-subtle bg-background px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted transition hover:bg-background/80"
+        className="flex w-full items-center gap-2 border-b border-border-subtle bg-background px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-text-muted transition hover:bg-background/80"
       >
         {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         <span>Done</span>

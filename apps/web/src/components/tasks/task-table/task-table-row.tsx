@@ -16,8 +16,8 @@ function TaskTableCell({
   children: React.ReactNode;
 }) {
   return (
-    <td className={cn("px-4 py-3 align-middle", className)}>
-      <div className={cn("flex min-h-10 items-center", contentClassName)}>{children}</div>
+    <td className={cn("px-4 py-1.5 align-middle", className)}>
+      <div className={cn("flex min-h-7 items-center", contentClassName)}>{children}</div>
     </td>
   );
 }
@@ -36,7 +36,7 @@ export function TaskTableRow({ task, users, onDelete, onUpdate }: TaskTableRowPr
         />
       </TaskTableCell>
       <TaskTableCell className="whitespace-nowrap">
-        <EditableStatus value={task.status} overdue={overdue} onSave={(status) => onUpdate({ status })} />
+        <EditableStatus value={task.status} onSave={(status) => onUpdate({ status })} />
       </TaskTableCell>
       <TaskTableCell>
         <EditablePriority value={task.priority} onSave={(priority) => onUpdate({ priority })} />

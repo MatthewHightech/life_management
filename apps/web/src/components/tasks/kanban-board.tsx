@@ -22,7 +22,7 @@ import { KanbanCard } from "@/components/tasks/kanban-card";
 import { KanbanColumnView } from "@/components/tasks/kanban-column";
 import { TasksPageLayout } from "@/components/tasks/tasks-page-layout";
 import { kanbanColumns } from "@/lib/task-status";
-import { tasksBoardKanbanQuery, tasksBoardRefetchQueries } from "@/lib/task-board-queries";
+import { tasksBoardKanbanQuery, tasksBoardRefetchQueries, updateTaskInBoardCaches } from "@/lib/task-board-queries";
 
 type BoardTask = TasksBoardQuery["tasks"][number];
 
@@ -31,6 +31,7 @@ const kanbanQuery = tasksBoardKanbanQuery;
 export function KanbanBoard() {
   const [doneCollapsed, setDoneCollapsed] = useState(true);
   const [activeTask, setActiveTask] = useState<BoardTask | null>(null);
+  const [activeWidth, setActiveWidth] = useState<number | null>(null);
 
   const { data, loading, error } = useQuery<TasksBoardQuery, TasksBoardQueryVariables>(TASKS_BOARD_QUERY, {
     variables: kanbanQuery.variables,
@@ -41,7 +42,11 @@ export function KanbanBoard() {
   });
 
   const [moveTask] = useMutation(MOVE_TASK_MUTATION, {
-    refetchQueries: tasksBoardRefetchQueries,
+    update(cache, { data: result }) {
+      if (result?.moveTask) {
+        updateTaskInBoardCaches(cache, result.moveTask);
+      }
+    },
   });
 
   const [updateTask] = useMutation(UPDATE_TASK_MUTATION, {
@@ -107,11 +112,12 @@ export function KanbanBoard() {
     [createTask, currentUserId],
   );
 
-  async function handleDragEnd(event: DragEndEvent) {
+  function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
-    setActiveTask(null);
 
     if (!over) {
+      setActiveTask(null);
+      setActiveWidth(null);
       return;
     }
 
@@ -120,10 +126,35 @@ export function KanbanBoard() {
     const currentStatus = active.data.current?.status as TaskStatus | undefined;
 
     if (!currentStatus || currentStatus === newStatus) {
+      setActiveTask(null);
+      setActiveWidth(null);
       return;
     }
 
-    await moveTask({ variables: { id: taskId, status: newStatus } });
+    const task = data?.tasks.find((item) => item.id === taskId);
+    if (!task) {
+      setActiveTask(null);
+      setActiveWidth(null);
+      return;
+    }
+
+    void moveTask({
+      variables: { id: taskId, status: newStatus },
+      optimisticResponse: {
+        moveTask: {
+          __typename: "Task",
+          ...task,
+          status: newStatus,
+        },
+      },
+    });
+    setActiveTask(null);
+    setActiveWidth(null);
+  }
+
+  function handleDragCancel() {
+    setActiveTask(null);
+    setActiveWidth(null);
   }
 
   return (
@@ -137,9 +168,10 @@ export function KanbanBoard() {
           onDragStart={(event) => {
             const task = data?.tasks.find((item: BoardTask) => item.id === event.active.id);
             setActiveTask(task ?? null);
+            setActiveWidth(event.active.rect.current.initial?.width ?? null);
           }}
           onDragEnd={handleDragEnd}
-          onDragCancel={() => setActiveTask(null)}
+          onDragCancel={handleDragCancel}
         >
           <div className="flex gap-4 overflow-x-auto pb-4">
             {kanbanColumns.map((column) => (
@@ -158,13 +190,16 @@ export function KanbanBoard() {
               />
             ))}
           </div>
-          <DragOverlay>
+          <DragOverlay dropAnimation={null}>
             {activeTask ? (
-              <KanbanCard
-                task={activeTask}
-                accentClass={accentByStatus[activeTask.status]}
-                overlay
-              />
+              <div style={activeWidth ? { width: activeWidth } : undefined}>
+                <KanbanCard
+                  task={activeTask}
+                  accentClass={accentByStatus[activeTask.status]}
+                  users={users}
+                  overlay
+                />
+              </div>
             ) : null}
           </DragOverlay>
         </DndContext>

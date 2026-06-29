@@ -5,6 +5,7 @@ export type KanbanColumn = {
   label: string;
   dotClass: string;
   accentClass: string;
+  chipClass: string;
   collapsible?: boolean;
 };
 
@@ -14,30 +15,35 @@ export const kanbanColumns: KanbanColumn[] = [
     label: "Backlog",
     dotClass: "bg-status-backlog",
     accentClass: "border-t-status-backlog",
+    chipClass: "bg-status-backlog text-on-primary",
   },
   {
     status: "TODO",
     label: "Todo",
     dotClass: "bg-status-todo",
     accentClass: "border-t-status-todo",
+    chipClass: "bg-status-todo text-on-primary",
   },
   {
     status: "IN_PROGRESS",
     label: "In progress",
     dotClass: "bg-status-in-progress",
     accentClass: "border-t-status-in-progress",
+    chipClass: "bg-status-in-progress text-on-primary",
   },
   {
     status: "WAITING",
     label: "Waiting",
     dotClass: "bg-status-waiting",
     accentClass: "border-t-status-waiting",
+    chipClass: "bg-status-waiting text-on-primary",
   },
   {
     status: "DONE",
     label: "Done",
     dotClass: "bg-status-done",
     accentClass: "border-t-status-done",
+    chipClass: "bg-status-done text-on-primary",
     collapsible: true,
   },
 ];
@@ -72,21 +78,6 @@ export function priorityChipClass(priority: string) {
 }
 
 export function statusChipClass(status: string) {
-  if (status === "DONE") {
-    return "bg-status-done text-on-primary";
-  }
-
-  if (status === "IN_PROGRESS") {
-    return "bg-muted-blue text-secondary";
-  }
-
-  if (status === "WAITING") {
-    return "bg-warm-amber text-[#6b3800]";
-  }
-
-  if (status === "OVERDUE") {
-    return "bg-error-container text-error";
-  }
-
-  return "bg-sage text-primary-container";
+  const column = kanbanColumns.find((item) => item.status === status);
+  return column?.chipClass ?? "bg-status-backlog text-on-primary";
 }

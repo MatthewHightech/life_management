@@ -25,7 +25,7 @@ import type { HouseholdUser } from "./types";
 
 const TASK_LIST_COLUMN_GRID =
   "grid w-full min-w-full grid-cols-[15%_13%_8%_11%_10%_minmax(280px,1fr)_7.5rem] text-left text-sm";
-const TASK_LIST_CELL = "flex min-h-10 items-center px-4 py-3";
+const TASK_LIST_CELL = "flex min-h-7 items-center px-4 py-1.5";
 
 const DEFAULT_STATUS: TaskStatus = "BACKLOG";
 const DEFAULT_PRIORITY: TaskPriority = "LOW";
@@ -61,7 +61,7 @@ function DraftAssigneePicker({
         ref={anchorRef}
         type="button"
         onClick={toggle}
-        className={triggerClassName("inline-flex min-h-9 items-center rounded-md px-1 py-0.5")}
+        className={triggerClassName("inline-flex min-h-7 items-center rounded-md px-1 py-0.5")}
       >
         <AssigneeAvatars assignees={assignees} />
       </button>
@@ -105,7 +105,7 @@ function DraftDueDatePicker({
         ref={anchorRef}
         type="button"
         onClick={toggle}
-        className={triggerClassName("inline-flex min-h-9 items-center rounded-md px-2 py-1 text-sm text-text-muted")}
+        className={triggerClassName("inline-flex min-h-7 items-center rounded-md px-2 py-0.5 text-sm text-text-muted")}
       >
         {value ? formatShortDate(value) : "Set date"}
       </button>
@@ -134,7 +134,7 @@ export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) 
     refetchQueries: tasksBoardRefetchQueries,
   });
 
-  const statusDisplay = useMemo(() => statusTriggerDisplay(status, false), [status]);
+  const statusDisplay = useMemo(() => statusTriggerDisplay(status), [status]);
 
   function resetForm() {
     setTitle("");

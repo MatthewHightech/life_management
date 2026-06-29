@@ -16,11 +16,11 @@
   --text-muted: #6c757d;
   --error: #ba1a1a;
   --error-container: #ffdad6;
-  --status-backlog: #9ca3af;
-  --status-todo: #3b82f6;
-  --status-in-progress: #f97316;
-  --status-waiting: #ef4444;
-  --status-done: #2d4b43;
+  --status-backlog: #999ca3;
+  --status-todo: #1a8f9c;
+  --status-in-progress: #f1b74b;
+  --status-waiting: #ec724d;
+  --status-done: #3d9b5c;
   --sidebar-width: 260px;
   --sidebar-collapsed: 72px;
 }

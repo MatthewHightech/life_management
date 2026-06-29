@@ -18,7 +18,7 @@ export function statusSelectOptions(): TaskPillOption<TaskStatus>[] {
   return kanbanColumns.map((column) => ({
     value: column.status,
     label: column.label,
-    chipClassName: statusChipClass(column.status),
+    chipClassName: column.chipClass,
   }));
 }
 
@@ -30,10 +30,12 @@ export function prioritySelectOptions(): TaskPillOption<TaskPriority>[] {
   }));
 }
 
-export function statusTriggerDisplay(status: TaskStatus, overdue: boolean) {
+export function statusTriggerDisplay(status: TaskStatus) {
+  const column = kanbanColumns.find((item) => item.status === status);
+
   return {
-    label: overdue ? "Overdue" : statusLabel(status),
-    chipClassName: statusChipClass(overdue ? "OVERDUE" : status),
+    label: column?.label ?? statusLabel(status),
+    chipClassName: column?.chipClass ?? statusChipClass(status),
   };
 }
 

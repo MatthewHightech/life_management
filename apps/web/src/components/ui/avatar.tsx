@@ -64,9 +64,10 @@ export function Avatar({ name, email, image, className }: AvatarProps) {
 type AssigneeAvatarsProps = {
   assignees: Array<{ id: string; name?: string | null; email: string; image?: string | null }>;
   max?: number;
+  avatarClassName?: string;
 };
 
-export function AssigneeAvatars({ assignees, max = 3 }: AssigneeAvatarsProps) {
+export function AssigneeAvatars({ assignees, max = 3, avatarClassName }: AssigneeAvatarsProps) {
   const visible = assignees.slice(0, max);
   const overflow = assignees.length - visible.length;
 
@@ -78,10 +79,16 @@ export function AssigneeAvatars({ assignees, max = 3 }: AssigneeAvatarsProps) {
           name={assignee.name}
           email={assignee.email}
           image={assignee.image}
+          className={avatarClassName}
         />
       ))}
       {overflow > 0 && (
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-container text-[10px] font-semibold text-on-primary ring-2 ring-surface">
+        <span
+          className={cn(
+            "flex h-7 w-7 items-center justify-center rounded-full bg-primary-container text-[10px] font-semibold text-on-primary ring-2 ring-surface",
+            avatarClassName,
+          )}
+        >
           +{overflow}
         </span>
       )}

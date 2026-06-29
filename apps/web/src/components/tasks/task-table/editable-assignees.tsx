@@ -5,21 +5,30 @@ import { FloatingPanel } from "@/components/ui/floating-panel";
 import { useAsyncAction } from "@/hooks/use-async-action";
 import { usePopoverAnchor } from "@/hooks/use-popover-anchor";
 import { toggleAssigneeId } from "@/lib/task-pills";
+import { cn } from "@/lib/cn";
 import type { BoardTask, HouseholdUser } from "./types";
 
 type EditableAssigneesProps = {
   assignees: BoardTask["assignees"];
   users: HouseholdUser[];
   onSave: (assigneeIds: string[]) => Promise<void>;
+  avatarClassName?: string;
+  triggerClassName?: string;
 };
 
-export function EditableAssignees({ assignees, users, onSave }: EditableAssigneesProps) {
+export function EditableAssignees({
+  assignees,
+  users,
+  onSave,
+  avatarClassName,
+  triggerClassName: triggerClassNameProp,
+}: EditableAssigneesProps) {
   const { open, anchorRef, toggle, close, triggerClassName } = usePopoverAnchor();
   const { pending, run } = useAsyncAction(onSave);
   const selectedIds = assignees.map((assignee) => assignee.id);
 
   if (users.length === 0) {
-    return <AssigneeAvatars assignees={assignees} />;
+    return <AssigneeAvatars assignees={assignees} avatarClassName={avatarClassName} />;
   }
 
   return (
@@ -28,9 +37,11 @@ export function EditableAssignees({ assignees, users, onSave }: EditableAssignee
         ref={anchorRef}
         type="button"
         onClick={toggle}
-        className={triggerClassName("inline-flex min-h-9 items-center rounded-md px-1 py-0.5")}
+        className={triggerClassName(
+          cn("inline-flex min-h-7 items-center rounded-md px-1 py-0.5", triggerClassNameProp),
+        )}
       >
-        <AssigneeAvatars assignees={assignees} />
+        <AssigneeAvatars assignees={assignees} avatarClassName={avatarClassName} />
       </button>
 
       <FloatingPanel open={open} anchorRef={anchorRef} onClose={close} minWidth={200} className="p-3">

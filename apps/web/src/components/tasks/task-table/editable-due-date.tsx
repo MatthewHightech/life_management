@@ -11,13 +11,14 @@ type EditableDueDateProps = {
   value?: string | null;
   overdue: boolean;
   onSave: (value: string | null) => Promise<void>;
+  className?: string;
 };
 
 function toDueDateIso(date: Date): string | null {
   return toIsoString(startOfDay(date));
 }
 
-export function EditableDueDate({ value, overdue, onSave }: EditableDueDateProps) {
+export function EditableDueDate({ value, overdue, onSave, className }: EditableDueDateProps) {
   const { open, anchorRef, toggle, close, triggerClassName } = usePopoverAnchor();
   const { pending, run } = useAsyncAction(onSave);
   const selectedDate = value ? parseOptionalDate(value) : null;
@@ -38,7 +39,11 @@ export function EditableDueDate({ value, overdue, onSave }: EditableDueDateProps
         disabled={pending}
         onClick={toggle}
         className={triggerClassName(
-          cn("inline-flex min-h-9 items-center rounded-md px-2 py-1 text-sm", overdue ? "font-medium text-error" : "text-text-muted"),
+          cn(
+            "inline-flex min-h-7 items-center rounded-md px-2 py-0.5 text-sm",
+            overdue ? "font-medium text-error" : "text-text-muted",
+            className,
+          ),
         )}
       >
         {value ? formatShortDate(value) : "Set date"}

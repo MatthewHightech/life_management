@@ -18,6 +18,8 @@ type PillSelectProps<T extends string> = {
   triggerChipClassName: string;
   options: PillSelectOption<T>[];
   onSelect: (value: T) => Promise<void> | void;
+  triggerClassName?: string;
+  chipClassName?: string;
 };
 
 export function PillSelect<T extends string>({
@@ -26,6 +28,8 @@ export function PillSelect<T extends string>({
   triggerChipClassName,
   options,
   onSelect,
+  triggerClassName: triggerClassNameProp,
+  chipClassName,
 }: PillSelectProps<T>) {
   const { open, anchorRef, toggle, close, triggerClassName } = usePopoverAnchor();
   const { pending, run } = useAsyncAction(onSelect);
@@ -47,9 +51,11 @@ export function PillSelect<T extends string>({
         aria-expanded={open}
         aria-haspopup="listbox"
         onClick={toggle}
-        className={triggerClassName("inline-flex min-h-9 items-center rounded-md px-1 py-0.5")}
+        className={triggerClassName(
+          cn("inline-flex min-h-7 items-center rounded-md px-1 py-0.5", triggerClassNameProp),
+        )}
       >
-        <Chip className={cn("whitespace-nowrap", triggerChipClassName)}>{triggerLabel}</Chip>
+        <Chip className={cn("whitespace-nowrap", triggerChipClassName, chipClassName)}>{triggerLabel}</Chip>
       </button>
 
       <FloatingPanel open={open} anchorRef={anchorRef} onClose={close} className="p-1.5">

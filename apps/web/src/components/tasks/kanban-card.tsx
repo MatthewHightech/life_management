@@ -39,9 +39,7 @@ export function KanbanCard({
     disabled: overlay,
   });
 
-  const style = {
-    transform: CSS.Translate.toString(transform),
-  };
+  const style = isDragging ? undefined : { transform: CSS.Translate.toString(transform) };
 
   const overdue = task.isOverdue;
   const editable = Boolean(onUpdate) && !overlay;
@@ -51,40 +49,43 @@ export function KanbanCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "rounded-lg border border-border-subtle bg-surface p-3 shadow-sm",
+        "rounded-lg border border-border-subtle bg-surface p-2 shadow-sm",
         "border-t-4",
         accentClass,
-        (isDragging || overlay) && "opacity-90",
+        isDragging && "opacity-0",
+        overlay && "cursor-grabbing shadow-lg",
         editable && "cursor-default",
       )}
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-1.5">
         {editable ? (
           <button
             type="button"
             {...listeners}
             {...attributes}
-            className="mt-0.5 shrink-0 cursor-grab rounded p-0.5 text-text-muted transition hover:text-text-main active:cursor-grabbing"
+            className="shrink-0 cursor-grab rounded p-0.5 text-text-muted transition hover:text-text-main active:cursor-grabbing"
             aria-label="Drag task"
           >
-            <GripVertical className="h-4 w-4" />
+            <GripVertical className="h-3.5 w-3.5" />
           </button>
         ) : (
-          <span className="mt-0.5 shrink-0 text-text-muted">
-            <GripVertical className="h-4 w-4" />
+          <span className="shrink-0 text-text-muted">
+            <GripVertical className="h-3.5 w-3.5" />
           </span>
         )}
 
-        <div className="min-w-0 flex-1 space-y-2">
+        <div className="min-w-0 flex-1 space-y-1">
           {editable ? (
             <EditableText
               value={task.title}
               onSave={(title) => onUpdate!({ title })}
-              className={cn("font-medium text-text-main", overdue && "text-error")}
+              className={cn("text-sm font-medium text-text-main", overdue && "text-error")}
               inputClassName="font-medium"
             />
           ) : (
-            <p className={cn("text-sm font-medium text-text-main", overdue && "text-error")}>{task.title}</p>
+            <p className={cn("text-sm font-medium leading-snug text-text-main", overdue && "text-error")}>
+              {task.title}
+            </p>
           )}
 
           {editable ? (
@@ -92,57 +93,78 @@ export function KanbanCard({
               value={task.description}
               onSave={(description) => onUpdate!({ description })}
               maxLength={80}
-              className="text-xs"
+              className="text-xs leading-snug"
             />
-          ) : (
-            <p className="text-xs text-text-muted">{truncateText(task.description, 80)}</p>
-          )}
-
-          {editable ? (
-            <EditableDueDate
-              value={task.dueDate}
-              overdue={overdue}
-              onSave={(dueDate) => onUpdate!({ dueDate })}
-            />
-          ) : (
-            <p className={cn("text-xs", overdue ? "font-medium text-error" : "text-text-muted")}>
-              {task.dueDate ? formatShortDate(task.dueDate) : "Set date"}
-            </p>
-          )}
+          ) : task.description ? (
+            <p className="text-xs leading-snug text-text-muted">{truncateText(task.description, 80)}</p>
+          ) : null}
 
           {task.subtaskProgress.total > 0 && (
             <div>
-              <div className="mb-1 flex justify-between text-[10px] text-text-muted">
+              <div className="mb-0.5 flex justify-between text-[10px] leading-none text-text-muted">
                 <span>{task.subtaskProgress.percent}% complete</span>
                 <span>
                   {task.subtaskProgress.completed}/{task.subtaskProgress.total}
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-background">
+              <div className="h-1 rounded-full bg-background">
                 <div
-                  className="h-1.5 rounded-full bg-primary-container"
+                  className="h-1 rounded-full bg-primary-container"
                   style={{ width: `${task.subtaskProgress.percent}%` }}
                 />
               </div>
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-2 pt-1">
-            {editable ? (
-              <EditableAssignees
-                assignees={task.assignees}
-                users={users}
-                onSave={(assigneeIds) => onUpdate!({ assigneeIds })}
-              />
-            ) : (
-              <AssigneeAvatars assignees={task.assignees} />
-            )}
+          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-1.5">
+            <div className="min-w-0">
+              {editable ? (
+                <EditableAssignees
+                  assignees={task.assignees}
+                  users={users}
+                  onSave={(assigneeIds) => onUpdate!({ assigneeIds })}
+                  avatarClassName="h-6 w-6 text-[9px] ring-1"
+                  triggerClassName="px-0"
+                />
+              ) : (
+                <AssigneeAvatars assignees={task.assignees} avatarClassName="h-6 w-6 text-[9px] ring-1" />
+              )}
+            </div>
 
-            {editable ? (
-              <EditablePriority value={task.priority} onSave={(priority) => onUpdate!({ priority })} />
-            ) : (
-              <Chip className={priorityChipClass(task.priority)}>{priorityLabels[task.priority]}</Chip>
-            )}
+            <div className="min-w-0">
+              {editable ? (
+                <EditableDueDate
+                  value={task.dueDate}
+                  overdue={overdue}
+                  onSave={(dueDate) => onUpdate!({ dueDate })}
+                  className="w-full min-w-0 truncate px-1 text-xs"
+                />
+              ) : task.dueDate ? (
+                <p
+                  className={cn(
+                    "truncate text-xs leading-none",
+                    overdue ? "font-medium text-error" : "text-text-muted",
+                  )}
+                >
+                  {formatShortDate(task.dueDate)}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="justify-self-end">
+              {editable ? (
+                <EditablePriority
+                  value={task.priority}
+                  onSave={(priority) => onUpdate!({ priority })}
+                  triggerClassName="px-0"
+                  chipClassName="normal-case tracking-normal"
+                />
+              ) : (
+                <Chip className={cn("whitespace-nowrap normal-case tracking-normal", priorityChipClass(task.priority))}>
+                  {priorityLabels[task.priority]}
+                </Chip>
+              )}
+            </div>
           </div>
         </div>
 
