@@ -163,7 +163,7 @@ These decisions align the Stitch export with [`requirements.md`](../requirements
 | Tasks module views (first pass) | **Kanban** (default) + **List** toggle only | REQ-TASK-12, REQ-TASK-14 |
 | Tasks module views (later pass) | Today · task calendar · by person | REQ-TASK-10, REQ-TASK-11, REQ-TASK-13 |
 | Google Calendar nav | Top-level **Calendar** — disabled until module ships | REQ-CAL-01 |
-| Meal Planning nav | Top-level — disabled until Phase 1b | REQ-MEAL-01 |
+| Meal Planning nav | Top-level **`/meals`** — enabled; Phase 1b implements planning UI | REQ-MEAL-01 … REQ-MEAL-06 |
 | Create action | **"+ New Task"** on Tasks pages (not sidebar “+ New Entry”) | — |
 | Kanban columns | BACKLOG · TODO · IN_PROGRESS · WAITING · **DONE** (collapsible, hidden by default) | REQ-TASK-06 |
 | Kanban interaction | **Drag-and-drop** between columns updates status | REQ-TASK-07 |
@@ -275,7 +275,7 @@ Use YAML frontmatter values as source of truth for implementation.
   Tasks          →  /tasks          (active module)
   Finance        →  /finance        (disabled until Phase 1)
   Calendar       →  /calendar       (disabled — Google Calendar module)
-  Meal Planning  →  /meals          (disabled until Phase 1b)
+  Meal Planning  →  /meals          (Phase 1b — weekly plan + grocery)
   ─────────────────
   Sign out
   [User — name + avatar only; no Settings or ADMIN badge in first pass]
@@ -300,6 +300,7 @@ List:    filter chips deferred (REQ-TASK-15)
 | `/tasks/today` | Today / inbox | Later pass |
 | `/tasks/calendar` | Task due-date calendar | Later pass |
 | `/tasks/people` | By assignee | Later pass |
+| `/meals` | Meal planning (library + week grid + grocery) | **Phase 1b** |
 
 **Do not** merge task due-date calendar with Google Calendar — separate modules (REQ-TASK-11 vs REQ-CAL-01).
 
@@ -404,6 +405,33 @@ Reference: [`list_view_homepage.png`](list_view_homepage.png)
 - **Task calendar:** due-date grouping (current implementation direction).
 - **Google Calendar:** separate Events UI; muted-blue module tint; read/write per REQ-CAL-02/03.
 
+### 8.10 Meal planning (Phase 1b)
+
+Reference: REQ-MEAL-01 … REQ-MEAL-08 · module accent **warm amber** (`warm-amber` / tertiary tints on section headers and chips — not on task cards).
+
+**Page structure** (desktop, top → bottom, inside `ModulePageLayout`):
+
+1. **Recipe library** — household-shared saved meals. Each recipe: name, ingredients (name + optional qty/unit), instructions, servings. **Create / edit** via **modal** (`Modal` in `components/ui`). Delete from library row/card. Compact **draggable** list rows (pattern: kanban card density + grip handle).
+2. **Weekly plan grid** — **Sunday → Saturday** columns (or rows on mobile). Each day: **breakfast · lunch · dinner** drop targets. Show **day names only** (Sun, Mon, … Sat) — no calendar dates on the grid. Empty slots are valid. **One meal per slot**; drop replaces existing assignment. **DnD:** `@dnd-kit` (same stack as Tasks kanban).
+3. **Grocery list** — auto-built from week grid ingredients; merge by name per REQ-MEAL-05. Manual add/edit/delete. **Bought** checkbox + strikethrough. Header action: **Remove bought items** (deletes checked rows only).
+
+**Interactions:**
+
+- **Drag-and-drop** from recipe library onto a slot (REQ-MEAL-02). `@dnd-kit` with grip handle on library rows (mirror kanban).
+- **Recipe CRUD:** modal form for create/edit; reuse `Modal`, `Button`, inline inputs (min-height 44px). Delete clears slots using that recipe this week.
+- **Sunday rollover:** server **cron at 00:00 Sunday Pacific** (`America/Los_Angeles`) clears **slot assignments only** (REQ-MEAL-04). Grocery list is **not** auto-cleared.
+- Grocery: **Bought** checkbox per row; **Remove bought items** button removes checked rows. Auto rows update when grid assignments change.
+
+**Visual:**
+
+- Module background tints: warm amber on section headers / summary strips (§4.2.4 pattern for module screens).
+- Week grid: white `surface` cells, `border-subtle` grid lines; dropped meal shows recipe name (+ optional servings chip).
+- Grocery: checkbox **Bought** + strikethrough; toolbar **Remove bought items**.
+
+**Mobile (REQ-MEAL-07):** Stack library → grid → grocery. Week grid horizontal scroll if needed.
+
+**Out of scope (Phase 1b):** Pantry inventory, nutrition, meal-prep timers, copy-last-week, date-picker weeks, Google Calendar meal events (REQ-MEAL-08).
+
 ---
 
 ## 9. Implementation plan
@@ -431,8 +459,21 @@ Reference: [`list_view_homepage.png`](list_view_homepage.png)
 | **Task polish** | Filters · category/project subtext on list rows |
 | **Finance** | Budget dashboard (sage accent) |
 | **Calendar** | Google Calendar module (blue accent) |
-| **Meals** | Meal planning (Phase 1b) |
+| **Meals (Phase 1b)** | Recipe library · Sun–Sat grid · DnD to slots · grocery list · Sunday auto-clear |
 | **Deferred** | Dark mode · Settings · admin roles UI |
+
+### 9.3 Meal planning pass (Phase 1b — next)
+
+| Layer | Work |
+|-------|------|
+| **Database** | `Recipe`, `RecipeIngredient`, `MealPlanSlot` (household + week anchor or rollover job), `GroceryListItem` |
+| **GraphQL** | Recipe CRUD · week plan query/mutations · slot assign/replace · grocery list query/mutations |
+| **Cron** | Sunday 00:00 **America/Los_Angeles** — clear `MealPlanSlot` rows only |
+| **Web `/meals`** | `ModulePageLayout` · recipe library (DnD rows) · 7×3 grid · grocery list + Remove bought · warm-amber accents · recipe `Modal` |
+| **Grocery merge** | Aggregate ingredients by name from assigned slots; manual items merged in same list |
+| **Codegen / tests** | Operations + unit tests for merge logic and week boundary |
+
+**Not in Phase 1b:** multi-week history, copy forward, nutrition, pantry, calendar sync (REQ-MEAL-08).
 
 ---
 
@@ -474,7 +515,7 @@ Reference: [`list_view_homepage.png`](list_view_homepage.png)
 | Push reminders (UI) | REQ-TASK-20 |
 | Finance | REQ-FIN-01 … REQ-FIN-06 |
 | Google Calendar | REQ-CAL-01 … REQ-CAL-04 |
-| Meals | REQ-MEAL-01, REQ-MEAL-02 |
+| Meals | REQ-MEAL-01 … REQ-MEAL-08 |
 | Out of scope | Dark mode, a11y-specific, real-time collab (§3.2) |
 
 ---
@@ -483,6 +524,7 @@ Reference: [`list_view_homepage.png`](list_view_homepage.png)
 
 | Date | Change |
 |------|--------|
+| 2026-06-24 | Meal planning refinements: recipe modal, PST Sunday cron (slots only), grocery Bought + Remove bought, delete-recipe clears slots, multi-qty merge row |
 | 2026-06-25 | Mockup review: module nav, Kanban default, List toggle, statuses, multi-assignee, DnD, collapsible DONE; linked PNG assets; first UI pass scope; aligned `requirements.md` |
 | 2026-06-24 | Initial Stitch/Kinship export |
 | 2026-06-24 | Resolved naming, sidebar, nav, color, and Phase 1 scope decisions |

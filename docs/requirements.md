@@ -1,6 +1,6 @@
 # Life Management Suite — Requirements
 
-> **Status:** Living document · **Last updated:** 2026-06-25  
+> **Status:** Living document · **Last updated:** 2026-06-24  
 > **Audience:** Project owner, future contributors, and LLM coding agents  
 > **Purpose:** Single source of truth for what this product is, what it must do, and what it must not do.  
 > **UI spec:** [`docs/design/DESIGN.md`](design/DESIGN.md)
@@ -244,15 +244,31 @@ The **family banking app remains the source of truth** for account balances and 
 
 ---
 
-### 4.5 Meal planning & grocery (MVP-lite)
+### 4.5 Meal planning & grocery (Phase 1b)
 
-**REQ-MEAL-01 (P1):** Basic **meal planning** — plan meals on a calendar or weekly grid (exact UX at implementation).
+**REQ-MEAL-01 (P1):** **Weekly meal plan grid** — Sunday through Saturday, three optional slots per day (**breakfast**, **lunch**, **dinner**). The grid shows **day names only** (not calendar dates such as “March 12”). Slots may be empty. **One meal per slot** when filled; assigning to an occupied slot **replaces** the existing meal.
 
-**REQ-MEAL-02 (P1):** **Grocery list** associated with meal plans (manual add/edit/check-off).
+**REQ-MEAL-02 (P1):** Assign meals to slots via **drag-and-drop** from the household recipe library onto a slot.
 
-**REQ-MEAL-03 (P2):** Scheduling integration — meal plans may reference calendar but Google Calendar remains event source of truth.
+**REQ-MEAL-03 (P1):** Household-shared **recipe library** (CRUD). A recipe includes: **name**, **ingredients** (each with name; quantity and unit optional), **instructions**, and **servings** (stored for display; **does not scale grocery in v1** — schema should allow serving-based scaling later). **Create and edit** open a **modal** (reuse shared `Modal` component). **Delete** removes the recipe and **clears any week slots** that referenced it. Recipes persist across weeks.
 
-> MVP-lite means shipped alongside Tasks + Finance + Calendar, but with minimal depth — not a full meal-kit replacement.
+**REQ-MEAL-04 (P1):** **Week rollover:** all planned slot assignments **auto-clear at 00:00 each Sunday** (**Pacific Time**, `America/Los_Angeles`) via a **server cron job**. The recipe library and grocery list are **not** auto-cleared on rollover.
+
+**REQ-MEAL-05 (P1):** **Grocery list** for the active planning week:
+- Auto-generated from ingredients of meals assigned to the current week grid.
+- **Merge lines by ingredient name** (case-insensitive). Same name + same unit → sum quantities into one string. Same name + **different units** → **one row** with **multiple quantity strings** (e.g. `2 cups · 500 g`).
+- **Manual** add, edit, delete items.
+- Each row has a **Bought** checkmark (strikethrough when checked). Checked state persists until the user removes those rows.
+- **Remove bought items** button deletes all checked rows (auto-generated and manual). List is **not** wiped on Sunday rollover.
+- Auto-generated rows refresh when week grid assignments change; manual rows are preserved where possible (implementation may re-merge after grid changes).
+
+**REQ-MEAL-06 (P1):** **Page layout** (desktop): recipe library at the **top**, weekly grid in the **middle**, grocery list **below** — all within the shared module page shell (`ModulePageLayout`).
+
+**REQ-MEAL-07 (P2):** **Mobile layout** — same three sections stacked vertically; week grid may scroll horizontally on narrow viewports.
+
+**REQ-MEAL-08 (P2):** **Calendar integration** — meal plans may reference calendar events in a later pass; **Google Calendar remains the event source of truth** (see REQ-CAL-01).
+
+> Phase 1b is **MVP-lite**: full recipes and drag-to-plan, not a meal-kit replacement. Defer pantry inventory (REQ-HOME-01), nutrition, meal prep timers, and multi-week history until requirements are updated.
 
 ---
 
@@ -289,11 +305,11 @@ Not needed yet. Do not implement until this document is updated.
 | **Finance** | Manual income/expense, categories + limits, recurring bills, monthly joint budget, basic reports |
 | **Calendar** | Google OAuth for Calendar API, multi-calendar aggregation, two-way sync |
 
-### Phase 1b — MVP-lite
+### Phase 1b — Meal planning
 
 | Module | Deliverables |
 |--------|--------------|
-| **Meal planning** | Simple meal plan + grocery list |
+| **Meal planning** | Household recipe library · Sun–Sat grid (breakfast/lunch/dinner) · drag-and-drop to slots · Sunday auto-clear · grocery list (auto + manual, merge by ingredient name) |
 
 ### Phase 2 — Hardening & ops
 
@@ -558,6 +574,8 @@ All open questions are resolved. Reference for agents and future you:
 
 | Date | Change |
 |------|--------|
+| 2026-06-24 | Meal planning refinements: recipe modal, PST Sunday cron (slots only), grocery Bought + Remove bought, delete clears slots, ingredient merge with multi-qty strings |
+| 2026-06-24 | Meal planning (Phase 1b): weekly Sun–Sat grid (day names only), household recipe library, drag-and-drop slots, Sunday auto-clear, grocery list auto + manual with ingredient merge. See REQ-MEAL-01 … REQ-MEAL-08 and `docs/design/DESIGN.md` §8.10. |
 | 2026-06-25 | UI alignment: Kanban default home (REQ-SHELL-01); module sidebar nav (REQ-SHELL-03); multi-assignee (REQ-TASK-05); statuses BACKLOG/WAITING/DONE collapsible (REQ-TASK-06); kanban DnD (REQ-TASK-07); List view (REQ-TASK-14); filters deferred (REQ-TASK-15). See `docs/design/DESIGN.md`. |
 | 2026-06-24 | Production hosting: **Oracle Cloud VM** (Docker Compose + Caddy); deploy guide at `docs/deployment/oracle-vm.md` |
 | 2026-06-24 | Monorepo split: `apps/api`, `apps/web`, `packages/{db,graphql,shared}`; API auth via Google OAuth + JWT |
@@ -578,7 +596,7 @@ All open questions are resolved. Reference for agents and future you:
 **Tasks:** REQ-TASK-01 … REQ-TASK-07, REQ-TASK-10 … REQ-TASK-15, REQ-TASK-20  
 **Finance:** REQ-FIN-01 … REQ-FIN-06, REQ-FIN-20  
 **Calendar:** REQ-CAL-01 … REQ-CAL-05  
-**Meals:** REQ-MEAL-01 … REQ-MEAL-03  
+**Meals:** REQ-MEAL-01 … REQ-MEAL-08  
 **Home:** REQ-HOME-01  
 **Data:** REQ-DATA-01 … REQ-DATA-05  
 **Dev:** REQ-DEV-01 … REQ-DEV-04  
