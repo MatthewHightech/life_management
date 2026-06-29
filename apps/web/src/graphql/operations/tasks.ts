@@ -57,6 +57,12 @@ export const TASKS_BOARD_QUERY = gql`
     tasks(filter: $filter) {
       ...TaskFields
     }
+    me {
+      id
+      name
+      email
+      image
+    }
     household {
       id
       users {

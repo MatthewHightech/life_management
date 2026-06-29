@@ -28,7 +28,7 @@ export function EditableAssignees({ assignees, users, onSave }: EditableAssignee
         ref={anchorRef}
         type="button"
         onClick={toggle}
-        className={triggerClassName("rounded-md px-1 py-0.5")}
+        className={triggerClassName("inline-flex min-h-9 items-center rounded-md px-1 py-0.5")}
       >
         <AssigneeAvatars assignees={assignees} />
       </button>

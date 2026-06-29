@@ -38,7 +38,7 @@ export function EditableDueDate({ value, overdue, onSave }: EditableDueDateProps
         disabled={pending}
         onClick={toggle}
         className={triggerClassName(
-          cn("rounded-md px-2 py-1 text-sm", overdue ? "font-medium text-error" : "text-text-muted"),
+          cn("inline-flex min-h-9 items-center rounded-md px-2 py-1 text-sm", overdue ? "font-medium text-error" : "text-text-muted"),
         )}
       >
         {value ? formatShortDate(value) : "Set date"}

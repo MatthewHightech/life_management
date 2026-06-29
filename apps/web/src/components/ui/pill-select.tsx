@@ -47,7 +47,7 @@ export function PillSelect<T extends string>({
         aria-expanded={open}
         aria-haspopup="listbox"
         onClick={toggle}
-        className={triggerClassName("rounded-md px-1 py-0.5")}
+        className={triggerClassName("inline-flex min-h-9 items-center rounded-md px-1 py-0.5")}
       >
         <Chip className={cn("whitespace-nowrap", triggerChipClassName)}>{triggerLabel}</Chip>
       </button>

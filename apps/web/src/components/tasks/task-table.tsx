@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import type { TasksBoardQuery, TasksBoardQueryVariables, UpdateTaskMutationVariables } from "@/graphql";
 import { DELETE_TASK_MUTATION, TASKS_BOARD_QUERY, UPDATE_TASK_MUTATION } from "@/graphql";
 import { CreateTaskModal } from "@/components/tasks/create-task-modal";
+import { QuickAddTaskRow } from "@/components/tasks/task-table/quick-add-task-row";
 import { TaskTableRow } from "@/components/tasks/task-table/task-table-row";
 import { TasksHeader } from "@/components/tasks/tasks-header";
 
@@ -46,8 +47,17 @@ export function TaskTable() {
         {error && <p className="text-sm text-error">Could not load tasks: {error.message}</p>}
 
         {!loading && !error && (
-          <div className="overflow-x-auto rounded-xl border border-border-subtle bg-surface">
-            <table className="min-w-full table-fixed text-left text-sm">
+          <div className="space-y-5">
+            <div className="overflow-x-auto rounded-xl border border-border-subtle bg-surface">
+              <QuickAddTaskRow
+                users={users}
+                currentUserId={data?.me?.id}
+                listQuery={listQuery}
+              />
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-border-subtle bg-surface">
+              <table className="min-w-full table-fixed text-left text-sm">
               <colgroup>
                 <col className="w-[15%]" />
                 <col className="w-[13%]" />
@@ -55,7 +65,7 @@ export function TaskTable() {
                 <col className="w-[11%]" />
                 <col className="w-[10%]" />
                 <col />
-                <col className="w-[72px]" />
+                <col className="w-[7.5rem]" />
               </colgroup>
               <thead className="border-b border-border-subtle bg-background text-xs uppercase tracking-wide text-text-muted">
                 <tr>
@@ -71,7 +81,7 @@ export function TaskTable() {
               <tbody>
                 {tasks.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-text-muted">
+                    <td colSpan={7} className="px-4 py-6 text-center text-sm text-text-muted">
                       No tasks yet.
                     </td>
                   </tr>
@@ -87,6 +97,7 @@ export function TaskTable() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>
