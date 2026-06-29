@@ -2,27 +2,32 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
-import type { TaskStatus, TasksBoardQuery } from "@/graphql";
+import type { TaskStatus } from "@/graphql";
+import type { BoardTask, HouseholdUser, TaskUpdateInput } from "@/components/tasks/task-table/types";
 import { KanbanCard } from "@/components/tasks/kanban-card";
 import type { KanbanColumn } from "@/lib/task-status";
 import { cn } from "@/lib/cn";
 
-type BoardTask = TasksBoardQuery["tasks"][number];
-
 type KanbanColumnProps = {
   column: KanbanColumn;
   tasks: BoardTask[];
+  users: HouseholdUser[];
   collapsed?: boolean;
   onToggleCollapsed?: () => void;
   onAddTask: (status: TaskStatus) => void;
+  onUpdateTask: (id: string, input: TaskUpdateInput) => Promise<void>;
+  onDeleteTask: (id: string) => void;
 };
 
 export function KanbanColumnView({
   column,
   tasks,
+  users,
   collapsed,
   onToggleCollapsed,
   onAddTask,
+  onUpdateTask,
+  onDeleteTask,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: column.status });
 
@@ -82,7 +87,14 @@ export function KanbanColumnView({
         )}
       >
         {tasks.map((task) => (
-          <KanbanCard key={task.id} task={task} accentClass={column.accentClass} />
+          <KanbanCard
+            key={task.id}
+            task={task}
+            accentClass={column.accentClass}
+            users={users}
+            onUpdate={(input) => onUpdateTask(task.id, input)}
+            onDelete={() => onDeleteTask(task.id)}
+          />
         ))}
       </div>
     </section>

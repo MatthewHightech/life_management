@@ -1,4 +1,5 @@
 import { cn } from "@/lib/cn";
+import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
 import { EditableAssignees } from "./editable-assignees";
 import { EditableDueDate } from "./editable-due-date";
 import { EditablePriority, EditableStatus } from "./editable-pill-cells";
@@ -54,9 +55,11 @@ export function TaskTableRow({ task, users, onDelete, onUpdate }: TaskTableRowPr
         <EditableDescription value={task.description} onSave={(description) => onUpdate({ description })} />
       </TaskTableCell>
       <TaskTableCell contentClassName="justify-end">
-        <button type="button" onClick={onDelete} className="text-xs text-text-muted hover:text-error">
-          Delete
-        </button>
+        <DeleteTaskButton
+          taskTitle={task.title}
+          onConfirm={onDelete}
+          className="text-xs text-text-muted hover:text-error"
+        />
       </TaskTableCell>
     </tr>
   );

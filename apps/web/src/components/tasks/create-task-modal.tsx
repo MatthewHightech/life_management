@@ -4,10 +4,11 @@ import { useMutation } from "@apollo/client";
 import { FormEvent, useEffect, useState } from "react";
 import { toIsoString, parseOptionalDate } from "@life/shared";
 import type { TaskPriority, TaskStatus } from "@/graphql";
-import { CREATE_TASK_MUTATION, TASKS_BOARD_QUERY } from "@/graphql";
+import { CREATE_TASK_MUTATION } from "@/graphql";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { kanbanColumns } from "@/lib/task-status";
+import { tasksBoardRefetchQueries } from "@/lib/task-board-queries";
 
 type HouseholdUser = {
   id: string;
@@ -36,7 +37,7 @@ export function CreateTaskModal({
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
 
   const [createTask, { loading }] = useMutation(CREATE_TASK_MUTATION, {
-    refetchQueries: [{ query: TASKS_BOARD_QUERY, variables: { filter: { view: "KANBAN", includeDone: true } } }],
+    refetchQueries: tasksBoardRefetchQueries,
     onCompleted: () => {
       onOpenChange(false);
       setTitle("");

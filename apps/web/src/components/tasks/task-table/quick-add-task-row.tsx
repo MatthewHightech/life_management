@@ -3,8 +3,8 @@
 import { useMutation } from "@apollo/client";
 import { formatShortDate, parseOptionalDate, startOfDay, toIsoString } from "@life/shared";
 import { useEffect, useMemo, useState } from "react";
-import type { TaskPriority, TaskStatus, TasksBoardQueryVariables } from "@/graphql";
-import { CREATE_TASK_MUTATION, TASKS_BOARD_QUERY } from "@/graphql";
+import type { TaskPriority, TaskStatus } from "@/graphql";
+import { CREATE_TASK_MUTATION } from "@/graphql";
 import { AssigneeAvatars, SelectableMemberAvatar } from "@/components/ui/avatar";
 import { CalendarPicker } from "@/components/ui/calendar-picker";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import {
   toggleAssigneeId,
 } from "@/lib/task-pills";
 import { cn } from "@/lib/cn";
+import { tasksBoardRefetchQueries } from "@/lib/task-board-queries";
 import type { HouseholdUser } from "./types";
 
 const TASK_LIST_COLUMN_GRID =
@@ -32,10 +33,6 @@ const DEFAULT_PRIORITY: TaskPriority = "LOW";
 type QuickAddTaskRowProps = {
   users: HouseholdUser[];
   currentUserId?: string;
-  listQuery: {
-    query: typeof TASKS_BOARD_QUERY;
-    variables: TasksBoardQueryVariables;
-  };
 };
 
 function toDueDateIso(date: Date): string | null {
@@ -124,7 +121,7 @@ function DraftDueDatePicker({
   );
 }
 
-export function QuickAddTaskRow({ users, currentUserId, listQuery }: QuickAddTaskRowProps) {
+export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) {
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState<TaskStatus>(DEFAULT_STATUS);
   const [priority, setPriority] = useState<TaskPriority>(DEFAULT_PRIORITY);
@@ -134,7 +131,7 @@ export function QuickAddTaskRow({ users, currentUserId, listQuery }: QuickAddTas
   const [titleError, setTitleError] = useState(false);
 
   const [createTask, { loading }] = useMutation(CREATE_TASK_MUTATION, {
-    refetchQueries: [listQuery],
+    refetchQueries: tasksBoardRefetchQueries,
   });
 
   const statusDisplay = useMemo(() => statusTriggerDisplay(status, false), [status]);

@@ -65,9 +65,16 @@ export function EditableText({ value, onSave, className, inputClassName, placeho
 type EditableDescriptionProps = {
   value?: string | null;
   onSave: (value: string | null) => Promise<void>;
+  maxLength?: number;
+  className?: string;
 };
 
-export function EditableDescription({ value, onSave }: EditableDescriptionProps) {
+export function EditableDescription({
+  value,
+  onSave,
+  maxLength = DESCRIPTION_MAX_LENGTH,
+  className,
+}: EditableDescriptionProps) {
   const displayValue = value ?? "";
   const { editing, setEditing, draft, setDraft, pending, commit, cancel } = useTextInlineEdit({
     value: displayValue,
@@ -110,9 +117,10 @@ export function EditableDescription({ value, onSave }: EditableDescriptionProps)
       className={cn(
         inlineFieldTriggerClass,
         value ? "text-text-muted" : "text-text-muted/70 italic",
+        className,
       )}
     >
-      {truncateText(value, DESCRIPTION_MAX_LENGTH)}
+      {truncateText(value, maxLength)}
     </button>
   );
 }

@@ -8,13 +8,11 @@ import { CreateTaskModal } from "@/components/tasks/create-task-modal";
 import { DoneTasksSection } from "@/components/tasks/task-table/done-tasks-section";
 import { QuickAddTaskRow } from "@/components/tasks/task-table/quick-add-task-row";
 import { TaskListTable } from "@/components/tasks/task-table/task-list-table";
-import { TasksHeader } from "@/components/tasks/tasks-header";
+import { TasksPageLayout } from "@/components/tasks/tasks-page-layout";
 import { partitionListTasks } from "@/lib/task-list-sort";
+import { tasksBoardListQuery, tasksBoardRefetchQueries } from "@/lib/task-board-queries";
 
-const listQuery = {
-  query: TASKS_BOARD_QUERY,
-  variables: { filter: { view: "LIST" as const, includeDone: true } },
-};
+const listQuery = tasksBoardListQuery;
 
 export function TaskTable() {
   const [createOpen, setCreateOpen] = useState(false);
@@ -24,11 +22,11 @@ export function TaskTable() {
   });
 
   const [deleteTask] = useMutation(DELETE_TASK_MUTATION, {
-    refetchQueries: [listQuery],
+    refetchQueries: tasksBoardRefetchQueries,
   });
 
   const [updateTask] = useMutation(UPDATE_TASK_MUTATION, {
-    refetchQueries: [listQuery],
+    refetchQueries: tasksBoardRefetchQueries,
   });
 
   const handleUpdate = useCallback(
@@ -54,8 +52,7 @@ export function TaskTable() {
 
   return (
     <>
-      <TasksHeader onNewTask={() => setCreateOpen(true)} />
-      <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-6">
+      <TasksPageLayout onNewTask={() => setCreateOpen(true)}>
         {loading && <p className="text-sm text-text-muted">Loading tasks…</p>}
         {error && <p className="text-sm text-error">Could not load tasks: {error.message}</p>}
 
@@ -65,7 +62,6 @@ export function TaskTable() {
               <QuickAddTaskRow
                 users={users}
                 currentUserId={data?.me?.id}
-                listQuery={listQuery}
               />
             </div>
 
@@ -87,7 +83,7 @@ export function TaskTable() {
             />
           </div>
         )}
-      </div>
+      </TasksPageLayout>
 
       <CreateTaskModal open={createOpen} onOpenChange={setCreateOpen} users={users} />
     </>

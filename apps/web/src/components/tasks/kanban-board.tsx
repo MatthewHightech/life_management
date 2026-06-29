@@ -9,19 +9,24 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { useMutation, useQuery } from "@apollo/client";
-import { useMemo, useState } from "react";
-import type { TaskStatus, TasksBoardQuery, TasksBoardQueryVariables } from "@/graphql";
+import { useCallback, useMemo, useState } from "react";
+import type { TaskStatus, TasksBoardQuery, TasksBoardQueryVariables, UpdateTaskMutationVariables } from "@/graphql";
 import {
+  DELETE_TASK_MUTATION,
   MOVE_TASK_MUTATION,
   TASKS_BOARD_QUERY,
+  UPDATE_TASK_MUTATION,
 } from "@/graphql";
 import { CreateTaskModal } from "@/components/tasks/create-task-modal";
 import { KanbanCard } from "@/components/tasks/kanban-card";
 import { KanbanColumnView } from "@/components/tasks/kanban-column";
-import { TasksHeader } from "@/components/tasks/tasks-header";
+import { TasksPageLayout } from "@/components/tasks/tasks-page-layout";
 import { kanbanColumns } from "@/lib/task-status";
+import { tasksBoardKanbanQuery, tasksBoardRefetchQueries } from "@/lib/task-board-queries";
 
 type BoardTask = TasksBoardQuery["tasks"][number];
+
+const kanbanQuery = tasksBoardKanbanQuery;
 
 export function KanbanBoard() {
   const [createOpen, setCreateOpen] = useState(false);
@@ -30,14 +35,36 @@ export function KanbanBoard() {
   const [activeTask, setActiveTask] = useState<BoardTask | null>(null);
 
   const { data, loading, error } = useQuery<TasksBoardQuery, TasksBoardQueryVariables>(TASKS_BOARD_QUERY, {
-    variables: { filter: { view: "KANBAN", includeDone: true } },
+    variables: kanbanQuery.variables,
   });
 
   const [moveTask] = useMutation(MOVE_TASK_MUTATION, {
-    refetchQueries: [{ query: TASKS_BOARD_QUERY, variables: { filter: { view: "KANBAN", includeDone: true } } }],
+    refetchQueries: tasksBoardRefetchQueries,
+  });
+
+  const [updateTask] = useMutation(UPDATE_TASK_MUTATION, {
+    refetchQueries: tasksBoardRefetchQueries,
+  });
+
+  const [deleteTask] = useMutation(DELETE_TASK_MUTATION, {
+    refetchQueries: tasksBoardRefetchQueries,
   });
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  const handleUpdate = useCallback(
+    async (id: string, input: UpdateTaskMutationVariables["input"]) => {
+      await updateTask({ variables: { id, input } });
+    },
+    [updateTask],
+  );
+
+  const handleDelete = useCallback(
+    (id: string) => {
+      void deleteTask({ variables: { id } });
+    },
+    [deleteTask],
+  );
 
   const tasksByStatus = useMemo(() => {
     const grouped = Object.fromEntries(kanbanColumns.map((column) => [column.status, [] as BoardTask[]])) as Record<
@@ -57,6 +84,8 @@ export function KanbanBoard() {
   const accentByStatus = Object.fromEntries(
     kanbanColumns.map((column) => [column.status, column.accentClass]),
   ) as Record<TaskStatus, string>;
+
+  const users = data?.household?.users ?? [];
 
   function openCreate(status: TaskStatus = "TODO") {
     setCreateStatus(status);
@@ -84,8 +113,7 @@ export function KanbanBoard() {
 
   return (
     <>
-      <TasksHeader onNewTask={() => openCreate("TODO")} />
-      <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-6">
+      <TasksPageLayout onNewTask={() => openCreate("TODO")}>
         {loading && <p className="text-sm text-text-muted">Loading board…</p>}
         {error && <p className="text-sm text-error">Could not load tasks: {error.message}</p>}
 
@@ -105,27 +133,34 @@ export function KanbanBoard() {
                   key={column.status}
                   column={column}
                   tasks={tasksByStatus[column.status] ?? []}
+                  users={users}
                   collapsed={column.collapsible ? doneCollapsed : false}
                   onToggleCollapsed={
                     column.collapsible ? () => setDoneCollapsed((value) => !value) : undefined
                   }
                   onAddTask={openCreate}
+                  onUpdateTask={handleUpdate}
+                  onDeleteTask={handleDelete}
                 />
               ))}
             </div>
             <DragOverlay>
               {activeTask ? (
-                <KanbanCard task={activeTask} accentClass={accentByStatus[activeTask.status]} />
+                <KanbanCard
+                  task={activeTask}
+                  accentClass={accentByStatus[activeTask.status]}
+                  overlay
+                />
               ) : null}
             </DragOverlay>
           </DndContext>
         )}
-      </div>
+      </TasksPageLayout>
 
       <CreateTaskModal
         open={createOpen}
         onOpenChange={setCreateOpen}
-        users={data?.household?.users ?? []}
+        users={users}
         defaultStatus={createStatus}
       />
     </>

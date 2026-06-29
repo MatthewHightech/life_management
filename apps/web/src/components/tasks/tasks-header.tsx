@@ -15,7 +15,7 @@ export function TasksHeader({ onNewTask }: TasksHeaderProps) {
   const isList = pathname === "/tasks/list";
 
   return (
-    <div className="border-b border-border-subtle bg-surface px-4 py-4 sm:px-6">
+    <div className="border-b border-border-subtle bg-surface px-4 py-4 sm:px-6 shrink-0">
       <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-semibold tracking-tight text-text-main">Tasks</h1>
