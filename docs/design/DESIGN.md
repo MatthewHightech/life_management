@@ -164,6 +164,8 @@ These decisions align the Stitch export with [`requirements.md`](../requirements
 | Tasks module views (later pass) | Today · task calendar · by person | REQ-TASK-10, REQ-TASK-11, REQ-TASK-13 |
 | Google Calendar nav | Top-level **Calendar** — disabled until module ships | REQ-CAL-01 |
 | Meal Planning nav | Top-level **`/meals`** — enabled; Phase 1b implements planning UI | REQ-MEAL-01 … REQ-MEAL-06 |
+| Receipts nav | Top-level **`/receipts`** — standalone module (not under Finance) | REQ-RCPT-01 |
+| Shared folders | Generic folder UI + GraphQL reused by Meals and Receipts | REQ-FOLDER-01 … REQ-FOLDER-06 |
 | Create action | **"+ New Task"** on Tasks pages (not sidebar “+ New Entry”) | — |
 | Kanban columns | BACKLOG · TODO · IN_PROGRESS · WAITING · **DONE** (collapsible, hidden by default) | REQ-TASK-06 |
 | Kanban interaction | **Drag-and-drop** between columns updates status | REQ-TASK-07 |
@@ -226,9 +228,10 @@ Use YAML frontmatter values as source of truth for implementation.
 - Category subtext (“Finance & Documentation”) and project-colored left bars → use `TaskProject` in a later pass.
 - Module-colored top borders on cards → not used on task cards.
 
-**Finance / Calendar / Meals (when built):**
+**Finance / Calendar / Meals / Receipts (when built):**
 
 - Use module background tints (sage, blue, amber) for section headers, summary cards, and category chips on those screens only.
+- **Receipts:** sage-green module tint (§8.11) — distinct from warm-amber meals.
 - Do not mix module colors onto task cards.
 
 **Current app gap:** `apps/web` still uses slate/blue placeholder tokens in `globals.css` — migrate to this palette when implementing the shell redesign.
@@ -276,6 +279,7 @@ Use YAML frontmatter values as source of truth for implementation.
   Finance        →  /finance        (disabled until Phase 1)
   Calendar       →  /calendar       (disabled — Google Calendar module)
   Meal Planning  →  /meals          (Phase 1b — weekly plan + grocery)
+  Receipts       →  /receipts       (Phase 1c — file storage + folders)
   ─────────────────
   Sign out
   [User — name + avatar only; no Settings or ADMIN badge in first pass]
@@ -301,6 +305,7 @@ List:    filter chips deferred (REQ-TASK-15)
 | `/tasks/calendar` | Task due-date calendar | Later pass |
 | `/tasks/people` | By assignee | Later pass |
 | `/meals` | Meal planning (library + week grid + grocery) | **Phase 1b** |
+| `/receipts` | Receipt management (upload + folders + preview) | **Phase 1c** |
 
 **Do not** merge task due-date calendar with Google Calendar — separate modules (REQ-TASK-11 vs REQ-CAL-01).
 
@@ -411,7 +416,7 @@ Reference: REQ-MEAL-01 … REQ-MEAL-08 · module accent **warm amber** (`warm-am
 
 **Page structure** (desktop, top → bottom, inside `ModulePageLayout`):
 
-1. **Recipe library** — household-shared saved meals. Each recipe: name, ingredients (name + optional qty/unit), instructions, servings. **Create / edit** via **modal** (`Modal` in `components/ui`). Delete from library row/card. Compact **draggable** list rows (pattern: kanban card density + grip handle).
+1. **Recipe library** — household-shared saved meals. Each recipe: name, ingredients (name + optional qty/unit), instructions, servings. **Nested colored folders** (shared folder components — §8.12). **Create / edit** via **modal** (`Modal` in `components/ui`). Delete from library row/card. Compact **draggable** list rows (pattern: kanban card density + grip handle).
 2. **Weekly plan grid** — **Sunday → Saturday** columns (or rows on mobile). Each day: **breakfast · lunch · dinner** drop targets. Show **day names only** (Sun, Mon, … Sat) — no calendar dates on the grid. Empty slots are valid. **One meal per slot**; drop replaces existing assignment. **DnD:** `@dnd-kit` (same stack as Tasks kanban).
 3. **Grocery list** — auto-built from week grid ingredients; merge by name per REQ-MEAL-05. Manual add/edit/delete. **Bought** checkbox + strikethrough. Header action: **Remove bought items** (deletes checked rows only).
 
@@ -431,6 +436,64 @@ Reference: REQ-MEAL-01 … REQ-MEAL-08 · module accent **warm amber** (`warm-am
 **Mobile (REQ-MEAL-07):** Stack library → grid → grocery. Week grid horizontal scroll if needed.
 
 **Out of scope (Phase 1b):** Pantry inventory, nutrition, meal-prep timers, copy-last-week, date-picker weeks, Google Calendar meal events (REQ-MEAL-08).
+
+### 8.11 Receipt management (Phase 1c)
+
+Reference: REQ-RCPT-01 … REQ-RCPT-13 · module accent **sage green** (`sage-green` on section headers — finance-adjacent but separate module).
+
+**Page structure** (inside `ModulePageLayout`):
+
+1. **Upload area** — dashed drop zone at top of content. Supports **file picker** (button) and **drag-and-drop** of files onto the zone. Accepts images (JPEG, PNG, WebP, HEIC if supported) and PDF. Max **10 MB** per file. Show clear error for oversize or unsupported type. New uploads land in the **current folder** (or root if at top level).
+2. **Folder browser** — shared folder shell (§8.12): breadcrumbs, compact colored folder tiles, **Add folder** + color picker (six pastel swatches). Separate `RECEIPTS` namespace — not shared with meal folders.
+3. **Receipt list** — rows/cards below folders in current directory. Each row: thumbnail (images) or PDF icon, **filename**, upload date (optional metadata for display only). Actions: **preview** (modal or inline), **rename** (inline or modal), **delete** (confirm). **Drag** receipt rows into folders (zone-aware DnD — folders only while pointer is in library zone; no meal-slot targets).
+
+**Interactions:**
+
+- Upload → file saved via API → `Receipt` row created → appears in current folder.
+- **Preview:** images in modal/lightbox; PDF in embedded viewer or authenticated new tab.
+- **Rename / delete:** GraphQL mutations; delete removes DB row **and** file bytes from volume.
+- **DnD:** receipt file rows draggable into folder tiles and breadcrumb crumbs (same pattern as recipes).
+
+**Visual:**
+
+- Sage-green section header strip (like finance module tint).
+- Upload zone: dashed `border-subtle`, sage tint on drag-over.
+- Folder tiles: compact pastel buttons (shared `FolderTile` — §8.12).
+- Receipt rows: white `surface`, thumbnail left, filename, icon actions right.
+
+**Mobile:** Stack upload zone → breadcrumbs → folders → file list. Preview full-width.
+
+**Out of scope (Phase 1c):** OCR, amount/date/vendor fields, search, finance transaction linking, email-in capture.
+
+### 8.12 Shared folder system (cross-module)
+
+Reference: REQ-FOLDER-01 … REQ-FOLDER-06. **Single implementation** — meals and receipts compose the same primitives.
+
+**Shared components** (`apps/web/src/components/folders/`):
+
+| Component | Role |
+|-----------|------|
+| `FolderTile` | Compact pastel folder button; droppable; shows name + item count |
+| `FolderBreadcrumbs` | `Recipes` / `Receipts` root crumb + path; navigable; droppable crumbs |
+| `FolderFormModal` | Name + six circle color swatches |
+| `FolderBrowser` | Shell: header actions, breadcrumbs, folder grid, `{children}` slot for module items |
+
+**Shared packages:**
+
+| Layer | Location |
+|-------|----------|
+| Colors / drop-id helpers | `packages/shared` (generalize from meal-plan folder helpers) |
+| `Folder` model + `FolderNamespace` enum | `packages/db` |
+| Folder GraphQL types + mutations | `packages/graphql/src/folders/` |
+| DnD zone helpers | `apps/web/src/lib/folder-dnd.ts` (generalize from `meal-plan-dnd.ts`) |
+
+**Migration:** Existing `RecipeFolder` → `Folder` where `namespace = MEALS`. Meal planning page switches to shared components without UX regression.
+
+**DnD zones (per module page):**
+
+- **Library zone** (recipe/receipt section ref): folder + breadcrumb droppables only.
+- **Module-specific zones** (e.g. meal schedule grid): module drop targets only when pointer enters that section.
+- Use `pointerWithin` first, filtered by zone — same pattern as current meal planning fix.
 
 ---
 
@@ -475,6 +538,20 @@ Reference: REQ-MEAL-01 … REQ-MEAL-08 · module accent **warm amber** (`warm-am
 
 **Not in Phase 1b:** multi-week history, copy forward, nutrition, pantry, calendar sync (REQ-MEAL-08).
 
+### 9.4 Receipt management pass (Phase 1c — next)
+
+| Layer | Work |
+|-------|------|
+| **Shared folders** | `Folder` + `FolderNamespace` · migrate `RecipeFolder` · `packages/graphql/src/folders/` · `components/folders/*` · refactor meals to shared folder UI |
+| **Database** | `Receipt` (metadata + `storageKey`, `folderId`) |
+| **API storage** | `FileStorage` interface · local volume in Docker · multipart upload route · authenticated download |
+| **GraphQL** | `receipts` query (folders + files for namespace) · `uploadReceipt` / `renameReceipt` / `deleteReceipt` · `moveReceiptToFolder` · shared folder mutations |
+| **Web `/receipts`** | `ModulePageLayout` · upload drop zone · `FolderBrowser` + receipt rows · preview modal · sage-green accents |
+| **Nav** | Enable **Receipts** in `moduleNav` → `/receipts` |
+| **Codegen / tests** | Operations · unit tests for `FileStorage` path helpers · household auth on download |
+
+**Not in Phase 1c:** OCR, metadata fields, search, finance linking, multi-file batch upload (unless owner confirms).
+
 ---
 
 ## 10. Design assets
@@ -516,6 +593,8 @@ Reference: REQ-MEAL-01 … REQ-MEAL-08 · module accent **warm amber** (`warm-am
 | Finance | REQ-FIN-01 … REQ-FIN-06 |
 | Google Calendar | REQ-CAL-01 … REQ-CAL-04 |
 | Meals | REQ-MEAL-01 … REQ-MEAL-08 |
+| Receipts | REQ-RCPT-01 … REQ-RCPT-13 |
+| Shared folders | REQ-FOLDER-01 … REQ-FOLDER-06 |
 | Out of scope | Dark mode, a11y-specific, real-time collab (§3.2) |
 
 ---
@@ -524,6 +603,7 @@ Reference: REQ-MEAL-01 … REQ-MEAL-08 · module accent **warm amber** (`warm-am
 
 | Date | Change |
 |------|--------|
+| 2026-07-02 | **Receipt management (Phase 1c):** §8.11 upload/preview/rename/delete, sage accent, `/receipts` nav. **Shared folders:** §8.12 — `FolderBrowser`, migrate meals off `RecipeFolder`. Implementation plan §9.4. |
 | 2026-06-24 | Meal planning refinements: recipe modal, PST Sunday cron (slots only), grocery Bought + Remove bought, delete-recipe clears slots, multi-qty merge row |
 | 2026-06-25 | Mockup review: module nav, Kanban default, List toggle, statuses, multi-assignee, DnD, collapsible DONE; linked PNG assets; first UI pass scope; aligned `requirements.md` |
 | 2026-06-24 | Initial Stitch/Kinship export |

@@ -1,6 +1,6 @@
 # Life Management Suite — Requirements
 
-> **Status:** Living document · **Last updated:** 2026-06-24  
+> **Status:** Living document · **Last updated:** 2026-07-02  
 > **Audience:** Project owner, future contributors, and LLM coding agents  
 > **Purpose:** Single source of truth for what this product is, what it must do, and what it must not do.  
 > **UI spec:** [`docs/design/DESIGN.md`](design/DESIGN.md)
@@ -102,6 +102,7 @@ See §5 Phased Roadmap for priorities.
 | **Finance** | Manual budget/spend tracking mirroring real-world spending |
 | **Calendar** | Google Calendar aggregation + two-way sync |
 | **Meal planning** | MVP-lite meal plans + grocery lists (alongside core trio) |
+| **Receipt management** | Household receipt file storage with shared folder organization |
 | **Home inventory** | Desired, post-MVP |
 | **Auth & household** | Google OAuth, allowlist, household grouping |
 
@@ -121,7 +122,6 @@ See §5 Phased Roadmap for priorities.
 - Bank/payment initiation — future bank sync is **read-only** only.
 - Native mobile apps in MVP (React Native is post-MVP).
 - Audit trail / change history.
-- File/blob storage (receipts, attachments) — not until a feature requires it.
 - Custom account recovery flows (Google handles account recovery).
 
 ### 3.3 Integrations
@@ -145,7 +145,7 @@ See §5 Phased Roadmap for priorities.
 
 **REQ-SHELL-02 (P1):** Responsive web UI usable on phone, tablet, and desktop with equal priority.
 
-**REQ-SHELL-03 (P0):** Primary navigation is **module-based** in a collapsible sidebar: Tasks · Finance · Calendar · Meal Planning. Finance, Calendar, and Meal Planning may be disabled placeholders until their modules ship. Task-specific views (Kanban, List, etc.) live **inside** the Tasks module, not as top-level sidebar items.
+**REQ-SHELL-03 (P0):** Primary navigation is **module-based** in a collapsible sidebar: Tasks · Finance · Calendar · Meal Planning · **Receipts**. Finance and Calendar may be disabled placeholders until their modules ship. Receipts is a **standalone module** (not nested under Finance). Task-specific views (Kanban, List, etc.) live **inside** the Tasks module, not as top-level sidebar items.
 
 > **Rollout note:** REQ-TASK-10 (Today), REQ-TASK-11 (task calendar), and REQ-TASK-13 (by person) remain P0 for Phase 1 but ship **after** the initial Kanban + List UI pass. See [`docs/design/DESIGN.md`](design/DESIGN.md) §9.
 
@@ -221,8 +221,8 @@ The **family banking app remains the source of truth** for account balances and 
 - Financial **account entities** (checking, savings, credit card records as first-class objects).
 - Bank/credit card **sync** (Plaid or similar).
 - Investment, loan, or net-worth tracking.
-- Receipt file attachments (deferred — file storage not needed yet).
 - Split transactions, multi-currency, tax tagging.
+- Receipt storage (see **§4.7 Receipt management** — separate module, not finance attachments in MVP).
 
 #### 4.3.3 Future finance
 
@@ -250,7 +250,7 @@ The **family banking app remains the source of truth** for account balances and 
 
 **REQ-MEAL-02 (P1):** Assign meals to slots via **drag-and-drop** from the household recipe library onto a slot.
 
-**REQ-MEAL-03 (P1):** Household-shared **recipe library** (CRUD). A recipe includes: **name**, **ingredients** (each with name; quantity and unit optional), **instructions**, and **servings** (stored for display; **does not scale grocery in v1** — schema should allow serving-based scaling later). **Create and edit** open a **modal** (reuse shared `Modal` component). **Delete** removes the recipe and **clears any week slots** that referenced it. Recipes persist across weeks.
+**REQ-MEAL-03 (P1):** Household-shared **recipe library** (CRUD). A recipe includes: **name**, **ingredients** (each with name; quantity and unit optional), **instructions**, and **servings** (stored for display; **does not scale grocery in v1** — schema should allow serving-based scaling later). **Create and edit** open a **modal** (reuse shared `Modal` component). **Delete** removes the recipe and **clears any week slots** that referenced it. Recipes persist across weeks. Recipes may be organized in **nested colored folders** (see REQ-FOLDER-01 … REQ-FOLDER-05).
 
 **REQ-MEAL-04 (P1):** **Week rollover:** all planned slot assignments **auto-clear at 00:00 each Sunday** (**Pacific Time**, `America/Los_Angeles`) via a **server cron job**. The recipe library and grocery list are **not** auto-cleared on rollover.
 
@@ -278,7 +278,66 @@ The **family banking app remains the source of truth** for account balances and 
 
 ---
 
-### 4.7 Family / contacts / medical (deferred)
+### 4.7 Receipt management (Phase 1c)
+
+**REQ-RCPT-01 (P1):** **Standalone Receipts module** at `/receipts` with its own top-level sidebar nav item (not under Finance).
+
+**REQ-RCPT-02 (P1):** **Household-shared** receipt files — all household members can view, upload, organize, rename, and delete receipts (same visibility model as recipes and tasks; REQ-PERM-01).
+
+**REQ-RCPT-03 (P1):** Upload **images** and **PDFs** via **file picker** and **drag-and-drop** onto a dedicated upload area on the Receipts page.
+
+**REQ-RCPT-04 (P1):** **Max file size 10 MB** per upload. Reject larger files with a clear error. Expected volume ~**50 receipts/month** per household (inform capacity planning, not a hard quota in v1).
+
+**REQ-RCPT-05 (P1):** **In-app preview** — image thumbnails and in-browser preview; PDFs viewable in-app (implementation may use embedded viewer or open-in-tab from authenticated URL).
+
+**REQ-RCPT-06 (P1):** **Rename** and **delete** receipts in v1.
+
+**REQ-RCPT-07 (P1):** Organize receipts in the **shared folder system** (REQ-FOLDER-01 … REQ-FOLDER-05) with a **separate folder tree** for receipts (not shared with meal recipes).
+
+**REQ-RCPT-08 (P2):** **No metadata** in v1 — no store, date, amount, tags, or search. Filename + folder location only. Schema may leave room for finance linking later without implementing it.
+
+**REQ-RCPT-09 (P2):** **No search** in v1.
+
+#### 4.7.1 File storage (decided)
+
+**REQ-RCPT-10 (P1):** Receipt **file bytes** stored on **local disk** on the API host via a **Docker volume** (Option A). Postgres stores **metadata only** (`fileName`, `mimeType`, `byteSize`, `storageKey`, `folderId`, `householdId`, timestamps).
+
+**REQ-RCPT-11 (P1):** Access files through the **API** with household auth checks — no public unauthenticated URLs. Implementation uses a **`FileStorage` abstraction** (`put`, `get`, `delete`) so object storage (S3/R2) can replace local disk later without changing receipt/folder domain logic.
+
+**REQ-RCPT-12 (P1):** Allowed MIME types for v1: **JPEG, PNG, WebP, HEIC/HEIF** (if feasible on stack), and **application/pdf**. Reject other types at upload.
+
+**REQ-RCPT-13 (P2):** Upload volume backup is **operator responsibility** — include uploads volume in VM backup strategy alongside Postgres (document in deploy guide when implemented).
+
+#### 4.7.2 Explicitly not in v1 receipts scope
+
+- OCR, auto-extraction of amount/vendor/date.
+- Linking receipts to finance transactions or categories.
+- Full-text search.
+- Tags, notes, or custom metadata fields.
+- Email-in or mobile camera capture (browser file picker + drag-drop only).
+- Sharing receipts outside the household.
+
+---
+
+### 4.8 Shared folder system (cross-module)
+
+Folders are a **shared platform capability** reused by Meal Planning (recipes) and Receipt Management (files). **Do not duplicate** folder UI or GraphQL per module.
+
+**REQ-FOLDER-01 (P1):** **Generic `Folder` model** scoped by `householdId` and **`namespace`** enum (e.g. `MEALS`, `RECEIPTS`). Supports **nested hierarchy** via optional `parentId`. Each namespace has an **independent folder tree** per household.
+
+**REQ-FOLDER-02 (P1):** Folder fields: **name**, **color** (six pastel options: Blush, Sky, Lavender, Lemon, Peach, Sage), optional **parentId**, `sortOrder`. Folder tiles show **name** and **item count** (direct children: subfolders + items in folder).
+
+**REQ-FOLDER-03 (P1):** **Shared UI components** in `apps/web/src/components/folders/`: folder tile, breadcrumbs, create-folder modal (name + color swatches), folder browser shell. Module pages compose this shell with their own item rows and module-specific actions.
+
+**REQ-FOLDER-04 (P1):** **Shared GraphQL** folder operations: list folders for namespace, `createFolder`, `moveItemToFolder` (or domain-specific move mutations that delegate to shared logic). Meal and receipt modules each expose their items alongside folders for the page query.
+
+**REQ-FOLDER-05 (P1):** **Migrate** existing `RecipeFolder` / `Recipe.folderId` to the generic `Folder` model (`namespace = MEALS`) as part of receipt work — **one folder system**, not parallel implementations.
+
+**REQ-FOLDER-06 (P1):** **Drag-and-drop into folders** within the module's library zone (reuse zone-aware DnD pattern from meal planning). Receipt files draggable into folders; meal recipes draggable into folders and onto meal slots (schedule zone unchanged).
+
+---
+
+### 4.9 Family / contacts / medical (deferred)
 
 Not needed yet. Do not implement until this document is updated.
 
@@ -309,7 +368,14 @@ Not needed yet. Do not implement until this document is updated.
 
 | Module | Deliverables |
 |--------|--------------|
-| **Meal planning** | Household recipe library · Sun–Sat grid (breakfast/lunch/dinner) · drag-and-drop to slots · Sunday auto-clear · grocery list (auto + manual, merge by ingredient name) |
+| **Meal planning** | Household recipe library · nested colored folders · Sun–Sat grid (breakfast/lunch/dinner) · drag-and-drop to slots · Sunday auto-clear · grocery list (auto + manual, merge by ingredient name) |
+
+### Phase 1c — Receipt management
+
+| Module | Deliverables |
+|--------|--------------|
+| **Shared folders** | Generic `Folder` model + shared UI/GraphQL · migrate meal `RecipeFolder` → `Folder` (`MEALS`) |
+| **Receipts** | `/receipts` page + nav · upload (picker + drag-drop) · local volume storage + `FileStorage` abstraction · preview · rename/delete · organize in `RECEIPTS` folder tree |
 
 ### Phase 2 — Hardening & ops
 
@@ -343,7 +409,7 @@ Not needed yet. Do not implement until this document is updated.
 
 **REQ-DATA-04 (P2):** Entity relationships start simple; richer typed/graph relationships only when a concrete feature requires them.
 
-**REQ-DATA-05 (P3):** No entity history/versioning or global search in initial releases.
+**REQ-DATA-06 (P1):** **File metadata** lives in Postgres; **file bytes** live in object storage or local volume via `FileStorage` — never store large blobs in Postgres.
 
 ---
 
@@ -360,6 +426,8 @@ Not needed yet. Do not implement until this document is updated.
 **NFR-REL-01 (P1):** **Weekly full database backup** to Google Drive. Encryption of backup files is **not required**.
 
 **NFR-REL-02:** If primary hosting is unavailable, **no failover required** for now — app being down is acceptable.
+
+**NFR-REL-03 (P2):** Receipt upload volume on local disk should be included in **operator backup** planning (~50 files/month × 10 MB max — low volume, but persistent Docker volume must survive redeploys).
 
 ### 7.3 Maintainability
 
@@ -419,7 +487,7 @@ Not needed yet. Do not implement until this document is updated.
 
 **SEC-DATA-01:** Financial entries and household data are sensitive — apply least-privilege DB access and parameterized queries.
 
-**SEC-DATA-02:** Operator is responsible for VM security (OS patches, firewall, backups). Revisit hardening before storing real financial data.
+**SEC-DATA-03 (P1):** Uploaded receipt files are **household-scoped** — API must verify household membership on every download/delete. Validate MIME type and size server-side; do not trust client-only checks.
 
 ---
 
@@ -479,11 +547,15 @@ life_management/
 
 **Deploy guide:** `docs/deployment/oracle-vm.md`
 
-### 9.3 Deferred technical items
+### 9.3 File storage (Phase 1c)
 
-| Item | Status |
-|------|--------|
-| File / blob storage | **Deferred** — not needed until a feature requires attachments |
+| Item | Decision |
+|------|----------|
+| Receipt files (v1) | **Local disk** — Docker volume on API container (e.g. `uploads_data` → `/data/uploads`) |
+| Metadata | **Postgres** — `Receipt` table + `Folder` references |
+| Access pattern | Authenticated API routes (multipart upload, streamed download) |
+| Future migration | **S3-compatible** (R2, Oracle Object Storage) behind same `FileStorage` interface |
+| Backup | Operator backs up volume + Postgres (see NFR-REL-03) |
 
 ### 9.4 Database
 
@@ -503,7 +575,9 @@ Prisma migrations in `packages/db` run against both environments.
 
 **CON-ARCH-02:** Google Calendar remains external source of truth — do not duplicate full calendar state as primary store.
 
-**CON-ARCH-03:** Design modules as **bounded contexts** within one deployable app (tasks, finance, calendar, meals) sharing auth and household context.
+**CON-ARCH-03:** Design modules as **bounded contexts** within one deployable app (tasks, finance, calendar, meals, receipts) sharing auth, household context, and **shared folder infrastructure**.
+
+**CON-ARCH-05:** **File storage** is accessed only through a **`FileStorage` interface** in `apps/api` — local volume in v1; S3-compatible backends later without domain rewrites.
 
 ---
 
@@ -549,6 +623,8 @@ When LLM agents implement features:
 | **Manual mirror** | Data entered by hand in this app to reflect reality elsewhere |
 | **MVP-lite** | Minimal version shipped alongside MVP, not blocking MVP but included in first release wave |
 | **Core trio** | Tasks, Finance, Calendar |
+| **Folder namespace** | Isolates folder trees per module (`MEALS`, `RECEIPTS`) within one household |
+| **FileStorage** | API abstraction for reading/writing file bytes (local volume or object storage) |
 
 ---
 
@@ -562,7 +638,7 @@ All open questions are resolved. Reference for agents and future you:
 | OQ-02 | No custom account recovery — Google only |
 | OQ-03 | **Docker Postgres on Oracle VM** for production; Docker Postgres for local dev |
 | OQ-04 | **Apollo Server** (GraphQL) + **Prisma** (ORM) |
-| OQ-05 | File/blob storage deferred until a feature requires it |
+| OQ-05 | **Local Docker volume** for receipt files (v1); `FileStorage` abstraction for future S3 |
 | OQ-06 | Per-task notifications via **web push** |
 | OQ-07 | **No audit trail** — explicitly out of scope |
 | OQ-08 | **No encryption** on Google Drive backups |
@@ -574,6 +650,7 @@ All open questions are resolved. Reference for agents and future you:
 
 | Date | Change |
 |------|--------|
+| 2026-07-02 | **Receipt management (Phase 1c):** REQ-RCPT-01 … REQ-RCPT-13 — standalone `/receipts` nav, household-shared uploads (images + PDF, 10 MB max, picker + drag-drop), preview/rename/delete, local volume storage + `FileStorage` abstraction. **Shared folders:** REQ-FOLDER-01 … REQ-FOLDER-06 — generic `Folder` model, migrate meal `RecipeFolder`, shared UI/GraphQL. See `docs/design/DESIGN.md` §8.11–8.12. |
 | 2026-06-24 | Meal planning refinements: recipe modal, PST Sunday cron (slots only), grocery Bought + Remove bought, delete clears slots, ingredient merge with multi-qty strings |
 | 2026-06-24 | Meal planning (Phase 1b): weekly Sun–Sat grid (day names only), household recipe library, drag-and-drop slots, Sunday auto-clear, grocery list auto + manual with ingredient merge. See REQ-MEAL-01 … REQ-MEAL-08 and `docs/design/DESIGN.md` §8.10. |
 | 2026-06-25 | UI alignment: Kanban default home (REQ-SHELL-01); module sidebar nav (REQ-SHELL-03); multi-assignee (REQ-TASK-05); statuses BACKLOG/WAITING/DONE collapsible (REQ-TASK-06); kanban DnD (REQ-TASK-07); List view (REQ-TASK-14); filters deferred (REQ-TASK-15). See `docs/design/DESIGN.md`. |
@@ -597,11 +674,13 @@ All open questions are resolved. Reference for agents and future you:
 **Finance:** REQ-FIN-01 … REQ-FIN-06, REQ-FIN-20  
 **Calendar:** REQ-CAL-01 … REQ-CAL-05  
 **Meals:** REQ-MEAL-01 … REQ-MEAL-08  
+**Receipts:** REQ-RCPT-01 … REQ-RCPT-13  
+**Folders (shared):** REQ-FOLDER-01 … REQ-FOLDER-06  
 **Home:** REQ-HOME-01  
-**Data:** REQ-DATA-01 … REQ-DATA-05  
+**Data:** REQ-DATA-01 … REQ-DATA-06  
 **Dev:** REQ-DEV-01 … REQ-DEV-04  
-**NFR:** NFR-PERF-01, NFR-PERF-02, NFR-REL-01, NFR-REL-02, NFR-MAINT-01 … NFR-MAINT-03, NFR-TEST-01 … NFR-TEST-03, NFR-PORT-01, NFR-PORT-02  
-**Security:** SEC-AUTH-01 … SEC-AUTH-04, SEC-TRANSPORT-01, SEC-STORAGE-01, SEC-STORAGE-02, SEC-EXPOSE-01, SEC-EXPOSE-02, SEC-SECRET-01, SEC-DATA-01, SEC-DATA-02  
-**Constraints:** CON-DEPLOY-01, CON-DEPLOY-02, CON-ARCH-01 … CON-ARCH-04  
+**NFR:** NFR-PERF-01, NFR-PERF-02, NFR-REL-01, NFR-REL-02, NFR-REL-03, NFR-MAINT-01 … NFR-MAINT-03, NFR-TEST-01 … NFR-TEST-03, NFR-PORT-01, NFR-PORT-02  
+**Security:** SEC-AUTH-01 … SEC-AUTH-04, SEC-TRANSPORT-01, SEC-STORAGE-01, SEC-STORAGE-02, SEC-EXPOSE-01, SEC-EXPOSE-02, SEC-SECRET-01, SEC-DATA-01, SEC-DATA-02, SEC-DATA-03  
+**Constraints:** CON-DEPLOY-01, CON-DEPLOY-02, CON-ARCH-01 … CON-ARCH-05  
 
 </details>
