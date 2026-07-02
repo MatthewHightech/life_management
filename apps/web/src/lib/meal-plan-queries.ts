@@ -1,3 +1,3 @@
-import { MEAL_PLAN_QUERY } from "@/graphql/operations/meals";
+import { MEAL_PLAN_QUERY } from "@/graphql";
 
-export const MEAL_PLAN_REFETCH = [{ query: MEAL_PLAN_QUERY }] as const;
+export const MEAL_PLAN_REFETCH = [MEAL_PLAN_QUERY] as const;

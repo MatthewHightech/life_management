@@ -51,7 +51,8 @@ model Household {
   projects       TaskProject[]
   tasks          Task[]
   recipes        Recipe[]
-  recipeFolders  RecipeFolder[]
+  folders        Folder[]
+  receipts       Receipt[]
   mealPlanSlots  MealPlanSlot[]
   groceryItems   GroceryListItem[]
   createdAt      DateTime          @default(now())
@@ -181,7 +182,12 @@ model TaskDependency {
   @@unique([taskId, dependsOnTaskId])
 }
 
-enum RecipeFolderColor {
+enum FolderNamespace {
+  MEALS
+  RECEIPTS
+}
+
+enum FolderColor {
   BLUSH
   SKY
   LAVENDER
@@ -190,21 +196,40 @@ enum RecipeFolderColor {
   SAGE
 }
 
-model RecipeFolder {
-  id          String            @id @default(cuid())
+model Folder {
+  id          String          @id @default(cuid())
   householdId String
-  household   Household         @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  household   Household       @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  namespace   FolderNamespace
   parentId    String?
-  parent      RecipeFolder?     @relation("RecipeFolderTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children    RecipeFolder[]    @relation("RecipeFolderTree")
+  parent      Folder?         @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Folder[]        @relation("FolderTree")
   name        String
-  color       RecipeFolderColor
+  color       FolderColor
   recipes     Recipe[]
-  sortOrder   Int               @default(0)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  receipts    Receipt[]
+  sortOrder   Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
-  @@index([householdId, parentId])
+  @@index([householdId, namespace, parentId])
+}
+
+model Receipt {
+  id          String    @id @default(cuid())
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  folderId    String?
+  folder      Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  fileName    String
+  mimeType    String
+  byteSize    Int
+  storageKey  String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([householdId, storageKey])
+  @@index([householdId, folderId])
 }
 
 model Recipe {
@@ -212,7 +237,7 @@ model Recipe {
   householdId  String
   household    Household          @relation(fields: [householdId], references: [id], onDelete: Cascade)
   folderId     String?
-  folder       RecipeFolder?      @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  folder       Folder?            @relation(fields: [folderId], references: [id], onDelete: SetNull)
   name         String
   instructions String?
   servings     Int?

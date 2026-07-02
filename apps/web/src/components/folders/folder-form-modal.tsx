@@ -1,24 +1,31 @@
 "use client";
 
-import { useMutation } from "@apollo/client";
+import { useMutation, type InternalRefetchQueriesInclude } from "@apollo/client";
 import { FormEvent, useEffect, useState } from "react";
-import { CREATE_RECIPE_FOLDER_MUTATION } from "@/graphql";
-import type { RecipeFolderColor } from "@life/shared";
-import { MEAL_PLAN_REFETCH } from "@/lib/meal-plan-queries";
-import { RECIPE_FOLDER_COLOR_OPTIONS } from "@/lib/recipe-folder-colors";
+import { CREATE_FOLDER_MUTATION } from "@/graphql";
+import type { FolderColor, FolderNamespace } from "@life/shared";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
+import { FOLDER_COLOR_OPTIONS } from "@/lib/folder-colors";
 import { cn } from "@/lib/cn";
 
-type RecipeFolderFormModalProps = {
+type FolderFormModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  namespace: FolderNamespace;
   parentId: string | null;
+  refetchQueries?: InternalRefetchQueriesInclude;
 };
 
-export function RecipeFolderFormModal({ open, onOpenChange, parentId }: RecipeFolderFormModalProps) {
+export function FolderFormModal({
+  open,
+  onOpenChange,
+  namespace,
+  parentId,
+  refetchQueries = [],
+}: FolderFormModalProps) {
   const [name, setName] = useState("");
-  const [color, setColor] = useState<RecipeFolderColor>("BLUSH");
+  const [color, setColor] = useState<FolderColor>("BLUSH");
 
   useEffect(() => {
     if (open) {
@@ -27,8 +34,9 @@ export function RecipeFolderFormModal({ open, onOpenChange, parentId }: RecipeFo
     }
   }, [open]);
 
-  const [createFolder, { loading }] = useMutation(CREATE_RECIPE_FOLDER_MUTATION, {
-    refetchQueries: [...MEAL_PLAN_REFETCH],
+  const [createFolder, { loading }] = useMutation(CREATE_FOLDER_MUTATION, {
+    refetchQueries,
+    awaitRefetchQueries: true,
     onCompleted: () => onOpenChange(false),
   });
 
@@ -43,6 +51,7 @@ export function RecipeFolderFormModal({ open, onOpenChange, parentId }: RecipeFo
     await createFolder({
       variables: {
         input: {
+          namespace,
           name: trimmedName,
           color,
           parentId,
@@ -56,7 +65,7 @@ export function RecipeFolderFormModal({ open, onOpenChange, parentId }: RecipeFo
       open={open}
       onOpenChange={onOpenChange}
       title="New folder"
-      description="Organize recipes with colored folders. Drag recipes onto a folder to file them."
+      description="Pick a name and color for your folder."
       className="w-[min(100%-2rem,28rem)]"
     >
       <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4">
@@ -66,7 +75,6 @@ export function RecipeFolderFormModal({ open, onOpenChange, parentId }: RecipeFo
             value={name}
             onChange={(event) => setName(event.target.value)}
             className="min-h-11 w-full rounded-lg border border-border-subtle px-3 py-2 text-sm outline-none focus:border-primary"
-            placeholder="Weeknight dinners"
             required
             autoFocus
           />
@@ -75,7 +83,7 @@ export function RecipeFolderFormModal({ open, onOpenChange, parentId }: RecipeFo
         <fieldset className="space-y-1.5">
           <legend className="text-sm font-medium text-text-main">Color</legend>
           <div className="flex flex-wrap gap-2">
-            {RECIPE_FOLDER_COLOR_OPTIONS.map((option) => (
+            {FOLDER_COLOR_OPTIONS.map((option) => (
               <button
                 key={option.value}
                 type="button"

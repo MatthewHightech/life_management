@@ -8,6 +8,8 @@ import express from "express";
 import { authRouter } from "./auth/routes";
 import { extractBearerToken, verifyAuthToken } from "./auth/jwt";
 import { runMealPlanWeekRollover } from "./cron/meal-plan-rollover";
+import { createReceiptRouter } from "./receipts/routes.js";
+import { createLocalFileStorage } from "./storage/local.js";
 
 declare global {
   namespace Express {
@@ -22,6 +24,7 @@ const webUrl = process.env.WEB_URL ?? "http://localhost:3000";
 
 async function main() {
   const app = express();
+  const fileStorage = createLocalFileStorage();
   app.set("trust proxy", 1);
   const server = createApolloServer();
 
@@ -39,6 +42,7 @@ async function main() {
   );
 
   app.use("/auth", authRouter);
+  app.use("/receipts", createReceiptRouter(fileStorage));
 
   app.use(
     "/graphql",
@@ -60,7 +64,10 @@ async function main() {
       next();
     },
     expressMiddleware(server, {
-      context: async ({ req }) => createGraphQLContext(req.authUser ?? null),
+      context: async ({ req }) =>
+        createGraphQLContext(req.authUser ?? null, {
+          deleteReceiptFile: (storageKey) => fileStorage.delete(storageKey),
+        }),
     }),
   );
 

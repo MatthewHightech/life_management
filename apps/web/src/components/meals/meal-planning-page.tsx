@@ -17,23 +17,25 @@ import {
   MEAL_PLAN_QUERY,
   MOVE_RECIPE_TO_FOLDER_MUTATION,
 } from "@/graphql";
+import { FolderFormModal } from "@/components/folders/folder-form-modal";
 import { GroceryListSection } from "@/components/meals/grocery-list-section";
-import { RecipeFolderFormModal } from "@/components/meals/recipe-folder-form-modal";
 import { RecipeFormModal } from "@/components/meals/recipe-form-modal";
 import { RecipeLibrarySection } from "@/components/meals/recipe-library-section";
 import { RecipeRow } from "@/components/meals/recipe-row";
 import type { MealRecipe } from "@/components/meals/types";
 import { WeekGridSection } from "@/components/meals/week-grid-section";
 import { ModulePageLayout } from "@/components/shell/module-page-layout";
-import { MEAL_PLAN_REFETCH } from "@/lib/meal-plan-queries";
-import { createMealPlanCollisionDetection } from "@/lib/meal-plan-dnd";
+import { createLibraryCollisionDetection } from "@/lib/folder-dnd";
 import {
-  buildRecipeFolderPath,
+  buildFolderPath,
   filterFoldersForParent,
-  filterRecipesForFolder,
-} from "@/lib/recipe-folder-utils";
-import { parseMealPlanSlotKey, parseRecipeFolderDropId } from "@life/shared";
+  filterItemsForFolder,
+} from "@/lib/folder-utils";
+import { MEAL_PLAN_REFETCH } from "@/lib/meal-plan-queries";
+import { parseFolderDropId, parseMealPlanSlotKey } from "@life/shared";
 import type { MealSlot, WeekDay } from "@/graphql";
+
+const MEAL_SCHEDULE_ZONE = "schedule";
 
 type MealPlanData = MealPlanQuery["mealPlan"];
 
@@ -55,15 +57,18 @@ export function MealPlanningPage() {
   });
   const [moveRecipeToFolder] = useMutation(MOVE_RECIPE_TO_FOLDER_MUTATION, {
     refetchQueries: [...MEAL_PLAN_REFETCH],
+    awaitRefetchQueries: true,
   });
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const collisionDetection = useMemo(
     () =>
-      createMealPlanCollisionDetection(
+      createLibraryCollisionDetection(
+        "MEALS",
         () => recipeZoneRef.current?.getBoundingClientRect() ?? null,
         () => scheduleZoneRef.current?.getBoundingClientRect() ?? null,
+        MEAL_SCHEDULE_ZONE,
       ),
     [],
   );
@@ -76,7 +81,7 @@ export function MealPlanningPage() {
   );
 
   const breadcrumbPath = useMemo(
-    () => buildRecipeFolderPath(mealPlan?.folders ?? [], currentFolderId),
+    () => buildFolderPath(mealPlan?.folders ?? [], currentFolderId),
     [mealPlan?.folders, currentFolderId],
   );
 
@@ -86,7 +91,7 @@ export function MealPlanningPage() {
   );
 
   const visibleRecipes = useMemo(
-    () => filterRecipesForFolder(mealPlan?.recipes ?? [], currentFolderId) as MealRecipe[],
+    () => filterItemsForFolder(mealPlan?.recipes ?? [], currentFolderId) as MealRecipe[],
     [mealPlan?.recipes, currentFolderId],
   );
 
@@ -124,17 +129,17 @@ export function MealPlanningPage() {
       return;
     }
 
-    const folderTarget = parseRecipeFolderDropId(String(over.id));
-    if (folderTarget !== undefined) {
+    const folderTarget = parseFolderDropId(String(over.id));
+    if (folderTarget?.namespace === "MEALS") {
       const recipe = recipeById.get(recipeId);
-      if ((recipe?.folderId ?? null) === folderTarget) {
+      if ((recipe?.folderId ?? null) === folderTarget.folderId) {
         return;
       }
 
       void moveRecipeToFolder({
         variables: {
           recipeId,
-          folderId: folderTarget,
+          folderId: folderTarget.folderId,
         },
       });
       return;
@@ -197,10 +202,12 @@ export function MealPlanningPage() {
         recipe={editingRecipe}
         folderId={currentFolderId}
       />
-      <RecipeFolderFormModal
+      <FolderFormModal
         open={folderModalOpen}
         onOpenChange={setFolderModalOpen}
+        namespace="MEALS"
         parentId={currentFolderId}
+        refetchQueries={[...MEAL_PLAN_REFETCH]}
       />
     </ModulePageLayout>
   );

@@ -6,7 +6,6 @@ import { X } from "lucide-react";
 import type { MealPlanSlot as MealPlanSlotType } from "@/components/meals/types";
 import type { MealSlot, WeekDay } from "@/graphql";
 import { mealPlanSlotKey } from "@life/shared";
-import { MEAL_PLAN_DROP_ZONE } from "@/lib/meal-plan-dnd";
 import { mealSlotLabels, weekDayLabels } from "@/lib/meal-plan-ui";
 import { cn } from "@/lib/cn";
 
@@ -21,7 +20,7 @@ export function MealSlotCell({ day, slot, assignment, onClear }: MealSlotCellPro
   const droppableId = mealPlanSlotKey(day, slot);
   const { setNodeRef, isOver } = useDroppable({
     id: droppableId,
-    data: { zone: MEAL_PLAN_DROP_ZONE.SCHEDULE, day, slot },
+    data: { zone: "schedule", day, slot },
   });
 
   return (

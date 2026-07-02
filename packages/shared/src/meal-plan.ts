@@ -159,28 +159,6 @@ export function parseMealPlanSlotKey(value: string): { day: WeekDay; slot: MealS
   return { day: day as WeekDay, slot: slot as MealSlot };
 }
 
-export const RECIPE_FOLDER_COLORS = [
-  "BLUSH",
-  "SKY",
-  "LAVENDER",
-  "LEMON",
-  "PEACH",
-  "SAGE",
-] as const;
+import type { FolderColor } from "./folders";
 
-export type RecipeFolderColor = (typeof RECIPE_FOLDER_COLORS)[number];
-
-export const RECIPE_FOLDER_DROP_PREFIX = "recipe-folder:";
-
-export function recipeFolderDropId(folderId: string | null): string {
-  return `${RECIPE_FOLDER_DROP_PREFIX}${folderId ?? "root"}`;
-}
-
-export function parseRecipeFolderDropId(value: string): string | null | undefined {
-  if (!value.startsWith(RECIPE_FOLDER_DROP_PREFIX)) {
-    return undefined;
-  }
-
-  const id = value.slice(RECIPE_FOLDER_DROP_PREFIX.length);
-  return id === "root" ? null : id;
-}
+export type RecipeFolderColor = FolderColor;

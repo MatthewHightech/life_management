@@ -1,4 +1,5 @@
 import { gql } from "@apollo/client";
+import { FOLDER_FIELDS } from "./folders";
 
 const RECIPE_FIELDS = gql`
   fragment RecipeFields on Recipe {
@@ -16,17 +17,6 @@ const RECIPE_FIELDS = gql`
     }
     createdAt
     updatedAt
-  }
-`;
-
-const RECIPE_FOLDER_FIELDS = gql`
-  fragment RecipeFolderFields on RecipeFolder {
-    id
-    name
-    color
-    parentId
-    recipeCount
-    childFolderCount
   }
 `;
 
@@ -54,7 +44,7 @@ const GROCERY_ITEM_FIELDS = gql`
 
 export const MEAL_PLAN_QUERY = gql`
   ${RECIPE_FIELDS}
-  ${RECIPE_FOLDER_FIELDS}
+  ${FOLDER_FIELDS}
   ${MEAL_PLAN_SLOT_FIELDS}
   ${GROCERY_ITEM_FIELDS}
   query MealPlan {
@@ -64,7 +54,7 @@ export const MEAL_PLAN_QUERY = gql`
         ...RecipeFields
       }
       folders {
-        ...RecipeFolderFields
+        ...FolderFields
       }
       slots {
         ...MealPlanSlotFields
@@ -97,15 +87,6 @@ export const UPDATE_RECIPE_MUTATION = gql`
 export const DELETE_RECIPE_MUTATION = gql`
   mutation DeleteRecipe($id: ID!) {
     deleteRecipe(id: $id)
-  }
-`;
-
-export const CREATE_RECIPE_FOLDER_MUTATION = gql`
-  ${RECIPE_FOLDER_FIELDS}
-  mutation CreateRecipeFolder($input: CreateRecipeFolderInput!) {
-    createRecipeFolder(input: $input) {
-      ...RecipeFolderFields
-    }
   }
 `;
 

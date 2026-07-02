@@ -1,4 +1,4 @@
-import { MealSlot, Prisma, RecipeFolderColor, WeekDay } from "@prisma/client";
+import { FolderNamespace, MealSlot, Prisma, WeekDay } from "@prisma/client";
 import {
   getMealPlanWeekStartIso,
   mergeGroceryIngredients,
@@ -6,6 +6,7 @@ import {
 } from "@life/shared";
 import { GraphQLContext } from "../context";
 import { ForbiddenError, requireHouseholdUser } from "../auth";
+import { assertFolderInHousehold, loadFoldersForNamespace } from "../folders/helpers";
 import { cleanupMealPlanWeeksBefore } from "./rollover";
 
 const recipeInclude = {
@@ -28,21 +29,6 @@ async function assertRecipeInHousehold(context: GraphQLContext, recipeId: string
 
   if (!recipe) {
     throw new ForbiddenError("Recipe not found in household");
-  }
-}
-
-async function assertFolderInHousehold(
-  context: GraphQLContext,
-  folderId: string,
-  householdId: string,
-) {
-  const folder = await context.prisma.recipeFolder.findFirst({
-    where: { id: folderId, householdId },
-    select: { id: true },
-  });
-
-  if (!folder) {
-    throw new ForbiddenError("Folder not found in household");
   }
 }
 
@@ -102,15 +88,7 @@ async function loadMealPlan(context: GraphQLContext, householdId: string) {
       include: recipeInclude,
       orderBy: { name: "asc" },
     }),
-    context.prisma.recipeFolder.findMany({
-      where: { householdId },
-      include: {
-        _count: {
-          select: { recipes: true, children: true },
-        },
-      },
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-    }),
+    loadFoldersForNamespace(context, householdId, FolderNamespace.MEALS),
     context.prisma.mealPlanSlot.findMany({
       where: { householdId, weekStart },
       include: slotInclude,
@@ -157,7 +135,7 @@ export const mealResolvers = {
       const { input } = args;
 
       if (input.folderId) {
-        await assertFolderInHousehold(context, input.folderId, householdId);
+        await assertFolderInHousehold(context, input.folderId, householdId, FolderNamespace.MEALS);
       }
 
       return context.prisma.recipe.create({
@@ -248,39 +226,6 @@ export const mealResolvers = {
       return true;
     },
 
-    createRecipeFolder: async (
-      _parent: unknown,
-      args: {
-        input: {
-          name: string;
-          color: RecipeFolderColor;
-          parentId?: string | null;
-        };
-      },
-      context: GraphQLContext,
-    ) => {
-      const { householdId } = await requireHouseholdUser(context);
-      const { input } = args;
-
-      if (input.parentId) {
-        await assertFolderInHousehold(context, input.parentId, householdId);
-      }
-
-      return context.prisma.recipeFolder.create({
-        data: {
-          householdId,
-          parentId: input.parentId ?? null,
-          name: input.name.trim(),
-          color: input.color,
-        },
-        include: {
-          _count: {
-            select: { recipes: true, children: true },
-          },
-        },
-      });
-    },
-
     moveRecipeToFolder: async (
       _parent: unknown,
       args: { recipeId: string; folderId?: string | null },
@@ -290,7 +235,7 @@ export const mealResolvers = {
       await assertRecipeInHousehold(context, args.recipeId, householdId);
 
       if (args.folderId) {
-        await assertFolderInHousehold(context, args.folderId, householdId);
+        await assertFolderInHousehold(context, args.folderId, householdId, FolderNamespace.MEALS);
       }
 
       return context.prisma.recipe.update({
@@ -438,10 +383,5 @@ export const mealResolvers = {
   Recipe: {
     createdAt: (parent: { createdAt: Date }) => parent.createdAt.toISOString(),
     updatedAt: (parent: { updatedAt: Date }) => parent.updatedAt.toISOString(),
-  },
-
-  RecipeFolder: {
-    recipeCount: (parent: { _count?: { recipes: number } }) => parent._count?.recipes ?? 0,
-    childFolderCount: (parent: { _count?: { children: number } }) => parent._count?.children ?? 0,
   },
 };

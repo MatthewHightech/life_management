@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Calendar, CheckSquare, UtensilsCrossed, Wallet } from "lucide-react";
+import { Calendar, CheckSquare, Receipt, UtensilsCrossed, Wallet } from "lucide-react";
 
 export type ModuleNavItem = {
   id: string;
@@ -14,4 +14,5 @@ export const moduleNav: ModuleNavItem[] = [
   { id: "finance", label: "Finance", href: "/finance", icon: Wallet, enabled: true },
   { id: "calendar", label: "Calendar", href: "/calendar", icon: Calendar, enabled: false },
   { id: "meals", label: "Meal Planning", href: "/meals", icon: UtensilsCrossed, enabled: true },
+  { id: "receipts", label: "Receipts", href: "/receipts", icon: Receipt, enabled: true },
 ];

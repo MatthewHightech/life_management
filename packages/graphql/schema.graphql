@@ -20,10 +20,12 @@ type Query {
   task(id: ID!): Task
   taskProjects: [TaskProject!]!
   mealPlan: MealPlan!
+  receiptLibrary: ReceiptLibrary!
 }
 
 type Mutation {
   ping: String!
+  createFolder(input: CreateFolderInput!): Folder!
   createTask(input: CreateTaskInput!): Task!
   updateTask(id: ID!, input: UpdateTaskInput!): Task!
   moveTask(id: ID!, status: TaskStatus!): Task!
@@ -35,7 +37,6 @@ type Mutation {
   createRecipe(input: CreateRecipeInput!): Recipe!
   updateRecipe(id: ID!, input: UpdateRecipeInput!): Recipe!
   deleteRecipe(id: ID!): Boolean!
-  createRecipeFolder(input: CreateRecipeFolderInput!): RecipeFolder!
   moveRecipeToFolder(recipeId: ID!, folderId: ID): Recipe!
   assignMealPlanSlot(day: WeekDay!, slot: MealSlot!, recipeId: ID!): MealPlanSlot!
   clearMealPlanSlot(day: WeekDay!, slot: MealSlot!): Boolean!
@@ -43,6 +44,40 @@ type Mutation {
   updateGroceryItem(id: ID!, input: UpdateGroceryItemInput!): GroceryListItem!
   deleteGroceryItem(id: ID!): Boolean!
   removeBoughtGroceryItems: Int!
+  renameReceipt(id: ID!, fileName: String!): Receipt!
+  deleteReceipt(id: ID!): Boolean!
+  moveReceiptToFolder(receiptId: ID!, folderId: ID): Receipt!
+}
+
+enum FolderNamespace {
+  MEALS
+  RECEIPTS
+}
+
+enum FolderColor {
+  BLUSH
+  SKY
+  LAVENDER
+  LEMON
+  PEACH
+  SAGE
+}
+
+type Folder {
+  id: ID!
+  namespace: FolderNamespace!
+  name: String!
+  color: FolderColor!
+  parentId: ID
+  itemCount: Int!
+  childFolderCount: Int!
+}
+
+input CreateFolderInput {
+  namespace: FolderNamespace!
+  name: String!
+  color: FolderColor!
+  parentId: ID
 }
 
 enum TaskStatus {
@@ -178,15 +213,6 @@ enum MealSlot {
   DINNER
 }
 
-enum RecipeFolderColor {
-  BLUSH
-  SKY
-  LAVENDER
-  LEMON
-  PEACH
-  SAGE
-}
-
 type RecipeIngredient {
   id: ID!
   name: String!
@@ -204,15 +230,6 @@ type Recipe {
   ingredients: [RecipeIngredient!]!
   createdAt: String!
   updatedAt: String!
-}
-
-type RecipeFolder {
-  id: ID!
-  name: String!
-  color: RecipeFolderColor!
-  parentId: ID
-  recipeCount: Int!
-  childFolderCount: Int!
 }
 
 type MealPlanSlot {
@@ -233,7 +250,7 @@ type GroceryListItem {
 type MealPlan {
   weekStart: String!
   recipes: [Recipe!]!
-  folders: [RecipeFolder!]!
+  folders: [Folder!]!
   slots: [MealPlanSlot!]!
   groceryItems: [GroceryListItem!]!
 }
@@ -252,12 +269,6 @@ input CreateRecipeInput {
   ingredients: [RecipeIngredientInput!]!
 }
 
-input CreateRecipeFolderInput {
-  name: String!
-  color: RecipeFolderColor!
-  parentId: ID
-}
-
 input UpdateRecipeInput {
   name: String
   instructions: String
@@ -274,6 +285,21 @@ input UpdateGroceryItemInput {
   name: String
   quantityLabel: String
   isBought: Boolean
+}
+
+type Receipt {
+  id: ID!
+  fileName: String!
+  mimeType: String!
+  byteSize: Int!
+  folderId: ID
+  createdAt: String!
+  updatedAt: String!
+}
+
+type ReceiptLibrary {
+  folders: [Folder!]!
+  receipts: [Receipt!]!
 }
 
 schema {

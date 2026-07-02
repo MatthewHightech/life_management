@@ -4,11 +4,16 @@ import { prisma, PrismaClient } from "@life/db";
 export type GraphQLContext = {
   prisma: PrismaClient;
   user: AuthUser | null;
+  deleteReceiptFile?: (storageKey: string) => Promise<void>;
 };
 
-export function createGraphQLContext(user: AuthUser | null): GraphQLContext {
+export function createGraphQLContext(
+  user: AuthUser | null,
+  options?: { deleteReceiptFile?: (storageKey: string) => Promise<void> },
+): GraphQLContext {
   return {
     prisma,
     user,
+    deleteReceiptFile: options?.deleteReceiptFile,
   };
 }
