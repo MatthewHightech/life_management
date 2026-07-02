@@ -10,7 +10,8 @@
     ".": "./src/index.ts",
     "./allowlist": "./src/allowlist.ts",
     "./auth": "./src/auth.ts",
-    "./dates": "./src/dates.ts"
+    "./dates": "./src/dates.ts",
+    "./meal-plan": "./src/meal-plan.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

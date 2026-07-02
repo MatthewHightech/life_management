@@ -1,9 +1,5 @@
-import { ModulePageLayout } from "@/components/shell/module-page-layout";
+import { MealPlanningPage } from "@/components/meals/meal-planning-page";
 
 export default function MealsPage() {
-  return (
-    <ModulePageLayout title="Meal Planning">
-      <p className="text-sm text-text-muted">Coming in Phase 1b.</p>
-    </ModulePageLayout>
-  );
+  return <MealPlanningPage />;
 }

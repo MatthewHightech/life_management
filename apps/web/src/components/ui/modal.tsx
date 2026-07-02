@@ -9,10 +9,11 @@ type ModalProps = {
   onOpenChange: (open: boolean) => void;
   title: string;
   description?: string;
+  className?: string;
   children: React.ReactNode;
 };
 
-export function Modal({ open, onOpenChange, title, description, children }: ModalProps) {
+export function Modal({ open, onOpenChange, title, description, className, children }: ModalProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -21,6 +22,7 @@ export function Modal({ open, onOpenChange, title, description, children }: Moda
           className={cn(
             "fixed top-1/2 left-1/2 z-50 w-[min(100%-2rem,32rem)] -translate-x-1/2 -translate-y-1/2",
             "rounded-xl border border-border-subtle bg-surface p-6 shadow-[0_12px_24px_rgba(0,0,0,0.1)]",
+            className,
           )}
         >
           <div className="mb-4 flex items-start justify-between gap-4">

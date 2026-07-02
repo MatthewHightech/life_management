@@ -3,9 +3,11 @@ import { createApolloServer } from "@life/graphql/server";
 import { createGraphQLContext } from "@life/graphql/context";
 import { AuthUser } from "@life/shared";
 import cors from "cors";
+import cron from "node-cron";
 import express from "express";
 import { authRouter } from "./auth/routes";
 import { extractBearerToken, verifyAuthToken } from "./auth/jwt";
+import { runMealPlanWeekRollover } from "./cron/meal-plan-rollover";
 
 declare global {
   namespace Express {
@@ -65,6 +67,16 @@ async function main() {
   app.listen(port, () => {
     console.log(`API ready at http://localhost:${port}`);
   });
+
+  cron.schedule(
+    "0 0 * * 0",
+    () => {
+      void runMealPlanWeekRollover().catch((error) => {
+        console.error("[meal-plan] rollover failed", error);
+      });
+    },
+    { timezone: "America/Los_Angeles" },
+  );
 }
 
 main().catch((error) => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolvers } from "@life/graphql/resolvers";
+import { mealResolvers } from "../../packages/graphql/src/meals/resolvers";
 import { taskResolvers } from "../../packages/graphql/src/tasks/resolvers";
 
 describe("graphql resolvers", () => {
@@ -20,6 +21,15 @@ describe("graphql resolvers", () => {
     expect(resolvers.Mutation.createTask).toBe(taskResolvers.Mutation.createTask);
     expect(resolvers.Mutation.moveTask).toBe(taskResolvers.Mutation.moveTask);
     expect(resolvers.Mutation.completeTask).toBe(taskResolvers.Mutation.completeTask);
+  });
+
+  it("merges meal query resolvers", () => {
+    expect(resolvers.Query.mealPlan).toBe(mealResolvers.Query.mealPlan);
+  });
+
+  it("merges meal mutation resolvers", () => {
+    expect(resolvers.Mutation.createRecipe).toBe(mealResolvers.Mutation.createRecipe);
+    expect(resolvers.Mutation.assignMealPlanSlot).toBe(mealResolvers.Mutation.assignMealPlanSlot);
   });
 
   it("computes isBlocked when dependencies are incomplete", () => {

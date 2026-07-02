@@ -9,7 +9,8 @@
     "./context": "./src/context.ts",
     "./resolvers": "./src/resolvers.ts",
     "./schema": "./src/schema.ts",
-    "./typeDefs": "./src/typeDefs.ts"
+    "./typeDefs": "./src/typeDefs.ts",
+    "./meals/rollover": "./src/meals/rollover.ts"
   },
   "scripts": {
     "schema:print": "tsx scripts/print-schema.ts",

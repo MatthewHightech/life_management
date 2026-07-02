@@ -1,4 +1,5 @@
 import { GraphQLContext } from "./context";
+import { mealResolvers } from "./meals/resolvers";
 import { taskResolvers } from "./tasks/resolvers";
 
 export const resolvers = {
@@ -34,10 +35,12 @@ export const resolvers = {
       });
     },
     ...taskResolvers.Query,
+    ...mealResolvers.Query,
   },
   Mutation: {
     ping: () => "pong",
     ...taskResolvers.Mutation,
+    ...mealResolvers.Mutation,
   },
   User: {
     household: (
@@ -71,4 +74,5 @@ export const resolvers = {
   },
   Task: taskResolvers.Task,
   TaskProject: taskResolvers.TaskProject,
+  Recipe: mealResolvers.Recipe,
 };
