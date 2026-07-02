@@ -15,6 +15,15 @@ export const mealTypeDefs = /* GraphQL */ `
     DINNER
   }
 
+  enum RecipeFolderColor {
+    BLUSH
+    SKY
+    LAVENDER
+    LEMON
+    PEACH
+    SAGE
+  }
+
   type RecipeIngredient {
     id: ID!
     name: String!
@@ -28,9 +37,19 @@ export const mealTypeDefs = /* GraphQL */ `
     name: String!
     instructions: String
     servings: Int
+    folderId: ID
     ingredients: [RecipeIngredient!]!
     createdAt: String!
     updatedAt: String!
+  }
+
+  type RecipeFolder {
+    id: ID!
+    name: String!
+    color: RecipeFolderColor!
+    parentId: ID
+    recipeCount: Int!
+    childFolderCount: Int!
   }
 
   type MealPlanSlot {
@@ -51,6 +70,7 @@ export const mealTypeDefs = /* GraphQL */ `
   type MealPlan {
     weekStart: String!
     recipes: [Recipe!]!
+    folders: [RecipeFolder!]!
     slots: [MealPlanSlot!]!
     groceryItems: [GroceryListItem!]!
   }
@@ -65,7 +85,14 @@ export const mealTypeDefs = /* GraphQL */ `
     name: String!
     instructions: String
     servings: Int
+    folderId: ID
     ingredients: [RecipeIngredientInput!]!
+  }
+
+  input CreateRecipeFolderInput {
+    name: String!
+    color: RecipeFolderColor!
+    parentId: ID
   }
 
   input UpdateRecipeInput {
@@ -94,6 +121,8 @@ export const mealTypeDefs = /* GraphQL */ `
     createRecipe(input: CreateRecipeInput!): Recipe!
     updateRecipe(id: ID!, input: UpdateRecipeInput!): Recipe!
     deleteRecipe(id: ID!): Boolean!
+    createRecipeFolder(input: CreateRecipeFolderInput!): RecipeFolder!
+    moveRecipeToFolder(recipeId: ID!, folderId: ID): Recipe!
     assignMealPlanSlot(day: WeekDay!, slot: MealSlot!, recipeId: ID!): MealPlanSlot!
     clearMealPlanSlot(day: WeekDay!, slot: MealSlot!): Boolean!
     addGroceryItem(input: AddGroceryItemInput!): GroceryListItem!

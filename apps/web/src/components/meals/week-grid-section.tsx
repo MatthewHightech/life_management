@@ -1,10 +1,12 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
+import { forwardRef } from "react";
 import { X } from "lucide-react";
 import type { MealPlanSlot as MealPlanSlotType } from "@/components/meals/types";
 import type { MealSlot, WeekDay } from "@/graphql";
 import { mealPlanSlotKey } from "@life/shared";
+import { MEAL_PLAN_DROP_ZONE } from "@/lib/meal-plan-dnd";
 import { mealSlotLabels, weekDayLabels } from "@/lib/meal-plan-ui";
 import { cn } from "@/lib/cn";
 
@@ -17,7 +19,10 @@ type MealSlotCellProps = {
 
 export function MealSlotCell({ day, slot, assignment, onClear }: MealSlotCellProps) {
   const droppableId = mealPlanSlotKey(day, slot);
-  const { setNodeRef, isOver } = useDroppable({ id: droppableId });
+  const { setNodeRef, isOver } = useDroppable({
+    id: droppableId,
+    data: { zone: MEAL_PLAN_DROP_ZONE.SCHEDULE, day, slot },
+  });
 
   return (
     <div
@@ -56,11 +61,14 @@ type WeekGridSectionProps = {
   onClear: (day: WeekDay, slot: MealSlot) => void;
 };
 
-export function WeekGridSection({ slots, onClear }: WeekGridSectionProps) {
+export const WeekGridSection = forwardRef<HTMLElement, WeekGridSectionProps>(function WeekGridSection(
+  { slots, onClear },
+  ref,
+) {
   const slotMap = new Map(slots.map((entry) => [mealPlanSlotKey(entry.day, entry.slot), entry]));
 
   return (
-    <section className="rounded-xl border border-border-subtle bg-surface">
+    <section ref={ref} className="rounded-xl border border-border-subtle bg-surface">
       <header className="border-b border-border-subtle bg-warm-amber/40 px-4 py-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-text-main">Weekly plan</h2>
       </header>
@@ -89,4 +97,4 @@ export function WeekGridSection({ slots, onClear }: WeekGridSectionProps) {
       </div>
     </section>
   );
-}
+});

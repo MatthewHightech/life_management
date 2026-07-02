@@ -75,4 +75,5 @@ export const resolvers = {
   Task: taskResolvers.Task,
   TaskProject: taskResolvers.TaskProject,
   Recipe: mealResolvers.Recipe,
+  RecipeFolder: mealResolvers.RecipeFolder,
 };

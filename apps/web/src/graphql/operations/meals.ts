@@ -6,6 +6,7 @@ const RECIPE_FIELDS = gql`
     name
     instructions
     servings
+    folderId
     ingredients {
       id
       name
@@ -15,6 +16,17 @@ const RECIPE_FIELDS = gql`
     }
     createdAt
     updatedAt
+  }
+`;
+
+const RECIPE_FOLDER_FIELDS = gql`
+  fragment RecipeFolderFields on RecipeFolder {
+    id
+    name
+    color
+    parentId
+    recipeCount
+    childFolderCount
   }
 `;
 
@@ -42,6 +54,7 @@ const GROCERY_ITEM_FIELDS = gql`
 
 export const MEAL_PLAN_QUERY = gql`
   ${RECIPE_FIELDS}
+  ${RECIPE_FOLDER_FIELDS}
   ${MEAL_PLAN_SLOT_FIELDS}
   ${GROCERY_ITEM_FIELDS}
   query MealPlan {
@@ -49,6 +62,9 @@ export const MEAL_PLAN_QUERY = gql`
       weekStart
       recipes {
         ...RecipeFields
+      }
+      folders {
+        ...RecipeFolderFields
       }
       slots {
         ...MealPlanSlotFields
@@ -81,6 +97,24 @@ export const UPDATE_RECIPE_MUTATION = gql`
 export const DELETE_RECIPE_MUTATION = gql`
   mutation DeleteRecipe($id: ID!) {
     deleteRecipe(id: $id)
+  }
+`;
+
+export const CREATE_RECIPE_FOLDER_MUTATION = gql`
+  ${RECIPE_FOLDER_FIELDS}
+  mutation CreateRecipeFolder($input: CreateRecipeFolderInput!) {
+    createRecipeFolder(input: $input) {
+      ...RecipeFolderFields
+    }
+  }
+`;
+
+export const MOVE_RECIPE_TO_FOLDER_MUTATION = gql`
+  ${RECIPE_FIELDS}
+  mutation MoveRecipeToFolder($recipeId: ID!, $folderId: ID) {
+    moveRecipeToFolder(recipeId: $recipeId, folderId: $folderId) {
+      ...RecipeFields
+    }
   }
 `;
 

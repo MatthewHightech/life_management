@@ -39,9 +39,10 @@ type RecipeFormModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   recipe?: MealRecipe | null;
+  folderId?: string | null;
 };
 
-export function RecipeFormModal({ open, onOpenChange, recipe }: RecipeFormModalProps) {
+export function RecipeFormModal({ open, onOpenChange, recipe, folderId = null }: RecipeFormModalProps) {
   const [form, setForm] = useState<RecipeFormValues>(() => toFormValues(recipe));
   const isEdit = Boolean(recipe);
 
@@ -99,7 +100,14 @@ export function RecipeFormModal({ open, onOpenChange, recipe }: RecipeFormModalP
       return;
     }
 
-    await createRecipe({ variables: { input } });
+    await createRecipe({
+      variables: {
+        input: {
+          ...input,
+          folderId,
+        },
+      },
+    });
   }
 
   return (

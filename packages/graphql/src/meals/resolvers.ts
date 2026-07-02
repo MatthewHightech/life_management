@@ -1,4 +1,4 @@
-import { MealSlot, Prisma, WeekDay } from "@prisma/client";
+import { MealSlot, Prisma, RecipeFolderColor, WeekDay } from "@prisma/client";
 import {
   getMealPlanWeekStartIso,
   mergeGroceryIngredients,
@@ -28,6 +28,21 @@ async function assertRecipeInHousehold(context: GraphQLContext, recipeId: string
 
   if (!recipe) {
     throw new ForbiddenError("Recipe not found in household");
+  }
+}
+
+async function assertFolderInHousehold(
+  context: GraphQLContext,
+  folderId: string,
+  householdId: string,
+) {
+  const folder = await context.prisma.recipeFolder.findFirst({
+    where: { id: folderId, householdId },
+    select: { id: true },
+  });
+
+  if (!folder) {
+    throw new ForbiddenError("Folder not found in household");
   }
 }
 
@@ -81,11 +96,20 @@ async function loadMealPlan(context: GraphQLContext, householdId: string) {
   const weekStart = await getCurrentWeekStart(context, householdId);
   const weekStartIso = toIsoDate(weekStart);
 
-  const [recipes, slots, groceryItems] = await Promise.all([
+  const [recipes, folders, slots, groceryItems] = await Promise.all([
     context.prisma.recipe.findMany({
       where: { householdId },
       include: recipeInclude,
       orderBy: { name: "asc" },
+    }),
+    context.prisma.recipeFolder.findMany({
+      where: { householdId },
+      include: {
+        _count: {
+          select: { recipes: true, children: true },
+        },
+      },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
     context.prisma.mealPlanSlot.findMany({
       where: { householdId, weekStart },
@@ -101,6 +125,7 @@ async function loadMealPlan(context: GraphQLContext, householdId: string) {
   return {
     weekStart: weekStartIso,
     recipes,
+    folders,
     slots,
     groceryItems,
   };
@@ -122,6 +147,7 @@ export const mealResolvers = {
           name: string;
           instructions?: string | null;
           servings?: number | null;
+          folderId?: string | null;
           ingredients: { name: string; quantity?: string | null; unit?: string | null }[];
         };
       },
@@ -130,9 +156,14 @@ export const mealResolvers = {
       const { householdId } = await requireHouseholdUser(context);
       const { input } = args;
 
+      if (input.folderId) {
+        await assertFolderInHousehold(context, input.folderId, householdId);
+      }
+
       return context.prisma.recipe.create({
         data: {
           householdId,
+          folderId: input.folderId ?? null,
           name: input.name.trim(),
           instructions: input.instructions?.trim() || null,
           servings: input.servings ?? null,
@@ -215,6 +246,58 @@ export const mealResolvers = {
       await context.prisma.recipe.delete({ where: { id: args.id } });
       await regenerateAutoGrocery(context, householdId, weekStart);
       return true;
+    },
+
+    createRecipeFolder: async (
+      _parent: unknown,
+      args: {
+        input: {
+          name: string;
+          color: RecipeFolderColor;
+          parentId?: string | null;
+        };
+      },
+      context: GraphQLContext,
+    ) => {
+      const { householdId } = await requireHouseholdUser(context);
+      const { input } = args;
+
+      if (input.parentId) {
+        await assertFolderInHousehold(context, input.parentId, householdId);
+      }
+
+      return context.prisma.recipeFolder.create({
+        data: {
+          householdId,
+          parentId: input.parentId ?? null,
+          name: input.name.trim(),
+          color: input.color,
+        },
+        include: {
+          _count: {
+            select: { recipes: true, children: true },
+          },
+        },
+      });
+    },
+
+    moveRecipeToFolder: async (
+      _parent: unknown,
+      args: { recipeId: string; folderId?: string | null },
+      context: GraphQLContext,
+    ) => {
+      const { householdId } = await requireHouseholdUser(context);
+      await assertRecipeInHousehold(context, args.recipeId, householdId);
+
+      if (args.folderId) {
+        await assertFolderInHousehold(context, args.folderId, householdId);
+      }
+
+      return context.prisma.recipe.update({
+        where: { id: args.recipeId },
+        data: { folderId: args.folderId ?? null },
+        include: recipeInclude,
+      });
     },
 
     assignMealPlanSlot: async (
@@ -355,5 +438,10 @@ export const mealResolvers = {
   Recipe: {
     createdAt: (parent: { createdAt: Date }) => parent.createdAt.toISOString(),
     updatedAt: (parent: { updatedAt: Date }) => parent.updatedAt.toISOString(),
+  },
+
+  RecipeFolder: {
+    recipeCount: (parent: { _count?: { recipes: number } }) => parent._count?.recipes ?? 0,
+    childFolderCount: (parent: { _count?: { children: number } }) => parent._count?.children ?? 0,
   },
 };

@@ -1,6 +1,7 @@
 import type { MealPlanQuery } from "@/graphql";
 
 export type MealRecipe = MealPlanQuery["mealPlan"]["recipes"][number];
+export type MealRecipeFolder = MealPlanQuery["mealPlan"]["folders"][number];
 export type MealPlanSlot = MealPlanQuery["mealPlan"]["slots"][number];
 export type GroceryItem = MealPlanQuery["mealPlan"]["groceryItems"][number];
 

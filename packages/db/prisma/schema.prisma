@@ -51,6 +51,7 @@ model Household {
   projects       TaskProject[]
   tasks          Task[]
   recipes        Recipe[]
+  recipeFolders  RecipeFolder[]
   mealPlanSlots  MealPlanSlot[]
   groceryItems   GroceryListItem[]
   createdAt      DateTime          @default(now())
@@ -180,10 +181,38 @@ model TaskDependency {
   @@unique([taskId, dependsOnTaskId])
 }
 
+enum RecipeFolderColor {
+  BLUSH
+  SKY
+  LAVENDER
+  LEMON
+  PEACH
+  SAGE
+}
+
+model RecipeFolder {
+  id          String            @id @default(cuid())
+  householdId String
+  household   Household         @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  parentId    String?
+  parent      RecipeFolder?     @relation("RecipeFolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children    RecipeFolder[]    @relation("RecipeFolderTree")
+  name        String
+  color       RecipeFolderColor
+  recipes     Recipe[]
+  sortOrder   Int               @default(0)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([householdId, parentId])
+}
+
 model Recipe {
   id           String             @id @default(cuid())
   householdId  String
   household    Household          @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  folderId     String?
+  folder       RecipeFolder?      @relation(fields: [folderId], references: [id], onDelete: SetNull)
   name         String
   instructions String?
   servings     Int?
@@ -193,6 +222,7 @@ model Recipe {
   updatedAt    DateTime           @updatedAt
 
   @@index([householdId])
+  @@index([folderId])
 }
 
 model RecipeIngredient {
