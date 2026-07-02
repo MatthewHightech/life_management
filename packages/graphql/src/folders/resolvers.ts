@@ -1,6 +1,6 @@
 import { FolderColor, FolderNamespace } from "@prisma/client";
 import { GraphQLContext } from "../context";
-import { requireHouseholdUser } from "../auth";
+import { ForbiddenError, requireHouseholdUser } from "../auth";
 import { assertFolderInHousehold, folderInclude } from "./helpers";
 
 export const folderResolvers = {
@@ -34,6 +34,56 @@ export const folderResolvers = {
         },
         include: folderInclude,
       });
+    },
+
+    updateFolder: async (
+      _parent: unknown,
+      args: {
+        id: string;
+        input: { name?: string | null; color?: FolderColor | null };
+      },
+      context: GraphQLContext,
+    ) => {
+      const { householdId } = await requireHouseholdUser(context);
+
+      const existing = await context.prisma.folder.findFirst({
+        where: { id: args.id, householdId },
+        select: { id: true, namespace: true },
+      });
+
+      if (!existing) {
+        throw new ForbiddenError("Folder not found in household");
+      }
+
+      const data: { name?: string; color?: FolderColor } = {};
+      if (args.input.name !== undefined && args.input.name !== null) {
+        data.name = args.input.name.trim();
+      }
+      if (args.input.color !== undefined && args.input.color !== null) {
+        data.color = args.input.color;
+      }
+
+      return context.prisma.folder.update({
+        where: { id: args.id },
+        data,
+        include: folderInclude,
+      });
+    },
+
+    deleteFolder: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
+      const { householdId } = await requireHouseholdUser(context);
+
+      const existing = await context.prisma.folder.findFirst({
+        where: { id: args.id, householdId },
+        select: { id: true },
+      });
+
+      if (!existing) {
+        throw new ForbiddenError("Folder not found in household");
+      }
+
+      await context.prisma.folder.delete({ where: { id: args.id } });
+      return true;
     },
   },
 

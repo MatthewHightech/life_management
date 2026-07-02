@@ -6,7 +6,6 @@ const ACTIVE_STATUS_RANK: Record<Exclude<TaskStatus, "DONE">, number> = {
   WAITING: 1,
   IN_PROGRESS: 2,
   TODO: 3,
-  BACKLOG: 4,
 };
 
 function activeTaskSortRank(task: BoardTask): number {

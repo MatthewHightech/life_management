@@ -27,7 +27,7 @@ const TASK_LIST_COLUMN_GRID =
   "grid w-full min-w-full grid-cols-[15%_13%_8%_11%_10%_minmax(280px,1fr)_7.5rem] text-left text-sm";
 const TASK_LIST_CELL = "flex min-h-7 items-center px-4 py-1.5";
 
-const DEFAULT_STATUS: TaskStatus = "BACKLOG";
+const DEFAULT_STATUS: TaskStatus = "TODO";
 const DEFAULT_PRIORITY: TaskPriority = "LOW";
 
 type QuickAddTaskRowProps = {

@@ -21,6 +21,7 @@ type ReceiptLibrarySectionProps = {
   onPreview: (receipt: ReceiptItem) => void;
   onRename: (receipt: ReceiptItem) => void;
   onDelete: (receipt: ReceiptItem) => void;
+  onFolderDeleted?: (folderId: string) => void;
 };
 
 export const ReceiptLibrarySection = forwardRef<HTMLElement, ReceiptLibrarySectionProps>(
@@ -37,6 +38,7 @@ export const ReceiptLibrarySection = forwardRef<HTMLElement, ReceiptLibrarySecti
       onPreview,
       onRename,
       onDelete,
+      onFolderDeleted,
     },
     ref,
   ) {
@@ -82,6 +84,7 @@ export const ReceiptLibrarySection = forwardRef<HTMLElement, ReceiptLibrarySecti
                   }}
                   onOpen={onNavigateFolder}
                   onFileDrop={(folderId, files) => void onUpload(files, folderId)}
+                  onFolderDeleted={onFolderDeleted}
                 />
               ))}
             </div>

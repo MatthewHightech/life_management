@@ -30,7 +30,14 @@ export const folderTypeDefs = /* GraphQL */ `
     parentId: ID
   }
 
+  input UpdateFolderInput {
+    name: String
+    color: FolderColor
+  }
+
   extend type Mutation {
     createFolder(input: CreateFolderInput!): Folder!
+    updateFolder(id: ID!, input: UpdateFolderInput!): Folder!
+    deleteFolder(id: ID!): Boolean!
   }
 `;

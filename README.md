@@ -52,15 +52,29 @@ Code is volume-mounted; API and web hot-reload. Containers run `npm install` on 
 
 ### `packages/db/prisma/schema.prisma` (database models)
 
-```bash
-# Local (Postgres must be running)
-npm run db:migrate -w @life/db
+**Apply pending migrations** (after pulling new migration files, or when the DB is behind the schema):
 
-# Regenerate Prisma client (also runs on API container start)
+```bash
+docker compose exec api npm run db:migrate:deploy -w @life/db
+```
+
+Use this when Docker is already running and you need to run migrations without restarting containers — for example after `git pull` brings in new files under `packages/db/prisma/migrations/`. The API container also runs this on startup, so a fresh `docker compose up` applies migrations automatically; run the command above when the stack is already up.
+
+**Create a new migration** during development (after editing `schema.prisma`):
+
+```bash
+npm run db:migrate -w @life/db
+```
+
+Postgres must be reachable (Docker stack running). This creates a migration file and applies it. Then commit the new folder under `packages/db/prisma/migrations/`.
+
+**Regenerate Prisma client** (also runs on API container start):
+
+```bash
 npm run db:generate -w @life/db
 ```
 
-Or restart the API container — it runs migrate + generate on startup:
+Or restart the API container — it runs migrate deploy + generate on startup:
 
 ```bash
 docker compose restart api
@@ -105,6 +119,8 @@ docker compose restart api web
 | `npm run schema:print` | Update `packages/graphql/schema.graphql` only |
 | `npm run typecheck` | TypeScript check all workspaces |
 | `npm test` | Unit tests |
+| `docker compose exec api npm run db:migrate:deploy -w @life/db` | Apply pending DB migrations (stack already running) |
+| `npm run db:migrate -w @life/db` | Create + apply a new migration from schema changes |
 | `npm run db:studio` | Prisma Studio (DB browser) |
 
 ---

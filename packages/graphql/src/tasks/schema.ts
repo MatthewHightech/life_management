@@ -1,6 +1,5 @@
 export const taskTypeDefs = `#graphql
   enum TaskStatus {
-    BACKLOG
     TODO
     IN_PROGRESS
     WAITING
@@ -127,6 +126,7 @@ export const taskTypeDefs = `#graphql
     updateTask(id: ID!, input: UpdateTaskInput!): Task!
     moveTask(id: ID!, status: TaskStatus!): Task!
     deleteTask(id: ID!): Boolean!
+    clearDoneTasks: Int!
     completeTask(id: ID!, completed: Boolean!): Task!
     createTaskProject(name: String!): TaskProject!
     addTaskDependency(taskId: ID!, dependsOnTaskId: ID!): Task!

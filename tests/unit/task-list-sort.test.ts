@@ -4,7 +4,7 @@ import { compareActiveListTasks, partitionListTasks } from "../../apps/web/src/l
 type BoardTask = {
   id: string;
   title: string;
-  status: "BACKLOG" | "TODO" | "IN_PROGRESS" | "WAITING" | "DONE";
+  status: "TODO" | "IN_PROGRESS" | "WAITING" | "DONE";
   priority: string;
   isShared: boolean;
   isBlocked: boolean;
@@ -33,7 +33,6 @@ function task(overrides: Partial<BoardTask>): BoardTask {
 describe("task list sort", () => {
   it("orders active tasks by overdue then status", () => {
     const tasks = [
-      task({ id: "backlog", title: "Backlog", status: "BACKLOG" }),
       task({ id: "todo", title: "Todo", status: "TODO" }),
       task({ id: "waiting", title: "Waiting", status: "WAITING" }),
       task({ id: "progress", title: "Progress", status: "IN_PROGRESS" }),
@@ -45,7 +44,7 @@ describe("task list sort", () => {
       task({ id: "done", title: "Done", status: "DONE" }),
     ]);
 
-    expect(activeTasks.map((item) => item.id)).toEqual(["overdue", "waiting", "progress", "todo", "backlog"]);
+    expect(activeTasks.map((item) => item.id)).toEqual(["overdue", "waiting", "progress", "todo"]);
     expect(doneTasks.map((item) => item.id)).toEqual(["done"]);
   });
 

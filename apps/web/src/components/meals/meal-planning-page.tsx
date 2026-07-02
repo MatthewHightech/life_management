@@ -30,6 +30,7 @@ import {
   buildFolderPath,
   filterFoldersForParent,
   filterItemsForFolder,
+  folderIdAfterDelete,
 } from "@/lib/folder-utils";
 import { MEAL_PLAN_REFETCH } from "@/lib/meal-plan-queries";
 import { parseFolderDropId, parseMealPlanSlotKey } from "@life/shared";
@@ -98,6 +99,15 @@ export function MealPlanningPage() {
   const handleNavigateFolder = useCallback((folderId: string | null) => {
     setCurrentFolderId(folderId);
   }, []);
+
+  const handleFolderDeleted = useCallback(
+    (deletedFolderId: string) => {
+      setCurrentFolderId((currentId) =>
+        folderIdAfterDelete(mealPlan?.folders ?? [], currentId, deletedFolderId),
+      );
+    },
+    [mealPlan?.folders],
+  );
 
   const handleClear = useCallback(
     (day: WeekDay, slot: MealSlot) => {
@@ -185,6 +195,7 @@ export function MealPlanningPage() {
               onCreate={openCreate}
               onCreateFolder={() => setFolderModalOpen(true)}
               onEdit={openEdit}
+              onFolderDeleted={handleFolderDeleted}
             />
             <WeekGridSection ref={scheduleZoneRef} slots={mealPlan.slots} onClear={handleClear} />
             <GroceryListSection items={mealPlan.groceryItems} />

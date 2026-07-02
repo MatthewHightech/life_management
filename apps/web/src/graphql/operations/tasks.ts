@@ -99,6 +99,12 @@ export const DELETE_TASK_MUTATION = gql`
   }
 `;
 
+export const CLEAR_DONE_TASKS_MUTATION = gql`
+  mutation ClearDoneTasks {
+    clearDoneTasks
+  }
+`;
+
 export const UPDATE_TASK_MUTATION = gql`
   ${TASK_FIELDS}
   mutation UpdateTask($id: ID!, $input: UpdateTaskInput!) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -8,9 +9,15 @@ type DeleteTaskButtonProps = {
   taskTitle: string;
   onConfirm: () => void;
   className?: string;
+  variant?: "text" | "icon";
 };
 
-export function DeleteTaskButton({ taskTitle, onConfirm, className }: DeleteTaskButtonProps) {
+export function DeleteTaskButton({
+  taskTitle,
+  onConfirm,
+  className,
+  variant = "text",
+}: DeleteTaskButtonProps) {
   const [open, setOpen] = useState(false);
 
   function handleConfirm() {
@@ -20,8 +27,13 @@ export function DeleteTaskButton({ taskTitle, onConfirm, className }: DeleteTask
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={className}>
-        Delete
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={className}
+        aria-label={`Delete ${taskTitle}`}
+      >
+        {variant === "icon" ? <Trash2 className="h-3.5 w-3.5" /> : "Delete"}
       </button>
 
       <Modal

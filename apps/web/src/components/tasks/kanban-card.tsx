@@ -172,7 +172,8 @@ export function KanbanCard({
           <DeleteTaskButton
             taskTitle={task.title}
             onConfirm={onDelete}
-            className="shrink-0 text-xs text-text-muted hover:text-error"
+            variant="icon"
+            className="shrink-0 rounded p-0.5 text-text-muted hover:text-error"
           />
         )}
       </div>

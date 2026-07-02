@@ -2,10 +2,13 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { useState } from "react";
 import type { TaskStatus } from "@/graphql";
 import type { BoardTask, HouseholdUser, TaskUpdateInput } from "@/components/tasks/task-table/types";
 import { KanbanCard } from "@/components/tasks/kanban-card";
 import type { KanbanColumn } from "@/lib/task-status";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/cn";
 
 type KanbanColumnProps = {
@@ -17,6 +20,8 @@ type KanbanColumnProps = {
   onAddTask: (status: TaskStatus) => void;
   onUpdateTask: (id: string, input: TaskUpdateInput) => Promise<void>;
   onDeleteTask: (id: string) => void;
+  onClearTasks?: () => void | Promise<void>;
+  clearingTasks?: boolean;
 };
 
 export function KanbanColumnView({
@@ -28,12 +33,21 @@ export function KanbanColumnView({
   onAddTask,
   onUpdateTask,
   onDeleteTask,
+  onClearTasks,
+  clearingTasks = false,
 }: KanbanColumnProps) {
+  const [clearOpen, setClearOpen] = useState(false);
   const { setNodeRef, isOver } = useDroppable({ id: column.status });
 
   if (column.collapsible && collapsed) {
     return (
-      <section className="flex w-12 shrink-0 flex-col items-center rounded-xl bg-background py-3">
+      <section
+        ref={setNodeRef}
+        className={cn(
+          "flex w-12 shrink-0 flex-col items-center rounded-xl bg-background py-3",
+          isOver && "bg-sage/60",
+        )}
+      >
         <button
           type="button"
           onClick={onToggleCollapsed}
@@ -50,7 +64,7 @@ export function KanbanColumnView({
   }
 
   return (
-    <section className="flex min-w-[260px] flex-1 flex-col rounded-xl bg-background">
+    <section className="flex min-w-0 flex-1 flex-col rounded-xl bg-background">
       <header className="flex items-center justify-between px-3 py-2">
         <div className="flex items-center gap-2">
           <span className={cn("h-2.5 w-2.5 rounded-full", column.dotClass)} />
@@ -68,6 +82,16 @@ export function KanbanColumnView({
               <ChevronDown className="h-4 w-4" />
             </button>
           )}
+          {onClearTasks && tasks.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setClearOpen(true)}
+              disabled={clearingTasks}
+              className="rounded px-1 py-0.5 text-[0.65rem] font-medium text-text-muted hover:bg-surface hover:text-error disabled:opacity-50"
+            >
+              Clear
+            </button>
+          ) : null}
         </div>
         <button
           type="button"
@@ -97,6 +121,34 @@ export function KanbanColumnView({
           />
         ))}
       </div>
+
+      {onClearTasks ? (
+        <Modal
+          open={clearOpen}
+          onOpenChange={setClearOpen}
+          title="Clear done tasks?"
+          description={
+            tasks.length === 1
+              ? "This will permanently delete 1 completed task. This cannot be undone."
+              : `This will permanently delete all ${tasks.length} completed tasks in this column. This cannot be undone.`
+          }
+        >
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setClearOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={clearingTasks}
+              onClick={() => {
+                void Promise.resolve(onClearTasks()).then(() => setClearOpen(false));
+              }}
+            >
+              {clearingTasks ? "Clearing…" : "Clear all"}
+            </Button>
+          </div>
+        </Modal>
+      ) : null}
     </section>
   );
 }

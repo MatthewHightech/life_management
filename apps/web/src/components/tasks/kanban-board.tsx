@@ -13,6 +13,7 @@ import { useCallback, useMemo, useState } from "react";
 import type { TaskStatus, TasksBoardQuery, TasksBoardQueryVariables, UpdateTaskMutationVariables } from "@/graphql";
 import {
   CREATE_TASK_MUTATION,
+  CLEAR_DONE_TASKS_MUTATION,
   DELETE_TASK_MUTATION,
   MOVE_TASK_MUTATION,
   TASKS_BOARD_QUERY,
@@ -29,7 +30,7 @@ type BoardTask = TasksBoardQuery["tasks"][number];
 const kanbanQuery = tasksBoardKanbanQuery;
 
 export function KanbanBoard() {
-  const [doneCollapsed, setDoneCollapsed] = useState(true);
+  const [collapsedByStatus, setCollapsedByStatus] = useState<Partial<Record<TaskStatus, boolean>>>({});
   const [activeTask, setActiveTask] = useState<BoardTask | null>(null);
   const [activeWidth, setActiveWidth] = useState<number | null>(null);
 
@@ -57,6 +58,10 @@ export function KanbanBoard() {
     refetchQueries: tasksBoardRefetchQueries,
   });
 
+  const [clearDoneTasks, { loading: clearingDone }] = useMutation(CLEAR_DONE_TASKS_MUTATION, {
+    refetchQueries: tasksBoardRefetchQueries,
+  });
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const handleUpdate = useCallback(
@@ -72,6 +77,10 @@ export function KanbanBoard() {
     },
     [deleteTask],
   );
+
+  const handleClearDone = useCallback(async () => {
+    await clearDoneTasks();
+  }, [clearDoneTasks]);
 
   const tasksByStatus = useMemo(() => {
     const grouped = Object.fromEntries(kanbanColumns.map((column) => [column.status, [] as BoardTask[]])) as Record<
@@ -173,20 +182,28 @@ export function KanbanBoard() {
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
         >
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="flex gap-3 pb-4">
             {kanbanColumns.map((column) => (
               <KanbanColumnView
                 key={column.status}
                 column={column}
                 tasks={tasksByStatus[column.status] ?? []}
                 users={users}
-                collapsed={column.collapsible ? doneCollapsed : false}
+                collapsed={column.collapsible ? (collapsedByStatus[column.status] ?? false) : false}
                 onToggleCollapsed={
-                  column.collapsible ? () => setDoneCollapsed((value) => !value) : undefined
+                  column.collapsible
+                    ? () =>
+                        setCollapsedByStatus((current) => ({
+                          ...current,
+                          [column.status]: !current[column.status],
+                        }))
+                    : undefined
                 }
                 onAddTask={handleAddTask}
                 onUpdateTask={handleUpdate}
                 onDeleteTask={handleDelete}
+                onClearTasks={column.status === "DONE" ? handleClearDone : undefined}
+                clearingTasks={column.status === "DONE" ? clearingDone : false}
               />
             ))}
           </div>

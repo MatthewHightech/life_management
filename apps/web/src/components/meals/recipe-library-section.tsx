@@ -16,6 +16,7 @@ type RecipeLibrarySectionProps = {
   onCreate: () => void;
   onCreateFolder: () => void;
   onEdit: (recipe: MealRecipe) => void;
+  onFolderDeleted?: (folderId: string) => void;
 };
 
 export const RecipeLibrarySection = forwardRef<HTMLElement, RecipeLibrarySectionProps>(
@@ -28,6 +29,7 @@ export const RecipeLibrarySection = forwardRef<HTMLElement, RecipeLibrarySection
       onCreate,
       onCreateFolder,
       onEdit,
+      onFolderDeleted,
     },
     ref,
   ) {
@@ -71,6 +73,7 @@ export const RecipeLibrarySection = forwardRef<HTMLElement, RecipeLibrarySection
                     childFolderCount: folder.childFolderCount,
                   }}
                   onOpen={onNavigateFolder}
+                  onFolderDeleted={onFolderDeleted}
                 />
               ))}
             </div>

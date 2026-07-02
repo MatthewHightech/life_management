@@ -25,6 +25,7 @@ import {
   buildFolderPath,
   filterFoldersForParent,
   filterItemsForFolder,
+  folderIdAfterDelete,
 } from "@/lib/folder-utils";
 import { RECEIPT_LIBRARY_REFETCH } from "@/lib/receipt-queries";
 import { uploadReceiptFiles } from "@/lib/receipt-upload";
@@ -81,6 +82,15 @@ export function ReceiptManagementPage() {
   const handleNavigateFolder = useCallback((folderId: string | null) => {
     setCurrentFolderId(folderId);
   }, []);
+
+  const handleFolderDeleted = useCallback(
+    (deletedFolderId: string) => {
+      setCurrentFolderId((currentId) =>
+        folderIdAfterDelete(library?.folders ?? [], currentId, deletedFolderId),
+      );
+    },
+    [library?.folders],
+  );
 
   const handleUpload = useCallback(
     async (files: FileList, folderId: string | null) => {
@@ -155,6 +165,7 @@ export function ReceiptManagementPage() {
             onPreview={setPreviewReceipt}
             onRename={setRenameReceipt}
             onDelete={setDeleteReceipt}
+            onFolderDeleted={handleFolderDeleted}
           />
 
           <DragOverlay dropAnimation={null}>

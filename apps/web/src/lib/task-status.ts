@@ -11,13 +11,6 @@ export type KanbanColumn = {
 
 export const kanbanColumns: KanbanColumn[] = [
   {
-    status: "BACKLOG",
-    label: "Backlog",
-    dotClass: "bg-status-backlog",
-    accentClass: "border-t-status-backlog",
-    chipClass: "bg-status-backlog text-on-primary",
-  },
-  {
     status: "TODO",
     label: "Todo",
     dotClass: "bg-status-todo",
@@ -79,5 +72,5 @@ export function priorityChipClass(priority: string) {
 
 export function statusChipClass(status: string) {
   const column = kanbanColumns.find((item) => item.status === status);
-  return column?.chipClass ?? "bg-status-backlog text-on-primary";
+  return column?.chipClass ?? "bg-status-todo text-on-primary";
 }

@@ -331,6 +331,19 @@ export const taskResolvers = {
       return true;
     },
 
+    clearDoneTasks: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
+      const { householdId, userId } = await requireHouseholdUser(context);
+
+      const result = await context.prisma.task.deleteMany({
+        where: {
+          ...visibleTaskWhere(householdId, userId),
+          status: TaskStatus.DONE,
+        },
+      });
+
+      return result.count;
+    },
+
     completeTask: async (
       _parent: unknown,
       args: { id: string; completed: boolean },

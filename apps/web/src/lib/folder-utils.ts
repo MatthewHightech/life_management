@@ -38,3 +38,25 @@ export function filterItemsForFolder<T extends { folderId?: string | null }>(
 ): T[] {
   return items.filter((item) => (item.folderId ?? null) === folderId);
 }
+
+export function folderIdAfterDelete<T extends FolderRecord>(
+  folders: T[],
+  currentFolderId: string | null,
+  deletedFolderId: string,
+): string | null {
+  if (!currentFolderId) {
+    return null;
+  }
+
+  const path = buildFolderPath(folders, currentFolderId);
+  if (!path.some((folder) => folder.id === deletedFolderId)) {
+    return currentFolderId;
+  }
+
+  const deletedIndex = path.findIndex((folder) => folder.id === deletedFolderId);
+  if (deletedIndex <= 0) {
+    return null;
+  }
+
+  return path[deletedIndex - 1]?.id ?? null;
+}

@@ -3,6 +3,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import type { FolderColor, FolderNamespace } from "@life/shared";
 import { folderDropId } from "@life/shared";
+import { FolderActionsMenu } from "@/components/folders/folder-actions-menu";
 import { getFolderColorOption } from "@/lib/folder-colors";
 import { cn } from "@/lib/cn";
 
@@ -19,9 +20,10 @@ type FolderTileProps = {
   folder: FolderTileData;
   onOpen: (folderId: string) => void;
   onFileDrop?: (folderId: string, files: FileList) => void;
+  onFolderDeleted?: (folderId: string) => void;
 };
 
-export function FolderTile({ namespace, folder, onOpen, onFileDrop }: FolderTileProps) {
+export function FolderTile({ namespace, folder, onOpen, onFileDrop, onFolderDeleted }: FolderTileProps) {
   const colors = getFolderColorOption(folder.color);
   const { isOver, setNodeRef } = useDroppable({
     id: folderDropId(namespace, folder.id),
@@ -32,10 +34,13 @@ export function FolderTile({ namespace, folder, onOpen, onFileDrop }: FolderTile
   const itemLabel = itemCount === 1 ? "1 item" : `${itemCount} items`;
 
   return (
-    <button
+    <div
       ref={setNodeRef}
-      type="button"
-      onClick={() => onOpen(folder.id)}
+      className={cn(
+        "group/folder relative inline-flex w-fit shrink-0 flex-col gap-0.5 rounded-md rounded-tl-none border border-black/10 pr-6 text-left shadow-sm transition",
+        colors.swatch,
+        isOver ? "ring-2 ring-primary/50" : "hover:brightness-[0.97]",
+      )}
       onDragOver={(event) => {
         if (!onFileDrop || !event.dataTransfer.types.includes("Files")) {
           return;
@@ -49,18 +54,20 @@ export function FolderTile({ namespace, folder, onOpen, onFileDrop }: FolderTile
         event.preventDefault();
         onFileDrop(folder.id, event.dataTransfer.files);
       }}
-      className={cn(
-        "relative inline-flex w-fit shrink-0 flex-col gap-0.5 rounded-md rounded-tl-none border border-black/10 px-2.5 py-1.5 text-left shadow-sm transition",
-        colors.swatch,
-        isOver ? "ring-2 ring-primary/50" : "hover:brightness-[0.97]",
-      )}
     >
       <span
         className={cn("absolute -top-1 left-0 h-1.5 w-5 rounded-t-sm border border-black/10 border-b-0", colors.swatch)}
         aria-hidden
       />
-      <span className="truncate text-sm font-medium text-text-main">{folder.name}</span>
-      <span className="text-[0.65rem] text-text-muted">{itemLabel}</span>
-    </button>
+      <button
+        type="button"
+        onClick={() => onOpen(folder.id)}
+        className="flex flex-col gap-0.5 px-2.5 py-1.5 text-left"
+      >
+        <span className="truncate text-sm font-medium text-text-main">{folder.name}</span>
+        <span className="text-[0.65rem] text-text-muted">{itemLabel}</span>
+      </button>
+      <FolderActionsMenu namespace={namespace} folder={folder} onDeleted={onFolderDeleted} />
+    </div>
   );
 }
