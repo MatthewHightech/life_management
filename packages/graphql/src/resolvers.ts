@@ -78,6 +78,7 @@ export const resolvers = {
     },
   },
   Task: taskResolvers.Task,
+  TaskComment: taskResolvers.TaskComment,
   TaskProject: taskResolvers.TaskProject,
   Recipe: mealResolvers.Recipe,
   Folder: folderResolvers.Folder,

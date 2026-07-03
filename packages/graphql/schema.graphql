@@ -19,6 +19,7 @@ type Query {
   tasks(filter: TaskFilterInput): [Task!]!
   task(id: ID!): Task
   taskProjects: [TaskProject!]!
+  taskComments(taskId: ID!): [TaskComment!]!
   mealPlan: MealPlan!
   receiptLibrary: ReceiptLibrary!
 }
@@ -34,6 +35,9 @@ type Mutation {
   deleteTask(id: ID!): Boolean!
   clearDoneTasks: Int!
   completeTask(id: ID!, completed: Boolean!): Task!
+  addTaskComment(taskId: ID!, body: String!): TaskComment!
+  deleteTaskComment(id: ID!): Boolean!
+  markTaskCommentsRead(taskId: ID!): Boolean!
   createTaskProject(name: String!): TaskProject!
   addTaskDependency(taskId: ID!, dependsOnTaskId: ID!): Task!
   removeTaskDependency(taskId: ID!, dependsOnTaskId: ID!): Task!
@@ -135,10 +139,17 @@ type SubtaskProgress {
   percent: Int!
 }
 
+type TaskComment {
+  id: ID!
+  body: String!
+  author: User!
+  createdAt: String!
+  canDelete: Boolean!
+}
+
 type Task {
   id: ID!
   title: String!
-  description: String
   status: TaskStatus!
   priority: TaskPriority!
   isShared: Boolean!
@@ -158,6 +169,8 @@ type Task {
   blockedBy: [TaskDependency!]!
   isBlocked: Boolean!
   isOverdue: Boolean!
+  commentCount: Int!
+  unreadCommentCount: Int!
   createdAt: String!
   updatedAt: String!
 }
@@ -172,7 +185,6 @@ input TaskFilterInput {
 
 input CreateTaskInput {
   title: String!
-  description: String
   status: TaskStatus
   priority: TaskPriority
   isShared: Boolean
@@ -189,7 +201,6 @@ input CreateTaskInput {
 
 input UpdateTaskInput {
   title: String
-  description: String
   status: TaskStatus
   priority: TaskPriority
   isShared: Boolean

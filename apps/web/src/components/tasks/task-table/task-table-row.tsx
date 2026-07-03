@@ -1,9 +1,10 @@
 import { cn } from "@/lib/cn";
 import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
+import { TaskCommentsButton } from "@/components/tasks/task-comments-button";
 import { EditableAssignees } from "./editable-assignees";
 import { EditableDueDate } from "./editable-due-date";
 import { EditablePriority, EditableStatus } from "./editable-pill-cells";
-import { EditableDescription, EditableText } from "./editable-text-cells";
+import { EditableText } from "./editable-text-cells";
 import type { TaskTableRowProps } from "./types";
 
 function TaskTableCell({
@@ -51,10 +52,14 @@ export function TaskTableRow({ task, users, onDelete, onUpdate }: TaskTableRowPr
       <TaskTableCell>
         <EditableDueDate value={task.dueDate} overdue={overdue} onSave={(dueDate) => onUpdate({ dueDate })} />
       </TaskTableCell>
-      <TaskTableCell className="min-w-[280px]">
-        <EditableDescription value={task.description} onSave={(description) => onUpdate({ description })} />
-      </TaskTableCell>
-      <TaskTableCell contentClassName="justify-end">
+      <TaskTableCell contentClassName="justify-end gap-1">
+        <TaskCommentsButton
+          taskId={task.id}
+          taskTitle={task.title}
+          commentCount={task.commentCount}
+          unreadCommentCount={task.unreadCommentCount}
+          placement="row"
+        />
         <DeleteTaskButton
           taskTitle={task.title}
           onConfirm={onDelete}

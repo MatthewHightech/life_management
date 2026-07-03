@@ -1,7 +1,9 @@
 "use client";
 
-import { ModulePageLayout } from "@/components/shell/module-page-layout";
+import { TaskCommentsProvider } from "@/components/tasks/task-comments-context";
+import { TaskCommentsSidebar } from "@/components/tasks/task-comments-sidebar";
 import { TasksViewToggle } from "@/components/tasks/tasks-view-toggle";
+import { ModulePageLayout } from "@/components/shell/module-page-layout";
 
 type TasksPageLayoutProps = {
   children: React.ReactNode;
@@ -9,8 +11,11 @@ type TasksPageLayoutProps = {
 
 export function TasksPageLayout({ children }: TasksPageLayoutProps) {
   return (
-    <ModulePageLayout title="Tasks" headerExtra={<TasksViewToggle />}>
-      {children}
-    </ModulePageLayout>
+    <TaskCommentsProvider>
+      <ModulePageLayout title="Tasks" headerExtra={<TasksViewToggle />}>
+        {children}
+      </ModulePageLayout>
+      <TaskCommentsSidebar />
+    </TaskCommentsProvider>
   );
 }

@@ -163,13 +163,25 @@ See §5 Phased Roadmap for priorities.
 
 **REQ-TASK-04 (P0):** Support **dependencies** between tasks (blocked-by / blocks).
 
-**REQ-TASK-05 (P0):** Tasks support **one or more assignees**, **due dates**, **priorities**, and **subtasks**.
+**REQ-TASK-05 (P0):** Tasks support **one or more assignees**, **due dates**, **priorities**, and **subtasks**. Extended details belong in the **comment thread** (REQ-TASK-08), not a separate description field.
 
-**REQ-TASK-06 (P0):** Task **status** values: `BACKLOG` · `TODO` · `IN_PROGRESS` · `WAITING` · `DONE`. Kanban board uses the first four as columns; `DONE` is a **collapsible** column (hidden by default).
+**REQ-TASK-06 (P0):** Task **status** values: `TODO` · `IN_PROGRESS` · `WAITING` · `DONE`. Kanban board uses all four as columns; `DONE` is a **collapsible** column (open by default).
 
 **REQ-TASK-07 (P0):** **Kanban drag-and-drop** — moving a card between columns updates task status.
 
-#### 4.2.2 Task views
+#### 4.2.2 Task comments
+
+**REQ-TASK-08 (P0):** Each task has a **comment thread** (one thread per task — subtasks do not get separate threads). Any household member who can see the task may read and post. Comments are **plain text**; pasted **URLs are auto-linkified** in the UI. Thread order is **newest first** (chat-style). Authors may **delete their own** comments only (no editing others’ comments). Data loads **on open** (refresh when the sidebar opens; no live sync in v1).
+
+**REQ-TASK-09 (P0):** **Remove** the task `description` field from schema, GraphQL, and UI. Existing descriptions are **dropped** (not migrated to comments). The list **quick-add row** and all create/update flows must not expose description.
+
+**REQ-TASK-21 (P0):** **Comment UI entry points:** Kanban card — speech-bubble control at **bottom-right** (mirror delete icon placement at top-right). List row — speech-bubble control at **end of row**. Control shows **comment count** and an **unread** indicator when the current user has not seen new comments since last open.
+
+**REQ-TASK-22 (P0):** **Comment sidebar** — overlay panel on the **right** of the screen (does not push main content). Shows task title, full thread, and compose box. Opening comments on another task **switches** the sidebar to that task immediately. Close via **X** or **click outside**. Task visibility rules match comments: **full household visibility** on shared tasks (same as task list today).
+
+**REQ-TASK-23 (P1):** Persist **read state** per user per task (or per thread) so unread badges are accurate. Schema should allow **future notifications** (web push / in-app) for new comments; notification delivery is **out of scope for v1**.
+
+#### 4.2.3 Task views
 
 **REQ-TASK-10 (P0):** **Today / inbox** view. *(Initial UI pass: deferred — see DESIGN.md §9.)*
 
@@ -179,15 +191,15 @@ See §5 Phased Roadmap for priorities.
 
 **REQ-TASK-13 (P0):** **By person** view (filter/group by assignee). *(Initial UI pass: deferred.)*
 
-**REQ-TASK-14 (P0):** **List** view — table with columns for task name, status, priority, assignee(s), and due date. Toggle with Kanban inside Tasks module.
+**REQ-TASK-14 (P0):** **List** view — table with columns for task name, status, priority, assignee(s), due date, and **comments** access. Toggle with Kanban inside Tasks module. No description column.
 
 **REQ-TASK-15 (P1):** Task list/kanban **filters** (assignee, priority, and extended filters). *(Deferred from initial UI pass.)*
 
-#### 4.2.3 Task notifications
+#### 4.2.4 Task notifications
 
 **REQ-TASK-20 (P0):** **Per-task** reminders via **web push** (browser push notifications).
 
-#### 4.2.4 Deferred task features
+#### 4.2.5 Deferred task features
 
 | Feature | Priority | Notes |
 |---------|----------|-------|
@@ -360,7 +372,7 @@ Not needed yet. Do not implement until this document is updated.
 
 | Module | Deliverables |
 |--------|--------------|
-| **Tasks** | CRUD, all fields, Kanban + List (first UI pass), then Today/calendar/by-person views; recurring, dependencies, per-task reminders; multi-assignee; extended statuses |
+| **Tasks** | CRUD, Kanban + List, comment threads (REQ-TASK-08 … REQ-TASK-23), remove description; then Today/calendar/by-person views; recurring, dependencies, per-task reminders; multi-assignee |
 | **Finance** | Manual income/expense, categories + limits, recurring bills, monthly joint budget, basic reports |
 | **Calendar** | Google OAuth for Calendar API, multi-calendar aggregation, two-way sync |
 
@@ -650,6 +662,7 @@ All open questions are resolved. Reference for agents and future you:
 
 | Date | Change |
 |------|--------|
+| 2026-07-02 | **Task comments:** REQ-TASK-08 … REQ-TASK-23 — per-task thread sidebar (overlay, newest-first, plain text + linkify, unread badge + count, author-only delete); remove `description` field (drop existing data). Status enum trimmed to TODO / IN_PROGRESS / WAITING / DONE (REQ-TASK-06). See `docs/design/DESIGN.md` §8.13. |
 | 2026-07-02 | **Receipt management (Phase 1c):** REQ-RCPT-01 … REQ-RCPT-13 — standalone `/receipts` nav, household-shared uploads (images + PDF, 10 MB max, picker + drag-drop), preview/rename/delete, local volume storage + `FileStorage` abstraction. **Shared folders:** REQ-FOLDER-01 … REQ-FOLDER-06 — generic `Folder` model, migrate meal `RecipeFolder`, shared UI/GraphQL. See `docs/design/DESIGN.md` §8.11–8.12. |
 | 2026-06-24 | Meal planning refinements: recipe modal, PST Sunday cron (slots only), grocery Bought + Remove bought, delete clears slots, ingredient merge with multi-qty strings |
 | 2026-06-24 | Meal planning (Phase 1b): weekly Sun–Sat grid (day names only), household recipe library, drag-and-drop slots, Sunday auto-clear, grocery list auto + manual with ingredient merge. See REQ-MEAL-01 … REQ-MEAL-08 and `docs/design/DESIGN.md` §8.10. |
@@ -670,7 +683,7 @@ All open questions are resolved. Reference for agents and future you:
 **Users:** REQ-USER-01 … REQ-USER-06  
 **Permissions:** REQ-PERM-01 … REQ-PERM-03  
 **Shell:** REQ-SHELL-01 … REQ-SHELL-03  
-**Tasks:** REQ-TASK-01 … REQ-TASK-07, REQ-TASK-10 … REQ-TASK-15, REQ-TASK-20  
+**Tasks:** REQ-TASK-01 … REQ-TASK-09, REQ-TASK-10 … REQ-TASK-15, REQ-TASK-20 … REQ-TASK-23  
 **Finance:** REQ-FIN-01 … REQ-FIN-06, REQ-FIN-20  
 **Calendar:** REQ-CAL-01 … REQ-CAL-05  
 **Meals:** REQ-MEAL-01 … REQ-MEAL-08  

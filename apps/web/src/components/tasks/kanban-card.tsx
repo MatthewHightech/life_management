@@ -5,15 +5,15 @@ import { CSS } from "@dnd-kit/utilities";
 import { formatShortDate } from "@life/shared";
 import { GripVertical } from "lucide-react";
 import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
+import { TaskCommentsButton } from "@/components/tasks/task-comments-button";
 import { AssigneeAvatars } from "@/components/ui/avatar";
 import { Chip } from "@/components/ui/chip";
 import { EditableAssignees } from "@/components/tasks/task-table/editable-assignees";
 import { EditableDueDate } from "@/components/tasks/task-table/editable-due-date";
 import { EditablePriority } from "@/components/tasks/task-table/editable-pill-cells";
-import { EditableDescription, EditableText } from "@/components/tasks/task-table/editable-text-cells";
+import { EditableText } from "@/components/tasks/task-table/editable-text-cells";
 import type { BoardTask, HouseholdUser, TaskUpdateInput } from "@/components/tasks/task-table/types";
 import { priorityChipClass, priorityLabels } from "@/lib/task-status";
-import { truncateText } from "@/lib/truncate";
 import { cn } from "@/lib/cn";
 
 type KanbanCardProps = {
@@ -49,7 +49,7 @@ export function KanbanCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "rounded-lg border border-border-subtle bg-surface p-2 shadow-sm",
+        "relative rounded-lg border border-border-subtle bg-surface p-2 shadow-sm",
         "border-t-4",
         accentClass,
         isDragging && "opacity-0",
@@ -57,7 +57,18 @@ export function KanbanCard({
         editable && "cursor-default",
       )}
     >
-      <div className="flex items-start gap-1.5">
+      {editable && onDelete ? (
+        <div className="absolute right-1 top-1">
+          <DeleteTaskButton
+            taskTitle={task.title}
+            onConfirm={onDelete}
+            variant="icon"
+            className="rounded p-0.5 text-text-muted hover:text-error"
+          />
+        </div>
+      ) : null}
+
+      <div className="flex items-start gap-1.5 pr-5">
         {editable ? (
           <button
             type="button"
@@ -88,18 +99,7 @@ export function KanbanCard({
             </p>
           )}
 
-          {editable ? (
-            <EditableDescription
-              value={task.description}
-              onSave={(description) => onUpdate!({ description })}
-              maxLength={80}
-              className="text-xs leading-snug"
-            />
-          ) : task.description ? (
-            <p className="text-xs leading-snug text-text-muted">{truncateText(task.description, 80)}</p>
-          ) : null}
-
-          {task.subtaskProgress.total > 0 && (
+          {task.subtaskProgress.total > 0 ? (
             <div>
               <div className="mb-0.5 flex justify-between text-[10px] leading-none text-text-muted">
                 <span>{task.subtaskProgress.percent}% complete</span>
@@ -114,9 +114,9 @@ export function KanbanCard({
                 />
               </div>
             </div>
-          )}
+          ) : null}
 
-          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-1.5">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-1.5">
             <div className="min-w-0">
               {editable ? (
                 <EditableAssignees
@@ -165,17 +165,19 @@ export function KanbanCard({
                 </Chip>
               )}
             </div>
+
+            {editable ? (
+              <div className="justify-self-end">
+                <TaskCommentsButton
+                  taskId={task.id}
+                  taskTitle={task.title}
+                  commentCount={task.commentCount}
+                  unreadCommentCount={task.unreadCommentCount}
+                />
+              </div>
+            ) : null}
           </div>
         </div>
-
-        {editable && onDelete && (
-          <DeleteTaskButton
-            taskTitle={task.title}
-            onConfirm={onDelete}
-            variant="icon"
-            className="shrink-0 rounded p-0.5 text-text-muted hover:text-error"
-          />
-        )}
       </div>
     </article>
   );

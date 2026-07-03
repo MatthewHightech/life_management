@@ -13,13 +13,12 @@ export function TaskListTable({ tasks, users, emptyMessage, onDelete, onUpdate }
   return (
     <table className="min-w-full table-fixed text-left text-sm">
       <colgroup>
-        <col className="w-[15%]" />
-        <col className="w-[13%]" />
-        <col className="w-[8%]" />
-        <col className="w-[11%]" />
+        <col className="w-[18%]" />
+        <col className="w-[14%]" />
         <col className="w-[10%]" />
+        <col className="w-[14%]" />
+        <col className="w-[12%]" />
         <col />
-        <col className="w-[7.5rem]" />
       </colgroup>
       <thead className="border-b border-border-subtle bg-background text-xs uppercase tracking-wide text-text-muted">
         <tr>
@@ -28,14 +27,13 @@ export function TaskListTable({ tasks, users, emptyMessage, onDelete, onUpdate }
           <th className="px-4 py-2 font-semibold">Priority</th>
           <th className="px-4 py-2 font-semibold">Assignees</th>
           <th className="px-4 py-2 font-semibold">Due date</th>
-          <th className="px-4 py-2 font-semibold">Description</th>
           <th className="px-4 py-2 font-semibold" />
         </tr>
       </thead>
       <tbody>
         {tasks.length === 0 && (
           <tr>
-            <td colSpan={7} className="px-4 py-6 text-center text-sm text-text-muted">
+            <td colSpan={6} className="px-4 py-6 text-center text-sm text-text-muted">
               {emptyMessage}
             </td>
           </tr>

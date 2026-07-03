@@ -167,8 +167,10 @@ These decisions align the Stitch export with [`requirements.md`](../requirements
 | Receipts nav | Top-level **`/receipts`** — standalone module (not under Finance) | REQ-RCPT-01 |
 | Shared folders | Generic folder UI + GraphQL reused by Meals and Receipts | REQ-FOLDER-01 … REQ-FOLDER-06 |
 | Create action | **"+ New Task"** on Tasks pages (not sidebar “+ New Entry”) | — |
-| Kanban columns | BACKLOG · TODO · IN_PROGRESS · WAITING · **DONE** (collapsible, hidden by default) | REQ-TASK-06 |
+| Kanban columns | TODO · IN_PROGRESS · WAITING · **DONE** (collapsible, open by default) | REQ-TASK-06 |
 | Kanban interaction | **Drag-and-drop** between columns updates status | REQ-TASK-07 |
+| Task comments | Overlay **right sidebar** thread; bubble on card/row with count + unread | REQ-TASK-08 … REQ-TASK-23 |
+| Task description field | **Removed** — use comment thread instead | REQ-TASK-09 |
 | Assignees | **Many-to-many** — multiple avatars per task | REQ-TASK-05 |
 | Task card colors | **Priority chips** (amber for HIGH/URGENT); column **status accent** on kanban card top border | REQ-TASK-05 |
 | List row categories | **Deferred** — no subtext/left color bar in first pass | §4.2.4 |
@@ -210,15 +212,16 @@ Use YAML frontmatter values as source of truth for implementation.
 **Tasks — Kanban (first pass):**
 
 - White card, Level 1 border, subtle shadow.
-- **Top border accent** colored by **column status** (grey backlog, blue todo, orange in-progress, red waiting).
-- **Priority chip** (pill) bottom-right: amber/red tint for HIGH/URGENT; muted for LOW/MEDIUM.
-- **Assignee avatars** bottom-left (stacked when multiple).
+- **Top border accent** colored by **column status** (blue todo, orange in-progress, red waiting, green done).
+- **Priority chip** + **assignee avatars** on card footer row.
+- **Delete** — trash icon top-right; **comments** — speech-bubble bottom-right with count + unread dot.
 - **Subtask progress** optional: “N% complete” + bar when subtasks exist.
 - Drag between columns → status update.
+- **No** inline description on cards (REQ-TASK-09).
 
 **Tasks — List (first pass):**
 
-- Table columns: Task name · Status · Priority · Assignee(s) · Due date.
+- Table columns: Task name · Status · Priority · Assignee(s) · Due date · **Comments**.
 - Status/priority as pills; overdue row gets soft red background (per mockup).
 - **No** category subtext or left color bar in first pass.
 - Toggle with Kanban in Tasks header.
@@ -293,7 +296,7 @@ Use YAML frontmatter values as source of truth for implementation.
 Header:  Tasks                    [+ New Task]
          [Kanban] [List]          ← view toggle (segmented control)
 
-Kanban:  BACKLOG | TODO | IN-PROGRESS | WAITING | [▸ DONE collapsed]
+Kanban:  TODO | IN-PROGRESS | WAITING | DONE [Clear]     (overlay comments sidebar →)
 List:    filter chips deferred (REQ-TASK-15)
 ```
 
@@ -362,7 +365,7 @@ Reference: [`Kanban_full_sidebar_homepage.png`](Kanban_full_sidebar_homepage.png
 
 - Horizontal columns per status; column header: status dot, label (uppercase), count badge, “+” to add task in column.
 - Cards draggable between columns (REQ-TASK-07).
-- DONE column collapsible — collapsed by default; expand to see completed tasks.
+- **Four columns:** TODO · IN_PROGRESS · WAITING · DONE. DONE collapsible (open by default); **Clear** control on DONE header (confirm before bulk delete).
 - `WAITING` aligns with blocked/waiting-on-dependency workflow (REQ-TASK-04).
 
 ### 8.3 List view
@@ -377,7 +380,10 @@ Reference: [`list_view_homepage.png`](list_view_homepage.png)
 
 - White surface, Level 1 border.
 - Priority chip + assignee avatar(s).
+- **Comments** speech-bubble (bottom-right on kanban) with numeric count and unread indicator.
+- **Delete** trash icon (top-right on kanban); ghost button at row end on list.
 - Hover → Level 2 elevation.
+- **No description** field on card or list (REQ-TASK-09).
 
 ### 8.5 Buttons
 
@@ -495,6 +501,77 @@ Reference: REQ-FOLDER-01 … REQ-FOLDER-06. **Single implementation** — meals 
 - **Module-specific zones** (e.g. meal schedule grid): module drop targets only when pointer enters that section.
 - Use `pointerWithin` first, filtered by zone — same pattern as current meal planning fix.
 
+### 8.13 Task comment threads
+
+Reference: REQ-TASK-08 … REQ-TASK-23 · replaces task `description` (REQ-TASK-09).
+
+**Entry points**
+
+| Surface | Control | Placement |
+|---------|---------|-----------|
+| Kanban card | Speech-bubble button | **Bottom-right** (symmetric to delete trash at top-right) |
+| List row | Speech-bubble button | **End of row** (after due date / actions) |
+
+**Control chrome**
+
+- Show **total comment count** on the bubble when count > 0.
+- **Unread dot** (or badge) when the current user has not read comments since last opening that task’s sidebar.
+- Icon: Lucide `MessageCircle` (or equivalent); same ghost/hover pattern as delete.
+
+**Sidebar panel (overlay)**
+
+```
+┌──────────────────────────────┐  ┌─────────────────────────┐
+│  Main content (kanban/list)  │  │  Task title          [X]│
+│  (dimmed scrim behind panel) │  │  ─────────────────────  │
+│                              │  │  [Newest comment]       │
+│                              │  │  author · time          │
+│                              │  │  body with linkified URL│
+│                              │  │  [Older comment…]       │
+│                              │  │  ─────────────────────  │
+│                              │  │  [ Compose textarea ]   │
+│                              │  │  [ Post ]               │
+└──────────────────────────────┘  └─────────────────────────┘
+```
+
+| Behavior | Spec |
+|----------|------|
+| Layout | **Overlay** on right; fixed width ~360–400px on desktop; full-width sheet on narrow mobile |
+| Scrim | Click outside panel **or** X → close |
+| Task switch | Opening bubble on task B while A is open → **switch to B immediately** (no confirm) |
+| Thread order | **Newest first** (chat-style scroll; compose pinned bottom) |
+| Content | Plain text only; render URLs as clickable links |
+| Permissions | Any household member; full visibility on tasks user can already see |
+| Delete | Author may delete **own** comment only (confirm optional — match delete-task pattern) |
+| Sync | **Refresh on open**; refetch after post/delete; no websocket in v1 |
+| Subtasks | **One thread per task** (top-level task id); no separate subtask threads |
+
+**Data model (implementation hint — not binding UI)**
+
+| Entity | Fields (conceptual) |
+|--------|---------------------|
+| `TaskComment` | `id`, `taskId`, `authorId`, `body`, `createdAt` |
+| `TaskCommentRead` (or last-read timestamp) | `userId`, `taskId`, `readAt` — powers unread badge |
+
+Drop `Task.description` column; **do not migrate** existing description text.
+
+**GraphQL (conceptual)**
+
+- `Task.comments` or `taskComments(taskId)` query
+- `addTaskComment(taskId, body)` mutation
+- `deleteTaskComment(id)` mutation (author check)
+- `markTaskCommentsRead(taskId)` mutation (on sidebar open)
+- Extend `Task` type: `commentCount`, `unreadCommentCount` (for list/kanban badges)
+
+**Removals**
+
+- Remove description from kanban card, list table, quick-add row, GraphQL inputs, Prisma schema.
+- List table: drop description column; add comments column with bubble control only.
+
+**Future (REQ-TASK-23)**
+
+- Web push / in-app notification when someone comments on a task you follow or are assigned to — schema should not block this; UI deferred.
+
 ---
 
 ## 9. Implementation plan
@@ -552,6 +629,19 @@ Reference: REQ-FOLDER-01 … REQ-FOLDER-06. **Single implementation** — meals 
 
 **Not in Phase 1c:** OCR, metadata fields, search, finance linking, multi-file batch upload (unless owner confirms).
 
+### 9.5 Task comments pass (awaiting owner GO)
+
+| Layer | Work |
+|-------|------|
+| **Database** | `TaskComment` model · per-user read tracking · migration drops `Task.description` (no data migration) |
+| **GraphQL** | Comment query/mutations · `commentCount` / `unreadCommentCount` on `Task` · remove description from Task inputs |
+| **Web — sidebar** | Overlay right panel · thread (newest first) · compose · linkify URLs · close via X / outside click |
+| **Web — entry** | Speech bubble on kanban card (bottom-right) and list row · count + unread badge |
+| **Web — cleanup** | Remove description from kanban card, list columns, quick-add row |
+| **Codegen / tests** | Operations · resolver auth (household + author delete) · unread logic unit tests |
+
+**Not in v1:** comment edit, rich text, attachments, @mentions, live sync, push notifications (schema-ready only).
+
 ---
 
 ## 10. Design assets
@@ -573,7 +663,8 @@ Reference: REQ-FOLDER-01 … REQ-FOLDER-06. **Single implementation** — meals 
 | Assignee/Priority filters | **Deferred** |
 | Category subtext + left bar | **Deferred** |
 | Settings + ADMIN footer | **Deferred** |
-| 4 kanban columns (no DONE) | 5 columns; **DONE collapsible** |
+| 4 kanban columns (no DONE) | 4 status columns + collapsible DONE |
+| Task description on cards/list | **Comment thread sidebar** (§8.13) |
 
 ---
 
@@ -585,6 +676,7 @@ Reference: REQ-FOLDER-01 … REQ-FOLDER-06. **Single implementation** — meals 
 | Module sidebar | REQ-SHELL-03 |
 | Responsive + mobile | REQ-SHELL-02, NFR-PERF-02 |
 | Kanban + List | REQ-TASK-12, REQ-TASK-14, REQ-TASK-06, REQ-TASK-07 |
+| Task comments | REQ-TASK-08 … REQ-TASK-09, REQ-TASK-21 … REQ-TASK-23 · §8.13 |
 | Later task views | REQ-TASK-10, REQ-TASK-11, REQ-TASK-13 |
 | Task filters (later) | REQ-TASK-15 |
 | Multi-assignee | REQ-TASK-05 |
@@ -603,6 +695,7 @@ Reference: REQ-FOLDER-01 … REQ-FOLDER-06. **Single implementation** — meals 
 
 | Date | Change |
 |------|--------|
+| 2026-07-02 | **Task comments:** §8.13 overlay sidebar thread (newest-first, linkify, unread + count, author delete); remove description (REQ-TASK-09). Status columns → TODO / IN_PROGRESS / WAITING / DONE. Implementation plan §9.5 (awaiting GO). |
 | 2026-07-02 | **Receipt management (Phase 1c):** §8.11 upload/preview/rename/delete, sage accent, `/receipts` nav. **Shared folders:** §8.12 — `FolderBrowser`, migrate meals off `RecipeFolder`. Implementation plan §9.4. |
 | 2026-06-24 | Meal planning refinements: recipe modal, PST Sunday cron (slots only), grocery Bought + Remove bought, delete-recipe clears slots, multi-qty merge row |
 | 2026-06-25 | Mockup review: module nav, Kanban default, List toggle, statuses, multi-assignee, DnD, collapsible DONE; linked PNG assets; first UI pass scope; aligned `requirements.md` |

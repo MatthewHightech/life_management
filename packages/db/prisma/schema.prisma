@@ -70,6 +70,8 @@ model User {
   sessions      Session[]
   taskAssignments TaskAssignment[]
   createdTasks  Task[]     @relation("CreatedTasks")
+  taskComments  TaskComment[]
+  taskCommentReads TaskCommentRead[]
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 }
@@ -131,7 +133,6 @@ model Task {
   subtasks    Task[]        @relation("Subtasks")
 
   title       String
-  description String?
   status      TaskStatus    @default(TODO)
   priority    TaskPriority  @default(MEDIUM)
   isShared    Boolean       @default(true)
@@ -151,6 +152,8 @@ model Task {
 
   blockedBy TaskDependency[] @relation("BlockedTask")
   blocking  TaskDependency[] @relation("BlockingTask")
+  comments  TaskComment[]
+  commentReads TaskCommentRead[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -179,6 +182,29 @@ model TaskDependency {
   dependsOnTask   Task   @relation("BlockingTask", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
 
   @@unique([taskId, dependsOnTaskId])
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([taskId, createdAt])
+}
+
+model TaskCommentRead {
+  userId   String
+  taskId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task     Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  readAt   DateTime @default(now())
+
+  @@id([userId, taskId])
+  @@index([taskId])
 }
 
 enum FolderNamespace {

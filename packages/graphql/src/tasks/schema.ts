@@ -46,10 +46,17 @@ export const taskTypeDefs = `#graphql
     percent: Int!
   }
 
+  type TaskComment {
+    id: ID!
+    body: String!
+    author: User!
+    createdAt: String!
+    canDelete: Boolean!
+  }
+
   type Task {
     id: ID!
     title: String!
-    description: String
     status: TaskStatus!
     priority: TaskPriority!
     isShared: Boolean!
@@ -69,6 +76,8 @@ export const taskTypeDefs = `#graphql
     blockedBy: [TaskDependency!]!
     isBlocked: Boolean!
     isOverdue: Boolean!
+    commentCount: Int!
+    unreadCommentCount: Int!
     createdAt: String!
     updatedAt: String!
   }
@@ -83,7 +92,6 @@ export const taskTypeDefs = `#graphql
 
   input CreateTaskInput {
     title: String!
-    description: String
     status: TaskStatus
     priority: TaskPriority
     isShared: Boolean
@@ -100,7 +108,6 @@ export const taskTypeDefs = `#graphql
 
   input UpdateTaskInput {
     title: String
-    description: String
     status: TaskStatus
     priority: TaskPriority
     isShared: Boolean
@@ -119,6 +126,7 @@ export const taskTypeDefs = `#graphql
     tasks(filter: TaskFilterInput): [Task!]!
     task(id: ID!): Task
     taskProjects: [TaskProject!]!
+    taskComments(taskId: ID!): [TaskComment!]!
   }
 
   extend type Mutation {
@@ -128,6 +136,9 @@ export const taskTypeDefs = `#graphql
     deleteTask(id: ID!): Boolean!
     clearDoneTasks: Int!
     completeTask(id: ID!, completed: Boolean!): Task!
+    addTaskComment(taskId: ID!, body: String!): TaskComment!
+    deleteTaskComment(id: ID!): Boolean!
+    markTaskCommentsRead(taskId: ID!): Boolean!
     createTaskProject(name: String!): TaskProject!
     addTaskDependency(taskId: ID!, dependsOnTaskId: ID!): Task!
     removeTaskDependency(taskId: ID!, dependsOnTaskId: ID!): Task!

@@ -4,7 +4,6 @@ const TASK_FIELDS = gql`
   fragment TaskFields on Task {
     id
     title
-    description
     status
     priority
     isShared
@@ -12,6 +11,8 @@ const TASK_FIELDS = gql`
     completedAt
     isBlocked
     isOverdue
+    commentCount
+    unreadCommentCount
     subtaskProgress {
       completed
       total
@@ -26,6 +27,21 @@ const TASK_FIELDS = gql`
     project {
       id
       name
+    }
+  }
+`;
+
+const TASK_COMMENT_FIELDS = gql`
+  fragment TaskCommentFields on TaskComment {
+    id
+    body
+    createdAt
+    canDelete
+    author {
+      id
+      name
+      email
+      image
     }
   }
 `;
@@ -111,5 +127,35 @@ export const UPDATE_TASK_MUTATION = gql`
     updateTask(id: $id, input: $input) {
       ...TaskFields
     }
+  }
+`;
+
+export const TASK_COMMENTS_QUERY = gql`
+  ${TASK_COMMENT_FIELDS}
+  query TaskComments($taskId: ID!) {
+    taskComments(taskId: $taskId) {
+      ...TaskCommentFields
+    }
+  }
+`;
+
+export const ADD_TASK_COMMENT_MUTATION = gql`
+  ${TASK_COMMENT_FIELDS}
+  mutation AddTaskComment($taskId: ID!, $body: String!) {
+    addTaskComment(taskId: $taskId, body: $body) {
+      ...TaskCommentFields
+    }
+  }
+`;
+
+export const DELETE_TASK_COMMENT_MUTATION = gql`
+  mutation DeleteTaskComment($id: ID!) {
+    deleteTaskComment(id: $id)
+  }
+`;
+
+export const MARK_TASK_COMMENTS_READ_MUTATION = gql`
+  mutation MarkTaskCommentsRead($taskId: ID!) {
+    markTaskCommentsRead(taskId: $taskId)
   }
 `;

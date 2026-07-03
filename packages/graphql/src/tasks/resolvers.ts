@@ -9,7 +9,12 @@ const taskInclude = {
   createdBy: true,
   subtasks: { orderBy: { createdAt: "asc" as const } },
   blockedBy: { include: { dependsOnTask: true } },
+  _count: { select: { comments: true } },
 } satisfies Prisma.TaskInclude;
+
+const commentInclude = {
+  author: true,
+} satisfies Prisma.TaskCommentInclude;
 
 type TaskView = "TODAY" | "CALENDAR" | "KANBAN" | "BY_PERSON" | "LIST";
 
@@ -77,6 +82,26 @@ async function getTaskById(context: GraphQLContext, id: string, householdId: str
   return context.prisma.task.findFirst({
     where: { id, householdId },
     include: taskInclude,
+  });
+}
+
+async function getVisibleTask(context: GraphQLContext, id: string, householdId: string, userId: string) {
+  return context.prisma.task.findFirst({
+    where: { id, ...visibleTaskWhere(householdId, userId) },
+    include: taskInclude,
+  });
+}
+
+async function markTaskCommentsReadForUser(
+  context: GraphQLContext,
+  taskId: string,
+  userId: string,
+  readAt = new Date(),
+) {
+  await context.prisma.taskCommentRead.upsert({
+    where: { userId_taskId: { userId, taskId } },
+    create: { userId, taskId, readAt },
+    update: { readAt },
   });
 }
 
@@ -163,6 +188,20 @@ export const taskResolvers = {
         taskCount: project._count.tasks,
       }));
     },
+
+    taskComments: async (_parent: unknown, args: { taskId: string }, context: GraphQLContext) => {
+      const { householdId, userId } = await requireHouseholdUser(context);
+      const task = await getVisibleTask(context, args.taskId, householdId, userId);
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      return context.prisma.taskComment.findMany({
+        where: { taskId: args.taskId },
+        include: commentInclude,
+        orderBy: { createdAt: "desc" },
+      });
+    },
   },
 
   Mutation: {
@@ -171,7 +210,6 @@ export const taskResolvers = {
       args: {
         input: {
           title: string;
-          description?: string | null;
           status?: TaskStatus | null;
           priority?: TaskPriority | null;
           isShared?: boolean | null;
@@ -213,7 +251,6 @@ export const taskResolvers = {
           householdId,
           createdById: userId,
           title: input.title.trim(),
-          description: input.description?.trim() || null,
           status,
           priority: input.priority ?? TaskPriority.MEDIUM,
           isShared: input.isShared ?? true,
@@ -242,7 +279,6 @@ export const taskResolvers = {
         id: string;
         input: {
           title?: string | null;
-          description?: string | null;
           status?: TaskStatus | null;
           priority?: TaskPriority | null;
           isShared?: boolean | null;
@@ -265,7 +301,6 @@ export const taskResolvers = {
       const data: Prisma.TaskUpdateInput = {};
 
       if (args.input.title != null) data.title = args.input.title.trim();
-      if (args.input.description !== undefined) data.description = args.input.description?.trim() || null;
       if (args.input.status != null) {
         data.status = args.input.status;
         data.completedAt = args.input.status === TaskStatus.DONE ? new Date() : null;
@@ -431,6 +466,70 @@ export const taskResolvers = {
 
       return task;
     },
+
+    addTaskComment: async (
+      _parent: unknown,
+      args: { taskId: string; body: string },
+      context: GraphQLContext,
+    ) => {
+      const { householdId, userId } = await requireHouseholdUser(context);
+      const task = await getVisibleTask(context, args.taskId, householdId, userId);
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      const body = args.body.trim();
+      if (!body) {
+        throw new Error("Comment cannot be empty");
+      }
+
+      const comment = await context.prisma.taskComment.create({
+        data: {
+          taskId: args.taskId,
+          authorId: userId,
+          body,
+        },
+        include: commentInclude,
+      });
+
+      await markTaskCommentsReadForUser(context, args.taskId, userId);
+
+      return comment;
+    },
+
+    deleteTaskComment: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
+      const { householdId, userId } = await requireHouseholdUser(context);
+
+      const comment = await context.prisma.taskComment.findFirst({
+        where: { id: args.id, task: { householdId } },
+      });
+
+      if (!comment) {
+        throw new Error("Comment not found");
+      }
+
+      if (comment.authorId !== userId) {
+        throw new Error("You can only delete your own comments");
+      }
+
+      await context.prisma.taskComment.delete({ where: { id: args.id } });
+      return true;
+    },
+
+    markTaskCommentsRead: async (
+      _parent: unknown,
+      args: { taskId: string },
+      context: GraphQLContext,
+    ) => {
+      const { householdId, userId } = await requireHouseholdUser(context);
+      const task = await getVisibleTask(context, args.taskId, householdId, userId);
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      await markTaskCommentsReadForUser(context, args.taskId, userId);
+      return true;
+    },
   },
 
   Task: {
@@ -459,6 +558,33 @@ export const taskResolvers = {
 
       return { completed, total, percent };
     },
+    commentCount: (parent: { _count?: { comments: number } }) => parent._count?.comments ?? 0,
+    unreadCommentCount: async (
+      parent: { id: string },
+      _args: unknown,
+      context: GraphQLContext,
+    ) => {
+      if (!context.user?.id) {
+        return 0;
+      }
+
+      const read = await context.prisma.taskCommentRead.findUnique({
+        where: { userId_taskId: { userId: context.user.id, taskId: parent.id } },
+      });
+
+      return context.prisma.taskComment.count({
+        where: {
+          taskId: parent.id,
+          createdAt: { gt: read?.readAt ?? new Date(0) },
+        },
+      });
+    },
+  },
+
+  TaskComment: {
+    createdAt: (parent: { createdAt: Date }) => toIsoString(parent.createdAt)!,
+    canDelete: (parent: { authorId: string }, _args: unknown, context: GraphQLContext) =>
+      Boolean(context.user?.id && parent.authorId === context.user.id),
   },
 
   TaskProject: {

@@ -24,7 +24,7 @@ import { tasksBoardRefetchQueries } from "@/lib/task-board-queries";
 import type { HouseholdUser } from "./types";
 
 const TASK_LIST_COLUMN_GRID =
-  "grid w-full min-w-full grid-cols-[15%_13%_8%_11%_10%_minmax(280px,1fr)_7.5rem] text-left text-sm";
+  "grid w-full min-w-full grid-cols-[18%_14%_10%_14%_12%_minmax(9rem,1fr)] text-left text-sm";
 const TASK_LIST_CELL = "flex min-h-7 items-center px-4 py-1.5";
 
 const DEFAULT_STATUS: TaskStatus = "TODO";
@@ -127,7 +127,6 @@ export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) 
   const [priority, setPriority] = useState<TaskPriority>(DEFAULT_PRIORITY);
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState<string | null>(null);
-  const [description, setDescription] = useState("");
   const [titleError, setTitleError] = useState(false);
 
   const [createTask, { loading }] = useMutation(CREATE_TASK_MUTATION, {
@@ -142,7 +141,6 @@ export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) 
     setPriority(DEFAULT_PRIORITY);
     setAssigneeIds(currentUserId ? [currentUserId] : []);
     setDueDate(null);
-    setDescription("");
     setTitleError(false);
   }
 
@@ -162,7 +160,6 @@ export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) 
       variables: {
         input: {
           title: title.trim(),
-          description: description.trim() || null,
           status,
           priority,
           dueDate,
@@ -223,15 +220,6 @@ export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) 
       </div>
       <div className={TASK_LIST_CELL}>
         <DraftDueDatePicker value={dueDate} onChange={setDueDate} />
-      </div>
-      <div className={cn(TASK_LIST_CELL, "min-w-[280px]")}>
-        <input
-          value={description}
-          placeholder="—"
-          disabled={loading}
-          onChange={(event) => setDescription(event.target.value)}
-          className={cn(inlineFieldInputClass, "text-text-muted placeholder:text-text-muted/70 placeholder:italic")}
-        />
       </div>
       <div className={cn(TASK_LIST_CELL, "justify-end")}>
         <Button

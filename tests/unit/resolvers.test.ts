@@ -15,12 +15,16 @@ describe("graphql resolvers", () => {
   it("merges task query resolvers", () => {
     expect(resolvers.Query.tasks).toBe(taskResolvers.Query.tasks);
     expect(resolvers.Query.taskProjects).toBe(taskResolvers.Query.taskProjects);
+    expect(resolvers.Query.taskComments).toBe(taskResolvers.Query.taskComments);
   });
 
   it("merges task mutation resolvers", () => {
     expect(resolvers.Mutation.createTask).toBe(taskResolvers.Mutation.createTask);
     expect(resolvers.Mutation.moveTask).toBe(taskResolvers.Mutation.moveTask);
     expect(resolvers.Mutation.completeTask).toBe(taskResolvers.Mutation.completeTask);
+    expect(resolvers.Mutation.addTaskComment).toBe(taskResolvers.Mutation.addTaskComment);
+    expect(resolvers.Mutation.deleteTaskComment).toBe(taskResolvers.Mutation.deleteTaskComment);
+    expect(resolvers.Mutation.markTaskCommentsRead).toBe(taskResolvers.Mutation.markTaskCommentsRead);
   });
 
   it("merges meal query resolvers", () => {
