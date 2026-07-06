@@ -1,6 +1,6 @@
 # Life Management Suite — Requirements
 
-> **Status:** Living document · **Last updated:** 2026-07-02  
+> **Status:** Living document · **Last updated:** 2026-07-06  
 > **Audience:** Project owner, future contributors, and LLM coding agents  
 > **Purpose:** Single source of truth for what this product is, what it must do, and what it must not do.  
 > **UI spec:** [`docs/design/DESIGN.md`](design/DESIGN.md)
@@ -145,7 +145,7 @@ See §5 Phased Roadmap for priorities.
 
 **REQ-SHELL-02 (P1):** Responsive web UI usable on phone, tablet, and desktop with equal priority.
 
-**REQ-SHELL-03 (P0):** Primary navigation is **module-based** in a collapsible sidebar: Tasks · Finance · Calendar · Meal Planning · **Receipts**. Finance and Calendar may be disabled placeholders until their modules ship. Receipts is a **standalone module** (not nested under Finance). Task-specific views (Kanban, List, etc.) live **inside** the Tasks module, not as top-level sidebar items.
+**REQ-SHELL-03 (P0):** Primary navigation is **module-based** in a collapsible sidebar: Tasks · Finance · Calendar · Meal Planning · **Receipts** · **Gear**. Finance and Calendar may be disabled placeholders until their modules ship. Receipts and Gear are **standalone modules** (not nested under Finance). Task-specific views (Kanban, List, etc.) live **inside** the Tasks module, not as top-level sidebar items.
 
 > **Rollout note:** REQ-TASK-10 (Today), REQ-TASK-11 (task calendar), and REQ-TASK-13 (by person) remain P0 for Phase 1 but ship **after** the initial Kanban + List UI pass. See [`docs/design/DESIGN.md`](design/DESIGN.md) §9.
 
@@ -335,23 +335,90 @@ The **family banking app remains the source of truth** for account balances and 
 
 Folders are a **shared platform capability** reused by Meal Planning (recipes) and Receipt Management (files). **Do not duplicate** folder UI or GraphQL per module.
 
-**REQ-FOLDER-01 (P1):** **Generic `Folder` model** scoped by `householdId` and **`namespace`** enum (e.g. `MEALS`, `RECEIPTS`). Supports **nested hierarchy** via optional `parentId`. Each namespace has an **independent folder tree** per household.
+**REQ-FOLDER-01 (P1):** **Generic `Folder` model** scoped by `householdId` and **`namespace`** enum (`MEALS`, `RECEIPTS`, `GEAR`). Supports **nested hierarchy** via optional `parentId`. Each namespace has an **independent folder tree** per household. Gear uses **activity folders** (e.g. water sports, camping) — same folder UX as other modules.
 
 **REQ-FOLDER-02 (P1):** Folder fields: **name**, **color** (six pastel options: Blush, Sky, Lavender, Lemon, Peach, Sage), optional **parentId**, `sortOrder`. Folder tiles show **name** and **item count** (direct children: subfolders + items in folder).
 
 **REQ-FOLDER-03 (P1):** **Shared UI components** in `apps/web/src/components/folders/`: folder tile, breadcrumbs, create-folder modal (name + color swatches), folder browser shell. Module pages compose this shell with their own item rows and module-specific actions.
 
-**REQ-FOLDER-04 (P1):** **Shared GraphQL** folder operations: list folders for namespace, `createFolder`, `moveItemToFolder` (or domain-specific move mutations that delegate to shared logic). Meal and receipt modules each expose their items alongside folders for the page query.
+**REQ-FOLDER-04 (P1):** **Shared GraphQL** folder operations: list folders for namespace, `createFolder`, `moveItemToFolder` (or domain-specific move mutations that delegate to shared logic). Meal, receipt, and gear modules each expose their items alongside folders for the page query.
 
 **REQ-FOLDER-05 (P1):** **Migrate** existing `RecipeFolder` / `Recipe.folderId` to the generic `Folder` model (`namespace = MEALS`) as part of receipt work — **one folder system**, not parallel implementations.
 
-**REQ-FOLDER-06 (P1):** **Drag-and-drop into folders** within the module's library zone (reuse zone-aware DnD pattern from meal planning). Receipt files draggable into folders; meal recipes draggable into folders and onto meal slots (schedule zone unchanged).
+**REQ-FOLDER-06 (P1):** **Drag-and-drop into folders** within the module's library zone (reuse zone-aware DnD pattern from meal planning). Receipt files and gear items/variants draggable into folders; meal recipes draggable into folders and onto meal slots (schedule zone unchanged). Gear items/variants may also be dragged into the **lend staging zone** (REQ-GEAR-10).
 
 ---
 
 ### 4.9 Family / contacts / medical (deferred)
 
 Not needed yet. Do not implement until this document is updated.
+
+---
+
+### 4.10 Gear inventory (Phase 1d)
+
+Household **equipment and gear** tracking — organize owned items, group similar items into **item classes**, and manage **loans to external borrowers**. Distinct from pantry/home supplies (REQ-HOME-01). **Desktop-first** in v1; responsive/mobile layout deferred.
+
+**REQ-GEAR-01 (P1):** **Standalone Gear module** at `/gear` with top-level sidebar nav **“Gear”** (label may read “Gear Inventory” in page title). **Household-shared** — all household members can view and edit (REQ-PERM-01).
+
+**REQ-GEAR-02 (P1):** **Activity folders** — organize gear using the shared folder system (`namespace = GEAR`, REQ-FOLDER-01 … REQ-FOLDER-06). Both **standalone gear items** and **item classes** may live inside folders (e.g. folder “Water sports” contains class “Wetsuit boots” and standalone “Snorkel mask”).
+
+#### 4.10.1 Gear items — standalone
+
+**REQ-GEAR-03 (P1):** **Standalone gear item** fields: **name**, **description**, **size** (single-line free text — not a select), **care instructions**, **condition**, optional **photo**, optional **folderId**. An item is **either** standalone **or** a variant inside an item class — **not both** at once. **Promote** standalone → class member (or into new class) is a **later** enhancement; not required for first pass but schema should not block it.
+
+**REQ-GEAR-04 (P1):** **Condition** enum: `LIKE_NEW` · `GOOD` · `FAIR` · `RETIRED`. **`RETIRED`** items are not lendable and should be visually distinct in the UI.
+
+**REQ-GEAR-05 (P1):** **Photo** (optional) per standalone item — one image per item. Store file bytes via **`FileStorage`** (same abstraction as receipts, REQ-RCPT-11). Show **small thumbnail** in library rows. Allowed types: **JPEG, PNG, WebP** (no PDF for gear photos in v1). Reasonable max size (e.g. 10 MB) with clear error.
+
+#### 4.10.2 Item classes & variants
+
+**REQ-GEAR-06 (P1):** **Item class** — a single container (not nested inside another class) for a group of similar physical items. Lives in an activity folder like standalone items. Fields at **class level:** **name** (e.g. “Wetsuit boots”), **description**, **care instructions** (shared by all variants). **Variants** are the individual trackable units inside the class.
+
+**REQ-GEAR-07 (P1):** **Variant** fields: **name** (e.g. “Xcel 3mm”), **size** (free text), **condition** (REQ-GEAR-04), optional **photo** (thumbnail per variant). Variants **inherit** description and care instructions from the parent class (display on class detail; not duplicated per row unless overridden later — **no per-variant description/care in v1**).
+
+**REQ-GEAR-08 (P1):** **Class variant table** — opening an item class shows an **editable table** of all variants (name, size, condition, thumbnail, actions). Add / edit / delete variant rows inline or via modals. Each row is one physical item.
+
+**REQ-GEAR-09 (P1):** **CRUD** for standalone items, item classes, and variants. Delete class cascades variants (confirm if variants exist). Cannot delete items/variants on **active loan**.
+
+#### 4.10.3 Lending
+
+**REQ-GEAR-10 (P1):** **Lend staging zone** — section below the gear library. User drags **standalone items** or **individual variant rows** into the zone ( **not** a whole item class). Zone accumulates a **temporary list** of items to lend. Items already on active loan are **not draggable** (REQ-GEAR-13).
+
+**REQ-GEAR-11 (P1):** **Lend form** (in or adjacent to staging zone): borrower **name**, borrower **email** (**required** — external borrowers only, not household member picker), **lent date** (default **today**), **return-by date** (**required**, must be **strictly after** lent date). **“Lend”** button creates **one loan record** with **all staged items** attached.
+
+**REQ-GEAR-12 (P1):** **Active loans table** — permanent section below staging. Each row = one loan: borrower name, email, item list (names + thumbnails), lent date, return-by date. **Overdue** loans (past return-by, not yet returned) use prominent styling (e.g. soft red row / red date — mirror overdue tasks).
+
+**REQ-GEAR-13 (P1):** Items on **active loan** show **“Out on loan”** badge in the library / variant table and **cannot** be added to the lend staging zone again until returned.
+
+**REQ-GEAR-14 (P1):** **Return** — **one “Mark returned” action per loan** returns **all items** on that loan at once (**all-or-nothing**; no partial returns in v1). Returned loans move to **loan history**.
+
+**REQ-GEAR-15 (P1):** **Loan history** — **collapsed** section below active loans showing past returned loans (same columns as active). **“Clear history”** button permanently deletes history records (confirm). Active loans are never cleared by this action.
+
+**REQ-GEAR-16 (P2):** Schema and borrower **email** field should support **future automated reminder emails** (e.g. overdue notices). **No email send** in v1.
+
+#### 4.10.4 Page layout & scope
+
+**REQ-GEAR-17 (P1):** **Page layout** (desktop, top → bottom, inside `ModulePageLayout`):
+
+1. **Gear library** — folders, standalone item rows/cards, item class tiles/rows (open → variant table).
+2. **Lend staging zone** — drop target + staged item chips + lend form.
+3. **Active loans table**.
+4. **Loan history** (collapsed by default).
+
+**REQ-GEAR-18 (P2):** **Search / filter** (by name, condition, folder) — **deferred** from v1.
+
+**REQ-GEAR-19 (P2):** **Mobile layout** — deferred; desktop-first for Phase 1d.
+
+#### 4.10.5 Explicitly not in v1 gear scope
+
+- Barcode / QR scanning.
+- Purchase price, warranty, insurance metadata.
+- Linking gear to finance transactions.
+- Household member as borrower (external only).
+- Partial loan returns.
+- Automated email delivery (schema-ready only).
+- Full-text search.
 
 ---
 
@@ -389,6 +456,15 @@ Not needed yet. Do not implement until this document is updated.
 | **Shared folders** | Generic `Folder` model + shared UI/GraphQL · migrate meal `RecipeFolder` → `Folder` (`MEALS`) |
 | **Receipts** | `/receipts` page + nav · upload (picker + drag-drop) · local volume storage + `FileStorage` abstraction · preview · rename/delete · organize in `RECEIPTS` folder tree |
 
+### Phase 1d — Gear inventory
+
+| Module | Deliverables |
+|--------|--------------|
+| **Folders** | Extend `FolderNamespace` with `GEAR` · reuse shared folder UI |
+| **Gear library** | Standalone items + item classes with variant tables · photos · condition incl. `RETIRED` · activity folders |
+| **Lending** | Staging drop zone · external borrower form · active loans table · overdue styling · whole-loan return · collapsed loan history + clear |
+| **Web `/gear`** | `ModulePageLayout` · zone-aware DnD (library + lend zone) · desktop-first |
+
 ### Phase 2 — Hardening & ops
 
 - [ ] Weekly Postgres backup to Google Drive (unencrypted)
@@ -396,7 +472,7 @@ Not needed yet. Do not implement until this document is updated.
 
 ### Phase 3 — Expansion
 
-- [ ] Home inventory
+- [ ] Pantry / home supplies inventory (REQ-HOME-01) — separate from gear (REQ-GEAR-01)
 - [ ] React Native mobile app (same GraphQL backend)
 - [ ] Cross-entity linking (tasks ↔ bills ↔ events)
 - [ ] Quick capture for tasks
@@ -662,6 +738,7 @@ All open questions are resolved. Reference for agents and future you:
 
 | Date | Change |
 |------|--------|
+| 2026-07-06 | **Gear inventory (Phase 1d):** REQ-GEAR-01 … REQ-GEAR-19 — `/gear` nav, `GEAR` folder namespace, standalone items + item classes/variants, photos, lending staging + active loans + history. See `docs/design/DESIGN.md` §8.14. |
 | 2026-07-02 | **Task comments:** REQ-TASK-08 … REQ-TASK-23 — per-task thread sidebar (overlay, newest-first, plain text + linkify, unread badge + count, author-only delete); remove `description` field (drop existing data). Status enum trimmed to TODO / IN_PROGRESS / WAITING / DONE (REQ-TASK-06). See `docs/design/DESIGN.md` §8.13. |
 | 2026-07-02 | **Receipt management (Phase 1c):** REQ-RCPT-01 … REQ-RCPT-13 — standalone `/receipts` nav, household-shared uploads (images + PDF, 10 MB max, picker + drag-drop), preview/rename/delete, local volume storage + `FileStorage` abstraction. **Shared folders:** REQ-FOLDER-01 … REQ-FOLDER-06 — generic `Folder` model, migrate meal `RecipeFolder`, shared UI/GraphQL. See `docs/design/DESIGN.md` §8.11–8.12. |
 | 2026-06-24 | Meal planning refinements: recipe modal, PST Sunday cron (slots only), grocery Bought + Remove bought, delete clears slots, ingredient merge with multi-qty strings |
@@ -688,6 +765,7 @@ All open questions are resolved. Reference for agents and future you:
 **Calendar:** REQ-CAL-01 … REQ-CAL-05  
 **Meals:** REQ-MEAL-01 … REQ-MEAL-08  
 **Receipts:** REQ-RCPT-01 … REQ-RCPT-13  
+**Gear:** REQ-GEAR-01 … REQ-GEAR-19  
 **Folders (shared):** REQ-FOLDER-01 … REQ-FOLDER-06  
 **Home:** REQ-HOME-01  
 **Data:** REQ-DATA-01 … REQ-DATA-06  

@@ -1,4 +1,4 @@
-export const FOLDER_NAMESPACES = ["MEALS", "RECEIPTS"] as const;
+export const FOLDER_NAMESPACES = ["MEALS", "RECEIPTS", "GEAR"] as const;
 
 export type FolderNamespace = (typeof FOLDER_NAMESPACES)[number];
 

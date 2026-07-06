@@ -165,7 +165,8 @@ These decisions align the Stitch export with [`requirements.md`](../requirements
 | Google Calendar nav | Top-level **Calendar** — disabled until module ships | REQ-CAL-01 |
 | Meal Planning nav | Top-level **`/meals`** — enabled; Phase 1b implements planning UI | REQ-MEAL-01 … REQ-MEAL-06 |
 | Receipts nav | Top-level **`/receipts`** — standalone module (not under Finance) | REQ-RCPT-01 |
-| Shared folders | Generic folder UI + GraphQL reused by Meals and Receipts | REQ-FOLDER-01 … REQ-FOLDER-06 |
+| Gear nav | Top-level **`/gear`** — Gear Inventory module (Phase 1d) | REQ-GEAR-01 |
+| Shared folders | Generic folder UI + GraphQL reused by Meals, Receipts, and Gear | REQ-FOLDER-01 … REQ-FOLDER-06 |
 | Create action | **"+ New Task"** on Tasks pages (not sidebar “+ New Entry”) | — |
 | Kanban columns | TODO · IN_PROGRESS · WAITING · **DONE** (collapsible, open by default) | REQ-TASK-06 |
 | Kanban interaction | **Drag-and-drop** between columns updates status | REQ-TASK-07 |
@@ -473,14 +474,14 @@ Reference: REQ-RCPT-01 … REQ-RCPT-13 · module accent **sage green** (`sage-gr
 
 ### 8.12 Shared folder system (cross-module)
 
-Reference: REQ-FOLDER-01 … REQ-FOLDER-06. **Single implementation** — meals and receipts compose the same primitives.
+Reference: REQ-FOLDER-01 … REQ-FOLDER-06. **Single implementation** — meals, receipts, and gear compose the same primitives.
 
 **Shared components** (`apps/web/src/components/folders/`):
 
 | Component | Role |
 |-----------|------|
 | `FolderTile` | Compact pastel folder button; droppable; shows name + item count |
-| `FolderBreadcrumbs` | `Recipes` / `Receipts` root crumb + path; navigable; droppable crumbs |
+| `FolderBreadcrumbs` | `Recipes` / `Receipts` / `Gear` root crumb + path; navigable; droppable crumbs |
 | `FolderFormModal` | Name + six circle color swatches |
 | `FolderBrowser` | Shell: header actions, breadcrumbs, folder grid, `{children}` slot for module items |
 
@@ -489,7 +490,7 @@ Reference: REQ-FOLDER-01 … REQ-FOLDER-06. **Single implementation** — meals 
 | Layer | Location |
 |-------|----------|
 | Colors / drop-id helpers | `packages/shared` (generalize from meal-plan folder helpers) |
-| `Folder` model + `FolderNamespace` enum | `packages/db` |
+| `Folder` model + `FolderNamespace` enum | `packages/db` (`MEALS`, `RECEIPTS`, `GEAR`) |
 | Folder GraphQL types + mutations | `packages/graphql/src/folders/` |
 | DnD zone helpers | `apps/web/src/lib/folder-dnd.ts` (generalize from `meal-plan-dnd.ts`) |
 
@@ -572,6 +573,97 @@ Drop `Task.description` column; **do not migrate** existing description text.
 
 - Web push / in-app notification when someone comments on a task you follow or are assigned to — schema should not block this; UI deferred.
 
+### 8.14 Gear inventory (Phase 1d)
+
+Reference: REQ-GEAR-01 … REQ-GEAR-19 · module accent **muted blue** (`muted-blue` on section headers — equipment / logistics; distinct from sage receipts and warm-amber meals).
+
+**Page structure** (desktop, top → bottom, inside `ModulePageLayout`):
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Gear library — folders · standalone items · item classes   │
+├─────────────────────────────────────────────────────────────┤
+│  Lend staging zone — drop items here · staged chips · form  │
+├─────────────────────────────────────────────────────────────┤
+│  Active loans table                                         │
+├─────────────────────────────────────────────────────────────┤
+│  ▸ Loan history (collapsed) · [Clear history]               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Gear library
+
+1. **Activity folders** — shared folder shell (§8.12), `GEAR` namespace, root crumb **“Gear”**. Nested colored folder tiles; breadcrumbs when inside a folder.
+2. **Standalone items** — draggable rows/cards: thumbnail (if photo), name, size, condition chip, description/care on expand or edit modal. **“Out on loan”** badge when lent; not draggable to lend zone.
+3. **Item classes** — container rows (e.g. **“Wetsuit boots”**) with variant count. Click/open → **variant table**:
+   - Columns: thumbnail · variant name · size · condition · actions
+   - Shared **description** and **care instructions** shown on class header (not per-row in v1)
+   - Example: class “Wetsuit boots” · variant “Xcel 3mm” · size “10” · condition `GOOD`
+4. **Add actions** — header: **Add folder** · **Add item** · **Add item class**. Create/edit via modals.
+
+| Field | Standalone item | Item class | Variant |
+|-------|-----------------|------------|---------|
+| Name | ✓ | ✓ (class name) | ✓ (variant name) |
+| Description | ✓ | ✓ (shared) | inherits class |
+| Size | ✓ free text | — | ✓ free text |
+| Care instructions | ✓ | ✓ (shared) | inherits class |
+| Condition | ✓ | — | ✓ |
+| Photo | optional | — | optional |
+| Folder | optional | optional | — (via class) |
+
+**Condition chips:** `LIKE_NEW` · `GOOD` · `FAIR` · `RETIRED` (muted/disabled styling; not lendable).
+
+**Item ↔ class:** An item is standalone **or** a variant — never both. **Promote** standalone → class member: deferred (schema should allow later).
+
+**Photos:** Reuse `FileStorage` + authenticated download (same pattern as receipts). JPEG/PNG/WebP; thumbnail in rows. One photo per standalone item or variant.
+
+#### Lend staging zone
+
+- Dashed drop target below library (muted-blue tint on drag-over).
+- Accept drops of **standalone items** and **variant rows** only — **not** item classes.
+- Staged items appear as removable chips (thumbnail + name).
+- **Form:** borrower name · email (required) · lent date (default today) · return-by (required, must be after lent date).
+- **Lend** → creates one loan, clears staging, refreshes active loans + library badges.
+
+**DnD zones:**
+
+| Zone | Drop targets |
+|------|----------------|
+| Library | Folders, breadcrumbs |
+| Lend staging | Gear items / variants only |
+
+Use zone-aware collision detection (§8.12) — library DnD must not fire when pointer is over lend zone.
+
+#### Active loans table
+
+| Column | Content |
+|--------|---------|
+| Borrower | Name + email |
+| Items | Thumbnails + names (compact list) |
+| Lent | Date |
+| Return by | Date — **red** if overdue |
+| Actions | **Mark returned** (whole loan, all items) |
+
+Overdue rows: soft red background (mirror list-view overdue tasks).
+
+#### Loan history
+
+- **Collapsed** by default below active loans.
+- Same row shape as active loans + returned date (optional display).
+- **Clear history** — confirm modal; deletes history records only.
+
+**Future:** borrower `email` stored for automated reminder emails (REQ-GEAR-16); no send in v1.
+
+**Visual:**
+
+- Muted-blue section header strips.
+- Folder tiles: shared `FolderTile`.
+- Variant table: white `surface`, compact rows, inline edit or row actions menu.
+
+**Desktop-first (REQ-GEAR-19):** No dedicated mobile layout in Phase 1d.
+
+**Out of scope (Phase 1d):** search/filter, barcode, finance linking, household-member borrowers, partial returns, email automation.
+
 ---
 
 ## 9. Implementation plan
@@ -642,6 +734,20 @@ Drop `Task.description` column; **do not migrate** existing description text.
 
 **Not in v1:** comment edit, rich text, attachments, @mentions, live sync, push notifications (schema-ready only).
 
+### 9.6 Gear inventory pass (Phase 1d — awaiting owner GO)
+
+| Layer | Work |
+|-------|------|
+| **Database** | `FolderNamespace.GEAR` · `GearItem` (standalone) · `GearItemClass` + `GearVariant` · `GearLoan` + `GearLoanItem` · photo `storageKey` on item/variant · `GearCondition` enum incl. `RETIRED` |
+| **API storage** | Reuse `FileStorage` for gear photos · upload + authenticated download routes |
+| **GraphQL** | `gearLibrary` query (folders + items + classes) · CRUD mutations · `createLoan` / `markLoanReturned` / `clearLoanHistory` · move-to-folder |
+| **Web `/gear`** | Library section (folders, items, class → variant table) · lend staging zone + form · active loans · collapsed history · muted-blue accents |
+| **DnD** | Zone-aware: library (folders) + lend staging (items/variants only) · “Out on loan” badge blocks drag |
+| **Nav** | Enable **Gear** in `moduleNav` → `/gear` |
+| **Codegen / tests** | Operations · loan date validation · overdue display · cannot lend retired/on-loan items |
+
+**Not in Phase 1d:** search/filter, promote standalone→class, partial returns, email reminders (schema-ready), mobile layout.
+
 ---
 
 ## 10. Design assets
@@ -686,6 +792,7 @@ Drop `Task.description` column; **do not migrate** existing description text.
 | Google Calendar | REQ-CAL-01 … REQ-CAL-04 |
 | Meals | REQ-MEAL-01 … REQ-MEAL-08 |
 | Receipts | REQ-RCPT-01 … REQ-RCPT-13 |
+| Gear | REQ-GEAR-01 … REQ-GEAR-19 · §8.14 |
 | Shared folders | REQ-FOLDER-01 … REQ-FOLDER-06 |
 | Out of scope | Dark mode, a11y-specific, real-time collab (§3.2) |
 
@@ -695,6 +802,7 @@ Drop `Task.description` column; **do not migrate** existing description text.
 
 | Date | Change |
 |------|--------|
+| 2026-07-06 | **Gear inventory (Phase 1d):** §8.14 standalone items + item classes/variants, photos, lending staging + active loans + history; `GEAR` folder namespace. Implementation plan §9.6 (awaiting owner GO). |
 | 2026-07-02 | **Task comments:** §8.13 overlay sidebar thread (newest-first, linkify, unread + count, author delete); remove description (REQ-TASK-09). Status columns → TODO / IN_PROGRESS / WAITING / DONE. Implementation plan §9.5 (awaiting GO). |
 | 2026-07-02 | **Receipt management (Phase 1c):** §8.11 upload/preview/rename/delete, sage accent, `/receipts` nav. **Shared folders:** §8.12 — `FolderBrowser`, migrate meals off `RecipeFolder`. Implementation plan §9.4. |
 | 2026-06-24 | Meal planning refinements: recipe modal, PST Sunday cron (slots only), grocery Bought + Remove bought, delete-recipe clears slots, multi-qty merge row |

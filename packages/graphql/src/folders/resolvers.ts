@@ -90,10 +90,18 @@ export const folderResolvers = {
   Folder: {
     itemCount: (parent: {
       namespace: FolderNamespace;
-      _count?: { recipes: number; receipts: number };
+      _count?: {
+        recipes: number;
+        receipts: number;
+        gearItems: number;
+        gearItemClasses: number;
+      };
     }) => {
       if (parent.namespace === FolderNamespace.MEALS) {
         return parent._count?.recipes ?? 0;
+      }
+      if (parent.namespace === FolderNamespace.GEAR) {
+        return (parent._count?.gearItems ?? 0) + (parent._count?.gearItemClasses ?? 0);
       }
       return parent._count?.receipts ?? 0;
     },

@@ -2,6 +2,7 @@ export const folderTypeDefs = /* GraphQL */ `
   enum FolderNamespace {
     MEALS
     RECEIPTS
+    GEAR
   }
 
   enum FolderColor {

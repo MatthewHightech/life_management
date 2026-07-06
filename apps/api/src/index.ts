@@ -9,6 +9,7 @@ import { authRouter } from "./auth/routes";
 import { extractBearerToken, verifyAuthToken } from "./auth/jwt";
 import { runMealPlanWeekRollover } from "./cron/meal-plan-rollover";
 import { createReceiptRouter } from "./receipts/routes.js";
+import { createGearRouter } from "./gear/routes.js";
 import { createLocalFileStorage } from "./storage/local.js";
 
 declare global {
@@ -43,6 +44,7 @@ async function main() {
 
   app.use("/auth", authRouter);
   app.use("/receipts", createReceiptRouter(fileStorage));
+  app.use("/gear", createGearRouter(fileStorage));
 
   app.use(
     "/graphql",
@@ -67,6 +69,7 @@ async function main() {
       context: async ({ req }) =>
         createGraphQLContext(req.authUser ?? null, {
           deleteReceiptFile: (storageKey) => fileStorage.delete(storageKey),
+          deleteGearPhoto: (storageKey) => fileStorage.delete(storageKey),
         }),
     }),
   );

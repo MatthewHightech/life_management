@@ -44,18 +44,21 @@ enum MealSlot {
 }
 
 model Household {
-  id             String            @id @default(cuid())
-  name           String
-  users          User[]
-  projects       TaskProject[]
-  tasks          Task[]
-  recipes        Recipe[]
-  folders        Folder[]
-  receipts       Receipt[]
-  mealPlanSlots  MealPlanSlot[]
-  groceryItems   GroceryListItem[]
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id              String            @id @default(cuid())
+  name            String
+  users           User[]
+  projects        TaskProject[]
+  tasks           Task[]
+  recipes         Recipe[]
+  folders         Folder[]
+  receipts        Receipt[]
+  gearItems       GearItem[]
+  gearItemClasses GearItemClass[]
+  gearLoans       GearLoan[]
+  mealPlanSlots   MealPlanSlot[]
+  groceryItems    GroceryListItem[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 }
 
 model User {
@@ -210,6 +213,14 @@ model TaskCommentRead {
 enum FolderNamespace {
   MEALS
   RECEIPTS
+  GEAR
+}
+
+enum GearCondition {
+  LIKE_NEW
+  GOOD
+  FAIR
+  RETIRED
 }
 
 enum FolderColor {
@@ -231,13 +242,97 @@ model Folder {
   children    Folder[]        @relation("FolderTree")
   name        String
   color       FolderColor
-  recipes     Recipe[]
-  receipts    Receipt[]
-  sortOrder   Int             @default(0)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  recipes         Recipe[]
+  receipts        Receipt[]
+  gearItems       GearItem[]
+  gearItemClasses GearItemClass[]
+  sortOrder       Int             @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@index([householdId, namespace, parentId])
+}
+
+model GearItem {
+  id               String        @id @default(cuid())
+  householdId      String
+  household        Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  folderId         String?
+  folder           Folder?       @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  name             String
+  description      String?
+  size             String?
+  careInstructions String?
+  condition        GearCondition @default(GOOD)
+  photoStorageKey  String?
+  photoMimeType    String?
+  loanItems        GearLoanItem[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([householdId, folderId])
+}
+
+model GearItemClass {
+  id               String        @id @default(cuid())
+  householdId      String
+  household        Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  folderId         String?
+  folder           Folder?       @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  name             String
+  description      String?
+  careInstructions String?
+  variants         GearVariant[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([householdId, folderId])
+}
+
+model GearVariant {
+  id              String        @id @default(cuid())
+  classId         String
+  class           GearItemClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  name            String
+  size            String?
+  condition       GearCondition @default(GOOD)
+  photoStorageKey String?
+  photoMimeType   String?
+  loanItems       GearLoanItem[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([classId])
+}
+
+model GearLoan {
+  id            String         @id @default(cuid())
+  householdId   String
+  household     Household      @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  borrowerName  String
+  borrowerEmail String
+  lentAt        DateTime       @db.Date
+  returnBy      DateTime       @db.Date
+  returnedAt    DateTime?
+  items         GearLoanItem[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([householdId, returnedAt])
+}
+
+model GearLoanItem {
+  id            String       @id @default(cuid())
+  loanId        String
+  loan          GearLoan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  gearItemId    String?
+  gearItem      GearItem?    @relation(fields: [gearItemId], references: [id], onDelete: Restrict)
+  gearVariantId String?
+  gearVariant   GearVariant? @relation(fields: [gearVariantId], references: [id], onDelete: Restrict)
+
+  @@index([loanId])
+  @@index([gearItemId])
+  @@index([gearVariantId])
 }
 
 model Receipt {

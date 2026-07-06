@@ -4,7 +4,13 @@ import { ForbiddenError } from "../auth";
 
 export const folderInclude = {
   _count: {
-    select: { recipes: true, receipts: true, children: true },
+    select: {
+      recipes: true,
+      receipts: true,
+      children: true,
+      gearItems: true,
+      gearItemClasses: true,
+    },
   },
 } satisfies Prisma.FolderInclude;
 

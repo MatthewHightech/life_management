@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolvers } from "@life/graphql/resolvers";
 import { mealResolvers } from "../../packages/graphql/src/meals/resolvers";
+import { gearResolvers } from "../../packages/graphql/src/gear/resolvers";
 import { taskResolvers } from "../../packages/graphql/src/tasks/resolvers";
 
 describe("graphql resolvers", () => {
@@ -34,6 +35,16 @@ describe("graphql resolvers", () => {
   it("merges meal mutation resolvers", () => {
     expect(resolvers.Mutation.createRecipe).toBe(mealResolvers.Mutation.createRecipe);
     expect(resolvers.Mutation.assignMealPlanSlot).toBe(mealResolvers.Mutation.assignMealPlanSlot);
+  });
+
+  it("merges gear query resolvers", () => {
+    expect(resolvers.Query.gearLibrary).toBe(gearResolvers.Query.gearLibrary);
+    expect(resolvers.Query.gearLending).toBe(gearResolvers.Query.gearLending);
+  });
+
+  it("merges gear mutation resolvers", () => {
+    expect(resolvers.Mutation.createGearLoan).toBe(gearResolvers.Mutation.createGearLoan);
+    expect(resolvers.Mutation.markGearLoanReturned).toBe(gearResolvers.Mutation.markGearLoanReturned);
   });
 
   it("computes isBlocked when dependencies are incomplete", () => {
