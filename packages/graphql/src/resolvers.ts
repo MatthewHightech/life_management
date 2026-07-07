@@ -2,6 +2,7 @@ import { GraphQLContext } from "./context";
 import { folderResolvers } from "./folders/resolvers";
 import { mealResolvers } from "./meals/resolvers";
 import { gearResolvers } from "./gear/resolvers";
+import { financeResolvers } from "./finance/resolvers";
 import { receiptResolvers } from "./receipts/resolvers";
 import { taskResolvers } from "./tasks/resolvers";
 
@@ -41,6 +42,7 @@ export const resolvers = {
     ...mealResolvers.Query,
     ...receiptResolvers.Query,
     ...gearResolvers.Query,
+    ...financeResolvers.Query,
   },
   Mutation: {
     ping: () => "pong",
@@ -49,6 +51,7 @@ export const resolvers = {
     ...mealResolvers.Mutation,
     ...receiptResolvers.Mutation,
     ...gearResolvers.Mutation,
+    ...financeResolvers.Mutation,
   },
   User: {
     household: (

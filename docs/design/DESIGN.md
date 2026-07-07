@@ -280,7 +280,7 @@ Use YAML frontmatter values as source of truth for implementation.
 ```
 [Dark sidebar — Life Management / Household]     [collapse toggle]
   Tasks          →  /tasks          (active module)
-  Finance        →  /finance        (disabled until Phase 1)
+  Finance        →  /finance/budget (default; redirects from /finance)
   Calendar       →  /calendar       (disabled — Google Calendar module)
   Meal Planning  →  /meals          (Phase 1b — weekly plan + grocery)
   Receipts       →  /receipts       (Phase 1c — file storage + folders)
@@ -310,6 +310,27 @@ List:    filter chips deferred (REQ-TASK-15)
 | `/tasks/people` | By assignee | Later pass |
 | `/meals` | Meal planning (library + week grid + grocery) | **Phase 1b** |
 | `/receipts` | Receipt management (upload + folders + preview) | **Phase 1c** |
+| `/finance/budget` | Household budget (collapsible section table) | **Phase 1e — V1** |
+| `/finance/reports` | Monthly Reports | Placeholder (Phase 1e nav only) |
+| `/finance/purchase-list` | Purchase List | Placeholder (Phase 1e nav only) |
+
+**Inside Finance module** (`/finance/budget`, default):
+
+```
+Header:  Finance                  [Budget] [Monthly Reports] [Purchase List]
+                                              ↑ segmented control (Tasks toggle pattern)
+
+Budget:  July Budget
+         collapsible section table (Food · Car · Home …)
+         inline quick-add for sections + line items
+```
+
+| Route | View | Status |
+|-------|------|--------|
+| `/finance` | Redirect → `/finance/budget` | **Phase 1e** |
+| `/finance/budget` | Current-month budget table | **Phase 1e — V1** |
+| `/finance/reports` | Monthly Reports | Placeholder |
+| `/finance/purchase-list` | Purchase List | Placeholder |
 
 **Do not** merge task due-date calendar with Google Calendar — separate modules (REQ-TASK-11 vs REQ-CAL-01).
 
@@ -406,11 +427,71 @@ Reference: [`list_view_homepage.png`](list_view_homepage.png)
 - Tinted background + dark text of same hue (e.g. warm amber + dark brown for “Urgent”).
 - Blocked / overdue: soft amber, not aggressive red unless critical.
 
-### 8.8 Finance tables (future)
+### 8.8 Finance — Budget table (Phase 1e)
 
-- Monospaced numerals, right-aligned amounts.
-- Sage module tint on summary/header cards.
-- Category spend bars using category color or sage scale.
+Reference: REQ-FIN-07 … REQ-FIN-16 · module accent **sage green** (`sage` / `bg-sage` on section headers — §4.2.4).
+
+**Page shell:** `ModulePageLayout` + `FinancePageLayout` (wraps sub-nav toggle, mirror `TasksPageLayout`).
+
+**Sub-navigation:** `FinanceViewToggle` — segmented control with three links (same classes as `TasksViewToggle`): **Budget** · **Monthly Reports** · **Purchase List**.
+
+**Budget header:** `{Month} Budget` (e.g. “July Budget”) — current calendar month in household timezone; no month picker in V1.
+
+**Table structure:**
+
+```
+[Add section]                              ← button → modal (gear “Add item class”)
+
+▾ Food  [+]  …pencil… …trash…              $800  $0  $800  [====····]
+    Groceries                               $500  $0  $500  [====····]
+    [draft row after + click]               name · amount · Monthly|Annual
+▸ Car     …                                 $400  $0  $400  [====····]
+```
+
+| Row type | Columns | Notes |
+|----------|---------|-------|
+| **Section** (collapsible) | Name · Budget · Spent · Remaining · progress | Totals = sum of children; **+** adds inline draft line; chevron expand/collapse |
+| **Line item** | Name · Budget · Spent · Remaining · progress | Indented under section; inline edit |
+| **Draft line item** | Inline inputs | Appears after **+** on section row; commit on Enter/blur |
+
+**Add flows (mirror Gear library):**
+
+| Action | Pattern |
+|--------|---------|
+| **Add section** | Header **“Add section”** button → `Modal` (name only) |
+| **Rename section** | Pencil on section row → same modal |
+| **Add line item** | **+** on section row → inline draft row under that section |
+| **Delete section** | Trash → `ConfirmModal` cascade delete children |
+
+**Line item types:**
+
+| Type | Limit applies to | Spent resets |
+|------|------------------|--------------|
+| **Monthly** | Current calendar month | 1st of each month |
+| **Annual** | Calendar year (Jan–Dec) | January 1 |
+
+**V1 spend:** Always display **$0** spent / full remaining until bank sync (REQ-FIN-14). Persist spend rows in DB per month (monthly) and per year (annual YTD) for future Monthly Reports.
+
+**Interactions:**
+
+- **Sections:** **Add section** modal · pencil rename modal · trash + `ConfirmModal` cascade.
+- **Line items:** **+** on section row → inline draft row · inline edit on saved rows · trash + confirm.
+- **No DnD** on budget rows.
+- Reuse: `sectionCardClass` / `sectionHeaderClass`, `EditableTextCell`, `EditableSelectCell` or pill for Monthly/Annual, `ConfirmModal`, icon row actions (gear/receipts pattern).
+
+**Visual:**
+
+- Monospaced/tabular numerals, **right-aligned** amount columns (REQ-FIN-15).
+- **Progress bar** per row (section totals and line items): spent ÷ budget; sage scale; cap at 100% when over budget.
+- Sage tint on page section wrapper (single `sectionCardClass` around table).
+
+**Currency:** CAD only — format as `$1,234.56`; no currency selector.
+
+**Timezone:** Month and year boundaries use **America/Los_Angeles** (PST/PDT).
+
+**Delete section:** `ConfirmModal` cascade delete all child line items (gear-class pattern).
+
+**Out of scope (Budget V1):** Monthly Reports UI, Purchase List UI, manual transaction log, month browser, bank sync UI, income rows, recurring bills.
 
 ### 8.9 Calendar views (future)
 
@@ -689,7 +770,7 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 |------|---------|
 | **Task views** | Today · task calendar · by person |
 | **Task polish** | Filters · category/project subtext on list rows |
-| **Finance** | Budget dashboard (sage accent) |
+| **Finance** | Budget dashboard (sage accent) — **Phase 1e: Budget table V1** |
 | **Calendar** | Google Calendar module (blue accent) |
 | **Meals (Phase 1b)** | Recipe library · Sun–Sat grid · DnD to slots · grocery list · Sunday auto-clear |
 | **Deferred** | Dark mode · Settings · admin roles UI |
@@ -748,6 +829,19 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 
 **Not in Phase 1d:** search/filter, promote standalone→class, partial returns, email reminders (schema-ready), mobile layout.
 
+### 9.7 Finance Budget pass (Phase 1e — awaiting owner GO)
+
+| Layer | Work |
+|-------|------|
+| **Database** | `BudgetSection` · `BudgetLineItem` (name, amount, type `MONTHLY` \| `ANNUAL`, sectionId, householdId, sortOrder) · `BudgetLineSpend` (lineItemId, year, month nullable for annual YTD keying, spentCents) — retain full history |
+| **GraphQL** | `budgetMonth` query (current month sections + items + computed totals) · section/line CRUD · spend fields returned (0 in V1 UI) |
+| **Web `/finance`** | `FinancePageLayout` + `FinanceViewToggle` · `/finance/budget` collapsible table · **Add section** modal + per-section **+** draft rows · placeholder `/finance/reports` + `/finance/purchase-list` · sage accents |
+| **Nav** | `/finance` redirect · enable Budget sub-route as default landing |
+| **Reuse** | `ModulePageLayout`, `sectionCardClass`, `EditableTextCell`, `ConfirmModal`, `Modal`, gear-class **+** / draft-row pattern, pencil/trash icons |
+| **Codegen / tests** | Operations · monthly vs annual reset rules · section total aggregation · cascade delete section |
+
+**Not in Budget V1:** Monthly Reports content, Purchase List, manual spend entry, bank/Plaid sync (REQ-FIN-20), month picker, income rows, recurring bills.
+
 ---
 
 ## 10. Design assets
@@ -788,7 +882,7 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 | Multi-assignee | REQ-TASK-05 |
 | Task fields | REQ-TASK-01 … REQ-TASK-04 |
 | Push reminders (UI) | REQ-TASK-20 |
-| Finance | REQ-FIN-01 … REQ-FIN-06 |
+| Finance Budget | REQ-FIN-07 … REQ-FIN-16, REQ-FIN-20 |
 | Google Calendar | REQ-CAL-01 … REQ-CAL-04 |
 | Meals | REQ-MEAL-01 … REQ-MEAL-08 |
 | Receipts | REQ-RCPT-01 … REQ-RCPT-13 |
@@ -802,6 +896,7 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 
 | Date | Change |
 |------|--------|
+| 2026-07-07 | **Finance Budget V1 (Phase 1e):** §8.8 collapsible section budget table, in-module nav (Budget / Monthly Reports / Purchase List), monthly vs annual line items, sage accent, current-month UI. Implementation plan §9.7 (awaiting owner GO). |
 | 2026-07-06 | **Gear inventory (Phase 1d):** §8.14 standalone items + item classes/variants, photos, lending staging + active loans + history; `GEAR` folder namespace. Implementation plan §9.6 (awaiting owner GO). |
 | 2026-07-02 | **Task comments:** §8.13 overlay sidebar thread (newest-first, linkify, unread + count, author delete); remove description (REQ-TASK-09). Status columns → TODO / IN_PROGRESS / WAITING / DONE. Implementation plan §9.5 (awaiting GO). |
 | 2026-07-02 | **Receipt management (Phase 1c):** §8.11 upload/preview/rename/delete, sage accent, `/receipts` nav. **Shared folders:** §8.12 — `FolderBrowser`, migrate meals off `RecipeFolder`. Implementation plan §9.4. |

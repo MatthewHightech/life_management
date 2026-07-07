@@ -58,6 +58,8 @@ model Household {
   gearLoans       GearLoan[]
   mealPlanSlots   MealPlanSlot[]
   groceryItems    GroceryListItem[]
+  budgetSections  BudgetSection[]
+  budgetLineItems BudgetLineItem[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 }
@@ -352,6 +354,55 @@ model Receipt {
 
   @@unique([householdId, storageKey])
   @@index([householdId, folderId])
+}
+
+enum BudgetLineType {
+  MONTHLY
+  ANNUAL
+}
+
+model BudgetSection {
+  id          String           @id @default(cuid())
+  householdId String
+  household   Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  name        String
+  scope       BudgetLineType
+  sortOrder   Int              @default(0)
+  lineItems   BudgetLineItem[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([householdId, scope])
+}
+
+model BudgetLineItem {
+  id           String            @id @default(cuid())
+  householdId  String
+  household    Household         @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  sectionId    String
+  section      BudgetSection     @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  name         String
+  amountCents  Int
+  type         BudgetLineType
+  sortOrder    Int               @default(0)
+  spendRecords BudgetLineSpend[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([householdId])
+  @@index([sectionId])
+}
+
+model BudgetLineSpend {
+  id         String         @id @default(cuid())
+  lineItemId String
+  lineItem   BudgetLineItem @relation(fields: [lineItemId], references: [id], onDelete: Cascade)
+  year       Int
+  month      Int
+  spentCents Int            @default(0)
+
+  @@unique([lineItemId, year, month])
+  @@index([lineItemId])
 }
 
 model Recipe {
