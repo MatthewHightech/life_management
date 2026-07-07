@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import type { ReceiptItem } from "@/components/receipts/types";
+import { ReceiptEditableNotes } from "@/components/receipts/receipt-editable-notes";
 import { fetchReceiptBlob } from "@/lib/receipt-upload";
+import { formatReceiptAddedDate } from "@/lib/receipt-display";
 import { Modal } from "@/components/ui/modal";
 
 type ReceiptPreviewModalProps = {
@@ -55,8 +57,17 @@ export function ReceiptPreviewModal({ open, onOpenChange, receipt }: ReceiptPrev
       open={open}
       onOpenChange={onOpenChange}
       title={receipt?.fileName ?? "Receipt preview"}
+      description={
+        receipt ? `Added ${formatReceiptAddedDate(receipt.createdAt)}` : undefined
+      }
       className="w-[min(100%-2rem,48rem)]"
     >
+      {receipt ? (
+        <div className="mb-4">
+          <ReceiptEditableNotes receiptId={receipt.id} notes={receipt.notes} />
+        </div>
+      ) : null}
+
       {error ? <p className="text-sm text-error">{error}</p> : null}
       {!error && blobUrl && isImage ? (
         // eslint-disable-next-line @next/next/no-img-element

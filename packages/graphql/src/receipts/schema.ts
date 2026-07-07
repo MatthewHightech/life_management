@@ -5,6 +5,7 @@ export const receiptTypeDefs = /* GraphQL */ `
     mimeType: String!
     byteSize: Int!
     folderId: ID
+    notes: String
     createdAt: String!
     updatedAt: String!
   }
@@ -20,6 +21,7 @@ export const receiptTypeDefs = /* GraphQL */ `
 
   extend type Mutation {
     renameReceipt(id: ID!, fileName: String!): Receipt!
+    updateReceiptNotes(id: ID!, notes: String): Receipt!
     deleteReceipt(id: ID!): Boolean!
     moveReceiptToFolder(receiptId: ID!, folderId: ID): Receipt!
   }

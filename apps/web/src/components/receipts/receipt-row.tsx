@@ -6,6 +6,7 @@ import { FileText, GripVertical, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ReceiptItem } from "@/components/receipts/types";
 import { fetchReceiptBlob } from "@/lib/receipt-upload";
+import { formatReceiptRowSubtitle } from "@/lib/receipt-display";
 import { cn } from "@/lib/cn";
 
 type ReceiptRowProps = {
@@ -96,8 +97,8 @@ export function ReceiptRow({ receipt, onPreview, onRename, onDelete, overlay = f
         </span>
         <span className="min-w-0">
           <span className="block truncate text-sm font-medium text-text-main">{receipt.fileName}</span>
-          <span className="block text-xs text-text-muted">
-            {new Date(receipt.createdAt).toLocaleDateString()}
+          <span className="block truncate text-xs text-text-muted">
+            {formatReceiptRowSubtitle(receipt.createdAt, receipt.notes)}
           </span>
         </span>
       </button>

@@ -8,6 +8,7 @@ const RECEIPT_FIELDS = gql`
     mimeType
     byteSize
     folderId
+    notes
     createdAt
     updatedAt
   }
@@ -32,6 +33,15 @@ export const RENAME_RECEIPT_MUTATION = gql`
   ${RECEIPT_FIELDS}
   mutation RenameReceipt($id: ID!, $fileName: String!) {
     renameReceipt(id: $id, fileName: $fileName) {
+      ...ReceiptFields
+    }
+  }
+`;
+
+export const UPDATE_RECEIPT_NOTES_MUTATION = gql`
+  ${RECEIPT_FIELDS}
+  mutation UpdateReceiptNotes($id: ID!, $notes: String) {
+    updateReceiptNotes(id: $id, notes: $notes) {
       ...ReceiptFields
     }
   }

@@ -54,6 +54,7 @@ type Mutation {
   deleteGroceryItem(id: ID!): Boolean!
   removeBoughtGroceryItems: Int!
   renameReceipt(id: ID!, fileName: String!): Receipt!
+  updateReceiptNotes(id: ID!, notes: String): Receipt!
   deleteReceipt(id: ID!): Boolean!
   moveReceiptToFolder(receiptId: ID!, folderId: ID): Receipt!
   createGearItem(input: CreateGearItemInput!): GearItem!
@@ -328,6 +329,7 @@ type Receipt {
   mimeType: String!
   byteSize: Int!
   folderId: ID
+  notes: String
   createdAt: String!
   updatedAt: String!
 }

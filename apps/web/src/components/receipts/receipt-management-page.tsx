@@ -136,6 +136,10 @@ export function ReceiptManagementPage() {
     });
   }
 
+  const previewReceiptResolved = previewReceipt
+    ? receiptById.get(previewReceipt.id) ?? previewReceipt
+    : null;
+
   return (
     <ModulePageLayout title="Receipt Management">
       {loading && <p className="text-sm text-text-muted">Loading receipts…</p>}
@@ -192,7 +196,7 @@ export function ReceiptManagementPage() {
       <ReceiptPreviewModal
         open={Boolean(previewReceipt)}
         onOpenChange={(open) => !open && setPreviewReceipt(null)}
-        receipt={previewReceipt}
+        receipt={previewReceiptResolved}
       />
       <ReceiptRenameModal
         open={Boolean(renameReceipt)}

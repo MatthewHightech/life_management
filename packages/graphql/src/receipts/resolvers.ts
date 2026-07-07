@@ -54,6 +54,21 @@ export const receiptResolvers = {
       });
     },
 
+    updateReceiptNotes: async (
+      _parent: unknown,
+      args: { id: string; notes?: string | null },
+      context: GraphQLContext,
+    ) => {
+      const { householdId } = await requireHouseholdUser(context);
+      await assertReceiptInHousehold(context, args.id, householdId);
+
+      const trimmed = args.notes?.trim() ?? "";
+      return context.prisma.receipt.update({
+        where: { id: args.id },
+        data: { notes: trimmed || null },
+      });
+    },
+
     deleteReceipt: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
       const receipt = await context.prisma.receipt.findFirst({
