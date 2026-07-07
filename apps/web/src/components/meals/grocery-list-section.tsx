@@ -11,6 +11,7 @@ import {
 import type { GroceryItem } from "@/components/meals/types";
 import { MEAL_PLAN_REFETCH } from "@/lib/meal-plan-queries";
 import { Button } from "@/components/ui/button";
+import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
 import { cn } from "@/lib/cn";
 
 type GroceryListSectionProps = {
@@ -51,8 +52,8 @@ export function GroceryListSection({ items }: GroceryListSectionProps) {
   }
 
   return (
-    <section className="rounded-xl border border-border-subtle bg-surface">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle bg-warm-amber/40 px-4 py-3">
+    <section className={sectionCardClass}>
+      <header className={cn(sectionHeaderClass, "flex flex-wrap items-center justify-between gap-3")}>
         <h2 className="text-sm font-semibold uppercase tracking-wide text-text-main">Grocery list</h2>
         <Button
           type="button"

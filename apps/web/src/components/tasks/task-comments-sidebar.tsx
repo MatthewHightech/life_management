@@ -3,8 +3,8 @@
 import { useMutation, useQuery } from "@apollo/client";
 import { formatShortDate } from "@life/shared";
 import { Trash2, X } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
-import { useTaskComments } from "@/components/tasks/task-comments-context";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { useTaskComments, type TaskCommentsTarget } from "@/components/tasks/task-comments-context";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,15 +33,55 @@ function formatCommentTime(iso: string) {
   return formatShortDate(iso);
 }
 
+const SIDEBAR_TRANSITION_MS = 300;
+
 export function TaskCommentsSidebar() {
   const { activeTask, closeComments } = useTaskComments();
   const [body, setBody] = useState("");
+  const [heldTask, setHeldTask] = useState<TaskCommentsTarget | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const wasOpenRef = useRef(false);
+
+  const panelTask = activeTask ?? heldTask;
+
+  useEffect(() => {
+    if (activeTask) {
+      setHeldTask(activeTask);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setHeldTask(null), SIDEBAR_TRANSITION_MS);
+    return () => window.clearTimeout(timer);
+  }, [activeTask]);
+
+  useEffect(() => {
+    if (activeTask) {
+      if (!wasOpenRef.current) {
+        setIsVisible(false);
+        const frame = requestAnimationFrame(() => {
+          requestAnimationFrame(() => setIsVisible(true));
+        });
+        wasOpenRef.current = true;
+        return () => cancelAnimationFrame(frame);
+      }
+      return;
+    }
+
+    wasOpenRef.current = false;
+    setIsVisible(false);
+  }, [activeTask]);
+
+  useEffect(() => {
+    if (!activeTask) {
+      setBody("");
+    }
+  }, [activeTask]);
 
   const { data, loading, refetch } = useQuery<TaskCommentsQuery, TaskCommentsQueryVariables>(
     TASK_COMMENTS_QUERY,
     {
-      skip: !activeTask,
-      variables: { taskId: activeTask?.id ?? "" },
+      skip: !panelTask,
+      variables: { taskId: panelTask?.id ?? "" },
       fetchPolicy: "network-only",
     },
   );
@@ -63,7 +103,7 @@ export function TaskCommentsSidebar() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!activeTask) {
+    if (!panelTask) {
       return;
     }
 
@@ -73,13 +113,13 @@ export function TaskCommentsSidebar() {
     }
 
     await addComment({
-      variables: { taskId: activeTask.id, body: trimmed },
+      variables: { taskId: panelTask.id, body: trimmed },
     });
     setBody("");
     await refetch();
   }
 
-  if (!activeTask) {
+  if (!panelTask) {
     return null;
   }
 
@@ -90,15 +130,24 @@ export function TaskCommentsSidebar() {
       <button
         type="button"
         aria-label="Close comments"
-        className="absolute inset-0 bg-black/30"
+        className={cn(
+          "absolute inset-0 bg-black/30 transition-opacity duration-300",
+          isVisible ? "opacity-100" : "opacity-0",
+        )}
         onClick={closeComments}
       />
 
-      <aside className="relative flex h-full w-full max-w-md flex-col border-l border-border-subtle bg-surface shadow-[0_12px_24px_rgba(0,0,0,0.12)]">
+      <aside
+        className={cn(
+          "relative flex h-full w-full max-w-md flex-col border-l border-border-subtle bg-surface shadow-[0_12px_24px_rgba(0,0,0,0.12)]",
+          "transition-transform duration-300 ease-out",
+          isVisible ? "translate-x-0" : "translate-x-full",
+        )}
+      >
         <header className="flex items-start justify-between gap-3 border-b border-border-subtle px-4 py-4">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Comments</p>
-            <h2 className="truncate text-lg font-semibold text-text-main">{activeTask.title}</h2>
+            <h2 className="truncate text-lg font-semibold text-text-main">{panelTask.title}</h2>
           </div>
           <button
             type="button"

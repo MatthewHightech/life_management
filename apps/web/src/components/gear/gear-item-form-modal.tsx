@@ -168,7 +168,12 @@ export function GearItemFormModal({
             className="hidden"
             onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)}
           />
-          <Button type="button" variant="ghost" onClick={() => fileInputRef.current?.click()}>
+          <Button
+            type="button"
+            variant="secondary"
+            className="px-3 py-1.5 text-xs"
+            onClick={() => fileInputRef.current?.click()}
+          >
             {photoFile ? photoFile.name : "Choose photo"}
           </Button>
         </div>

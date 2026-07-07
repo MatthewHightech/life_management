@@ -8,6 +8,8 @@ import { GearClassRow } from "@/components/gear/gear-class-row";
 import { GearItemRow } from "@/components/gear/gear-item-row";
 import type { GearFolder, GearItem, GearItemClass } from "@/components/gear/types";
 import { Button } from "@/components/ui/button";
+import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
+import { cn } from "@/lib/cn";
 
 type GearLibrarySectionProps = {
   folders: GearFolder[];
@@ -26,7 +28,8 @@ type GearLibrarySectionProps = {
   onEditClass: (itemClass: GearItemClass) => void;
   onDeleteClass: (itemClass: GearItemClass) => void;
   onAddVariant: (itemClass: GearItemClass) => void;
-  onEditVariant: (itemClass: GearItemClass, variantId: string) => void;
+  addingVariantClassId: string | null;
+  onCancelAddVariant: () => void;
   onDeleteVariant: (itemClass: GearItemClass, variantId: string) => void;
   onFolderDeleted?: (folderId: string) => void;
 };
@@ -50,7 +53,8 @@ export const GearLibrarySection = forwardRef<HTMLElement, GearLibrarySectionProp
       onEditClass,
       onDeleteClass,
       onAddVariant,
-      onEditVariant,
+      addingVariantClassId,
+      onCancelAddVariant,
       onDeleteVariant,
       onFolderDeleted,
     },
@@ -60,8 +64,8 @@ export const GearLibrarySection = forwardRef<HTMLElement, GearLibrarySectionProp
     const showBreadcrumbs = breadcrumbPath.length > 0;
 
     return (
-      <section ref={ref} className="rounded-xl border border-border-subtle bg-surface">
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle bg-muted-blue/50 px-4 py-3">
+      <section ref={ref} className={sectionCardClass}>
+        <header className={cn(sectionHeaderClass, "flex flex-wrap items-center justify-between gap-2")}>
           <h2 className="text-sm font-semibold uppercase tracking-wide text-text-main">Gear library</h2>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="ghost" onClick={onCreateFolder} className="gap-1.5 px-3 py-1.5 text-xs">
@@ -116,12 +120,13 @@ export const GearLibrarySection = forwardRef<HTMLElement, GearLibrarySectionProp
                   key={itemClass.id}
                   itemClass={itemClass}
                   expanded={expandedClassIds.has(itemClass.id)}
+                  isAddingVariant={addingVariantClassId === itemClass.id}
                   onToggleExpand={onToggleClassExpand}
                   onEdit={onEditClass}
                   onDelete={onDeleteClass}
                   onAddVariant={onAddVariant}
-                  onEditVariant={onEditVariant}
-                  onDeleteVariant={onDeleteVariant}
+                  onCancelAddVariant={onCancelAddVariant}
+                  onDeleteVariant={(variant) => onDeleteVariant(itemClass, variant.id)}
                 />
               ))}
             </div>

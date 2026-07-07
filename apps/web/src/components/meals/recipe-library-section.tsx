@@ -7,6 +7,8 @@ import { FolderTile } from "@/components/folders/folder-tile";
 import { RecipeRow } from "@/components/meals/recipe-row";
 import type { MealFolder, MealRecipe } from "@/components/meals/types";
 import { Button } from "@/components/ui/button";
+import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
+import { cn } from "@/lib/cn";
 
 type RecipeLibrarySectionProps = {
   folders: MealFolder[];
@@ -36,8 +38,8 @@ export const RecipeLibrarySection = forwardRef<HTMLElement, RecipeLibrarySection
     const isEmpty = folders.length === 0 && recipes.length === 0;
 
     return (
-      <section ref={ref} className="rounded-xl border border-border-subtle bg-surface">
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle bg-warm-amber/40 px-4 py-3">
+      <section ref={ref} className={sectionCardClass}>
+        <header className={cn(sectionHeaderClass, "flex flex-wrap items-center justify-between gap-2")}>
           <h2 className="text-sm font-semibold uppercase tracking-wide text-text-main">Recipes</h2>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="ghost" onClick={onCreateFolder} className="gap-1.5 px-3 py-1.5 text-xs">

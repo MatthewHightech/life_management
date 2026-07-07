@@ -2,7 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { FileText, GripVertical } from "lucide-react";
+import { FileText, GripVertical, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ReceiptItem } from "@/components/receipts/types";
 import { fetchReceiptBlob } from "@/lib/receipt-upload";
@@ -103,20 +103,22 @@ export function ReceiptRow({ receipt, onPreview, onRename, onDelete, overlay = f
       </button>
 
       {!overlay ? (
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
             onClick={() => onRename(receipt)}
-            className="text-xs text-text-muted hover:text-text-main"
+            className="rounded p-1 text-text-muted hover:bg-background hover:text-text-main"
+            aria-label={`Rename ${receipt.fileName}`}
           >
-            Rename
+            <Pencil className="h-3.5 w-3.5" />
           </button>
           <button
             type="button"
             onClick={() => onDelete(receipt)}
-            className="text-xs text-text-muted hover:text-error"
+            className="rounded p-1 text-text-muted hover:bg-background hover:text-error"
+            aria-label={`Delete ${receipt.fileName}`}
           >
-            Delete
+            <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
       ) : null}

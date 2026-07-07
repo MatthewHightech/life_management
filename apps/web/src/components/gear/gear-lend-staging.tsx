@@ -7,6 +7,7 @@ import type { StagedGearEntry } from "@/components/gear/types";
 import { GearPhotoThumb } from "@/components/gear/gear-photo-thumb";
 import { Button } from "@/components/ui/button";
 import { GEAR_LEND_ZONE } from "@life/shared";
+import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
 import { cn } from "@/lib/cn";
 
 type GearLendStagingProps = {
@@ -60,9 +61,9 @@ export const GearLendStaging = forwardRef<HTMLElement, GearLendStagingProps>(fun
   }
 
   return (
-    <section ref={ref} className="rounded-xl border border-border-subtle bg-surface">
-      <header className="border-b border-border-subtle bg-muted-blue/30 px-4 py-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-text-main">Lend staging</h2>
+    <section ref={ref} className={sectionCardClass}>
+      <header className={sectionHeaderClass}>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-text-main">Loan Preview</h2>
         <p className="mt-1 text-xs text-text-muted">
           Drag standalone items or variants here, then complete the lend form.
         </p>
@@ -154,7 +155,7 @@ export const GearLendStaging = forwardRef<HTMLElement, GearLendStagingProps>(fun
           {error ? <p className="text-sm text-error md:col-span-2">{error}</p> : null}
           <div className="md:col-span-2">
             <Button type="submit" disabled={lending || staged.length === 0}>
-              {lending ? "Creating loan…" : "Lend staged items"}
+              {lending ? "Creating loan…" : "Lend items"}
             </Button>
           </div>
         </form>

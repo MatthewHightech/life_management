@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "@apollo/client";
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { DELETE_RECIPE_MUTATION } from "@/graphql";
 import { MEAL_PLAN_REFETCH } from "@/lib/meal-plan-queries";
@@ -30,9 +31,13 @@ export function DeleteRecipeButton({ recipeId, recipeName, className }: DeleteRe
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={cn("text-xs text-text-muted hover:text-error", className)}
+        className={cn(
+          "shrink-0 rounded p-1 text-text-muted hover:bg-background hover:text-error",
+          className,
+        )}
+        aria-label={`Delete ${recipeName}`}
       >
-        Delete
+        <Trash2 className="h-3.5 w-3.5" />
       </button>
       <Modal
         open={open}

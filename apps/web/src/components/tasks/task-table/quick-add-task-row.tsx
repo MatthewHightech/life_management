@@ -21,11 +21,9 @@ import {
 } from "@/lib/task-pills";
 import { cn } from "@/lib/cn";
 import { tasksBoardRefetchQueries } from "@/lib/task-board-queries";
+import { TASK_LIST_COLUMN_GRID } from "@/components/tasks/task-table/column-layout";
 import type { HouseholdUser } from "./types";
-
-const TASK_LIST_COLUMN_GRID =
-  "grid w-full min-w-full grid-cols-[18%_14%_10%_14%_12%_minmax(9rem,1fr)] text-left text-sm";
-const TASK_LIST_CELL = "flex min-h-7 items-center px-4 py-1.5";
+const TASK_LIST_CELL = "flex min-h-7 w-full min-w-0 items-center px-4 py-1.5";
 
 const DEFAULT_STATUS: TaskStatus = "TODO";
 const DEFAULT_PRIORITY: TaskPriority = "LOW";
@@ -175,7 +173,7 @@ export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) 
   return (
     <div className={TASK_LIST_COLUMN_GRID}>
       <div className={cn(TASK_LIST_CELL)}>
-        <div className="space-y-1">
+        <div className="w-full min-w-0 space-y-1">
           <input
             value={title}
             placeholder="Task name"

@@ -7,6 +7,7 @@ import type { MealPlanSlot as MealPlanSlotType } from "@/components/meals/types"
 import type { MealSlot, WeekDay } from "@/graphql";
 import { mealPlanSlotKey } from "@life/shared";
 import { mealSlotLabels, weekDayLabels } from "@/lib/meal-plan-ui";
+import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
 import { cn } from "@/lib/cn";
 
 type MealSlotCellProps = {
@@ -67,8 +68,8 @@ export const WeekGridSection = forwardRef<HTMLElement, WeekGridSectionProps>(fun
   const slotMap = new Map(slots.map((entry) => [mealPlanSlotKey(entry.day, entry.slot), entry]));
 
   return (
-    <section ref={ref} className="rounded-xl border border-border-subtle bg-surface">
-      <header className="border-b border-border-subtle bg-warm-amber/40 px-4 py-3">
+    <section ref={ref} className={sectionCardClass}>
+      <header className={sectionHeaderClass}>
         <h2 className="text-sm font-semibold uppercase tracking-wide text-text-main">Weekly plan</h2>
       </header>
 

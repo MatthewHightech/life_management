@@ -2,6 +2,7 @@
 
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
+import { sectionCardClass } from "@/lib/section-header";
 import { TaskListTable } from "@/components/tasks/task-table/task-list-table";
 import type { BoardTask, HouseholdUser, TaskUpdateInput } from "@/components/tasks/task-table/types";
 
@@ -16,7 +17,7 @@ export function DoneTasksSection({ tasks, users, onDelete, onUpdate }: DoneTasks
   const [collapsed, setCollapsed] = useState(true);
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border-subtle bg-surface">
+    <div className={sectionCardClass}>
       <button
         type="button"
         onClick={() => setCollapsed((current) => !current)}
@@ -28,13 +29,15 @@ export function DoneTasksSection({ tasks, users, onDelete, onUpdate }: DoneTasks
       </button>
 
       {!collapsed && (
-        <TaskListTable
+        <div className="overflow-x-auto">
+          <TaskListTable
           tasks={tasks}
           users={users}
           emptyMessage="No completed tasks."
           onDelete={onDelete}
           onUpdate={onUpdate}
         />
+        </div>
       )}
     </div>
   );

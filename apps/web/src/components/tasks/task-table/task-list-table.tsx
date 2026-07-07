@@ -1,4 +1,5 @@
 import { TaskTableRow } from "@/components/tasks/task-table/task-table-row";
+import { TASK_LIST_TABLE_COLUMNS } from "@/components/tasks/task-table/column-layout";
 import type { BoardTask, HouseholdUser, TaskUpdateInput } from "@/components/tasks/task-table/types";
 
 type TaskListTableProps = {
@@ -13,11 +14,9 @@ export function TaskListTable({ tasks, users, emptyMessage, onDelete, onUpdate }
   return (
     <table className="min-w-full table-fixed text-left text-sm">
       <colgroup>
-        <col className="w-[18%]" />
-        <col className="w-[14%]" />
-        <col className="w-[10%]" />
-        <col className="w-[14%]" />
-        <col className="w-[12%]" />
+        {TASK_LIST_TABLE_COLUMNS.map((column) => (
+          <col key={column.id} className={column.className} />
+        ))}
         <col />
       </colgroup>
       <thead className="border-b border-border-subtle bg-background text-xs uppercase tracking-wide text-text-muted">

@@ -377,7 +377,7 @@ Household **equipment and gear** tracking — organize owned items, group simila
 
 **REQ-GEAR-07 (P1):** **Variant** fields: **name** (e.g. “Xcel 3mm”), **size** (free text), **condition** (REQ-GEAR-04), optional **photo** (thumbnail per variant). Variants **inherit** description and care instructions from the parent class (display on class detail; not duplicated per row unless overridden later — **no per-variant description/care in v1**).
 
-**REQ-GEAR-08 (P1):** **Class variant table** — opening an item class shows an **editable table** of all variants (name, size, condition, thumbnail, actions). Add / edit / delete variant rows inline or via modals. Each row is one physical item.
+**REQ-GEAR-08 (P1):** **Class variant table** — opening an item class shows an **inline-editable table** of all variants (name, size, condition, thumbnail, actions). **Add variant** (+) appends a new draft row with focus in **Name**; pressing Enter or leaving the row saves the variant. Existing rows edit in place (same interaction pattern as the task list table). Reuse the shared **editable table** primitives (`EditableTable`, `EditableTextCell`, `EditableSelectCell`). Each row is one physical item.
 
 **REQ-GEAR-09 (P1):** **CRUD** for standalone items, item classes, and variants. Delete class cascades variants (confirm if variants exist). Cannot delete items/variants on **active loan**.
 
@@ -389,7 +389,7 @@ Household **equipment and gear** tracking — organize owned items, group simila
 
 **REQ-GEAR-12 (P1):** **Active loans table** — permanent section below staging. Each row = one loan: borrower name, email, item list (names + thumbnails), lent date, return-by date. **Overdue** loans (past return-by, not yet returned) use prominent styling (e.g. soft red row / red date — mirror overdue tasks).
 
-**REQ-GEAR-13 (P1):** Items on **active loan** show **“Out on loan”** badge in the library / variant table and **cannot** be added to the lend staging zone again until returned.
+**REQ-GEAR-13 (P1):** Items on **active loan** show **“Out on loan”** badge on **standalone items** in the library. In the **variant table**, lent rows are **greyed out** (not draggable, fields not editable) — no separate status column.
 
 **REQ-GEAR-14 (P1):** **Return** — **one “Mark returned” action per loan** returns **all items** on that loan at once (**all-or-nothing**; no partial returns in v1). Returned loans move to **loan history**.
 
@@ -738,6 +738,7 @@ All open questions are resolved. Reference for agents and future you:
 
 | Date | Change |
 |------|--------|
+| 2026-07-06 | **Gear variant table:** REQ-GEAR-08 — inline-editable variant rows (task-list pattern); + adds draft row with Name focus; shared `editable-table` primitives. |
 | 2026-07-06 | **Gear inventory (Phase 1d):** REQ-GEAR-01 … REQ-GEAR-19 — `/gear` nav, `GEAR` folder namespace, standalone items + item classes/variants, photos, lending staging + active loans + history. See `docs/design/DESIGN.md` §8.14. |
 | 2026-07-02 | **Task comments:** REQ-TASK-08 … REQ-TASK-23 — per-task thread sidebar (overlay, newest-first, plain text + linkify, unread badge + count, author-only delete); remove `description` field (drop existing data). Status enum trimmed to TODO / IN_PROGRESS / WAITING / DONE (REQ-TASK-06). See `docs/design/DESIGN.md` §8.13. |
 | 2026-07-02 | **Receipt management (Phase 1c):** REQ-RCPT-01 … REQ-RCPT-13 — standalone `/receipts` nav, household-shared uploads (images + PDF, 10 MB max, picker + drag-drop), preview/rename/delete, local volume storage + `FileStorage` abstraction. **Shared folders:** REQ-FOLDER-01 … REQ-FOLDER-06 — generic `Folder` model, migrate meal `RecipeFolder`, shared UI/GraphQL. See `docs/design/DESIGN.md` §8.11–8.12. |

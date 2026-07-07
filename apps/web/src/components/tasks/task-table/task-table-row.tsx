@@ -17,8 +17,8 @@ function TaskTableCell({
   children: React.ReactNode;
 }) {
   return (
-    <td className={cn("px-4 py-1.5 align-middle", className)}>
-      <div className={cn("flex min-h-7 items-center", contentClassName)}>{children}</div>
+    <td className={cn("max-w-0 overflow-hidden px-4 py-1.5 align-middle", className)}>
+      <div className={cn("flex min-h-7 w-full min-w-0 items-center", contentClassName)}>{children}</div>
     </td>
   );
 }

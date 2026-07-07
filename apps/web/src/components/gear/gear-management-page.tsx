@@ -28,16 +28,15 @@ import { FolderFormModal } from "@/components/folders/folder-form-modal";
 import { GearActiveLoans } from "@/components/gear/gear-active-loans";
 import { GearClassFormModal } from "@/components/gear/gear-class-form-modal";
 import { GearClassRow } from "@/components/gear/gear-class-row";
+import { GearVariantDragPreview } from "@/components/gear/gear-variant-table";
 import { GearItemFormModal } from "@/components/gear/gear-item-form-modal";
 import { GearItemRow } from "@/components/gear/gear-item-row";
 import { GearLendStaging } from "@/components/gear/gear-lend-staging";
 import { GearLibrarySection } from "@/components/gear/gear-library-section";
+import { GearDeleteModals } from "@/components/gear/gear-delete-modals";
 import { GearLoanHistory } from "@/components/gear/gear-loan-history";
-import { GearVariantFormModal } from "@/components/gear/gear-variant-form-modal";
 import type { GearItem, GearItemClass, StagedGearEntry } from "@/components/gear/types";
 import { ModulePageLayout } from "@/components/shell/module-page-layout";
-import { Modal } from "@/components/ui/modal";
-import { Button } from "@/components/ui/button";
 import { GEAR_PAGE_REFETCH } from "@/lib/gear-queries";
 import { createLibraryCollisionDetection } from "@/lib/folder-dnd";
 import {
@@ -58,7 +57,7 @@ type GearLendingData = GearLendingQuery["gearLending"];
 
 type DragPreview =
   | { kind: "item"; item: GearItem }
-  | { kind: "variant"; itemClass: GearItemClass; variantId: string }
+  | { kind: "variant"; variant: GearItemClass["variants"][number] }
   | { kind: "class"; itemClass: GearItemClass };
 
 export function GearManagementPage() {
@@ -74,12 +73,10 @@ export function GearManagementPage() {
   const [folderModalOpen, setFolderModalOpen] = useState(false);
   const [itemModalOpen, setItemModalOpen] = useState(false);
   const [classModalOpen, setClassModalOpen] = useState(false);
-  const [variantModalOpen, setVariantModalOpen] = useState(false);
+  const [addingVariantClassId, setAddingVariantClassId] = useState<string | null>(null);
 
   const [editItem, setEditItem] = useState<GearItem | null>(null);
   const [editClass, setEditClass] = useState<GearItemClass | null>(null);
-  const [variantClass, setVariantClass] = useState<GearItemClass | null>(null);
-  const [editVariant, setEditVariant] = useState<GearItemClass["variants"][number] | null>(null);
 
   const [deleteItem, setDeleteItem] = useState<GearItem | null>(null);
   const [deleteClass, setDeleteClass] = useState<GearItemClass | null>(null);
@@ -221,8 +218,7 @@ export function GearManagementPage() {
         if (match) {
           setDragPreview({
             kind: "variant",
-            itemClass: match.itemClass,
-            variantId: match.variant.id,
+            variant: match.variant,
           });
         }
         return;
@@ -415,19 +411,11 @@ export function GearManagementPage() {
               }}
               onDeleteClass={setDeleteClass}
               onAddVariant={(itemClass) => {
-                setVariantClass(itemClass);
-                setEditVariant(null);
-                setVariantModalOpen(true);
+                setExpandedClassIds((current) => new Set(current).add(itemClass.id));
+                setAddingVariantClassId(itemClass.id);
               }}
-              onEditVariant={(itemClass, variantId) => {
-                const variant = itemClass.variants.find((entry) => entry.id === variantId);
-                if (!variant) {
-                  return;
-                }
-                setVariantClass(itemClass);
-                setEditVariant(variant);
-                setVariantModalOpen(true);
-              }}
+              addingVariantClassId={addingVariantClassId}
+              onCancelAddVariant={() => setAddingVariantClassId(null)}
               onDeleteVariant={(itemClass, variantId) => {
                 const variant = itemClass.variants.find((entry) => entry.id === variantId);
                 if (!variant) {
@@ -483,15 +471,19 @@ export function GearManagementPage() {
                 overlay
               />
             ) : null}
+            {dragPreview?.kind === "variant" ? (
+              <GearVariantDragPreview variant={dragPreview.variant} />
+            ) : null}
             {dragPreview?.kind === "class" ? (
               <GearClassRow
                 itemClass={dragPreview.itemClass}
                 expanded={false}
+                isAddingVariant={false}
                 onToggleExpand={() => undefined}
                 onEdit={() => undefined}
                 onDelete={() => undefined}
                 onAddVariant={() => undefined}
-                onEditVariant={() => undefined}
+                onCancelAddVariant={() => undefined}
                 onDeleteVariant={() => undefined}
                 overlay
               />
@@ -522,84 +514,20 @@ export function GearManagementPage() {
         folderId={editClass ? editClass.folderId : currentFolderId}
       />
 
-      <GearVariantFormModal
-        open={variantModalOpen}
-        onOpenChange={setVariantModalOpen}
-        itemClass={variantClass}
-        variant={editVariant}
+      <GearDeleteModals
+        deleteItem={deleteItem}
+        deleteClass={deleteClass}
+        deleteVariant={deleteVariant}
+        deletingItem={deletingItem}
+        deletingClass={deletingClass}
+        deletingVariant={deletingVariant}
+        onCloseItem={() => setDeleteItem(null)}
+        onCloseClass={() => setDeleteClass(null)}
+        onCloseVariant={() => setDeleteVariant(null)}
+        onConfirmDeleteItem={(id) => void deleteGearItem({ variables: { id } })}
+        onConfirmDeleteClass={(id) => void deleteGearClass({ variables: { id } })}
+        onConfirmDeleteVariant={(id) => void deleteGearVariant({ variables: { id } })}
       />
-
-      <Modal
-        open={Boolean(deleteItem)}
-        onOpenChange={(open) => !open && setDeleteItem(null)}
-        title="Delete gear item?"
-        description={deleteItem ? `"${deleteItem.name}" will be permanently deleted.` : undefined}
-      >
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={() => setDeleteItem(null)}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            className="bg-error text-white hover:bg-error/90"
-            disabled={deletingItem}
-            onClick={() => deleteItem && void deleteGearItem({ variables: { id: deleteItem.id } })}
-          >
-            {deletingItem ? "Deleting…" : "Delete"}
-          </Button>
-        </div>
-      </Modal>
-
-      <Modal
-        open={Boolean(deleteClass)}
-        onOpenChange={(open) => !open && setDeleteClass(null)}
-        title="Delete item class?"
-        description={
-          deleteClass
-            ? `"${deleteClass.name}" and all ${deleteClass.variants.length} variant(s) will be permanently deleted.`
-            : undefined
-        }
-      >
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={() => setDeleteClass(null)}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            className="bg-error text-white hover:bg-error/90"
-            disabled={deletingClass}
-            onClick={() => deleteClass && void deleteGearClass({ variables: { id: deleteClass.id } })}
-          >
-            {deletingClass ? "Deleting…" : "Delete"}
-          </Button>
-        </div>
-      </Modal>
-
-      <Modal
-        open={Boolean(deleteVariant)}
-        onOpenChange={(open) => !open && setDeleteVariant(null)}
-        title="Delete variant?"
-        description={
-          deleteVariant ? `"${deleteVariant.variant.name}" will be permanently deleted.` : undefined
-        }
-      >
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={() => setDeleteVariant(null)}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            className="bg-error text-white hover:bg-error/90"
-            disabled={deletingVariant}
-            onClick={() =>
-              deleteVariant &&
-              void deleteGearVariant({ variables: { id: deleteVariant.variant.id } })
-            }
-          >
-            {deletingVariant ? "Deleting…" : "Delete"}
-          </Button>
-        </div>
-      </Modal>
     </ModulePageLayout>
   );
 }

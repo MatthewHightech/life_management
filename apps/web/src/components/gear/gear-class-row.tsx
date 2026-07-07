@@ -11,23 +11,25 @@ import { cn } from "@/lib/cn";
 type GearClassRowProps = {
   itemClass: GearItemClass;
   expanded: boolean;
+  isAddingVariant: boolean;
   onToggleExpand: (classId: string) => void;
   onEdit: (itemClass: GearItemClass) => void;
   onDelete: (itemClass: GearItemClass) => void;
   onAddVariant: (itemClass: GearItemClass) => void;
-  onEditVariant: (itemClass: GearItemClass, variantId: string) => void;
-  onDeleteVariant: (itemClass: GearItemClass, variantId: string) => void;
+  onCancelAddVariant: () => void;
+  onDeleteVariant: (variant: GearItemClass["variants"][number]) => void;
   overlay?: boolean;
 };
 
 export function GearClassRow({
   itemClass,
   expanded,
+  isAddingVariant,
   onToggleExpand,
   onEdit,
   onDelete,
   onAddVariant,
-  onEditVariant,
+  onCancelAddVariant,
   onDeleteVariant,
   overlay = false,
 }: GearClassRowProps) {
@@ -127,8 +129,9 @@ export function GearClassRow({
           ) : null}
           <GearVariantTable
             itemClass={itemClass}
-            onEditVariant={(variant) => onEditVariant(itemClass, variant.id)}
-            onDeleteVariant={(variant) => onDeleteVariant(itemClass, variant.id)}
+            isAddingNew={isAddingVariant}
+            onCancelAddNew={onCancelAddVariant}
+            onDeleteVariant={onDeleteVariant}
           />
         </div>
       ) : null}

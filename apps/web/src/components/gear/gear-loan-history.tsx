@@ -3,9 +3,11 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import type { GearLendingQuery } from "@/graphql";
-import { GearPhotoThumb } from "@/components/gear/gear-photo-thumb";
+import { GearLoanItemList } from "@/components/gear/gear-loan-item-list";
 import { Button } from "@/components/ui/button";
-import { Modal } from "@/components/ui/modal";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
+import { cn } from "@/lib/cn";
 
 type GearLoan = GearLendingQuery["gearLending"]["loanHistory"][number];
 
@@ -20,8 +22,8 @@ export function GearLoanHistory({ loans, clearing, onClearHistory }: GearLoanHis
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
-    <section className="rounded-xl border border-border-subtle bg-surface">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle bg-muted-blue/20 px-4 py-3">
+    <section className={sectionCardClass}>
+      <header className={cn(sectionHeaderClass, "flex flex-wrap items-center justify-between gap-2")}>
         <button
           type="button"
           onClick={() => setExpanded((value) => !value)}
@@ -65,27 +67,7 @@ export function GearLoanHistory({ loans, clearing, onClearHistory }: GearLoanHis
                       <p className="text-xs text-text-muted">{loan.borrowerEmail}</p>
                     </td>
                     <td className="px-2 py-2 align-top">
-                      <ul className="space-y-1">
-                        {loan.items.map((item) => {
-                          const kind = item.gearItem ? "item" : "variant";
-                          const id = item.gearItem?.id ?? item.gearVariant?.id;
-                          if (!id) {
-                            return null;
-                          }
-                          return (
-                            <li key={item.id} className="flex items-center gap-2">
-                              <GearPhotoThumb
-                                kind={kind}
-                                id={id}
-                                hasPhoto={item.hasPhoto}
-                                alt={item.displayName}
-                                className="h-8 w-8"
-                              />
-                              <span>{item.displayName}</span>
-                            </li>
-                          );
-                        })}
-                      </ul>
+                      <GearLoanItemList items={loan.items} />
                     </td>
                     <td className="px-2 py-2 align-top text-text-muted">{loan.lentAt}</td>
                     <td className="px-2 py-2 align-top text-text-muted">{loan.returnBy}</td>
@@ -100,28 +82,20 @@ export function GearLoanHistory({ loans, clearing, onClearHistory }: GearLoanHis
         </div>
       ) : null}
 
-      <Modal
+      <ConfirmModal
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title="Clear loan history?"
         description="This permanently deletes all returned loan records. Active loans are not affected."
-      >
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={() => setConfirmOpen(false)}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            className="bg-error text-white hover:bg-error/90"
-            disabled={clearing}
-            onClick={() => {
-              void onClearHistory().then(() => setConfirmOpen(false));
-            }}
-          >
-            {clearing ? "Clearing…" : "Clear history"}
-          </Button>
-        </div>
-      </Modal>
+        confirmLabel="Clear history"
+        loadingLabel="Clearing…"
+        loading={clearing}
+        destructive
+        onConfirm={async () => {
+          await onClearHistory();
+          setConfirmOpen(false);
+        }}
+      />
     </section>
   );
 }

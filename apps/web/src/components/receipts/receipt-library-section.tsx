@@ -8,6 +8,8 @@ import { ReceiptRow } from "@/components/receipts/receipt-row";
 import { ReceiptUploadZone } from "@/components/receipts/receipt-upload-zone";
 import type { ReceiptFolder, ReceiptItem } from "@/components/receipts/types";
 import { Button } from "@/components/ui/button";
+import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
+import { cn } from "@/lib/cn";
 
 type ReceiptLibrarySectionProps = {
   folders: ReceiptFolder[];
@@ -45,8 +47,8 @@ export const ReceiptLibrarySection = forwardRef<HTMLElement, ReceiptLibrarySecti
     const isEmpty = folders.length === 0 && receipts.length === 0;
 
     return (
-      <section ref={ref} className="rounded-xl border border-border-subtle bg-surface">
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle bg-sage-green/60 px-4 py-3">
+      <section ref={ref} className={sectionCardClass}>
+        <header className={cn(sectionHeaderClass, "flex flex-wrap items-center justify-between gap-2")}>
           <h2 className="text-sm font-semibold uppercase tracking-wide text-text-main">Receipts</h2>
           <Button type="button" variant="ghost" onClick={onCreateFolder} className="gap-1.5 px-3 py-1.5 text-xs">
             <FolderPlus className="h-4 w-4" />
