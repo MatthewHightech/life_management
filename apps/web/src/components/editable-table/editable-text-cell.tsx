@@ -15,6 +15,7 @@ type EditableTextCellProps = {
   startInEditMode?: boolean;
   allowClear?: boolean;
   disabled?: boolean;
+  wrap?: boolean;
 };
 
 export function EditableTextCell({
@@ -27,6 +28,7 @@ export function EditableTextCell({
   startInEditMode = false,
   allowClear = false,
   disabled = false,
+  wrap = false,
 }: EditableTextCellProps) {
   const { editing, setEditing, draft, setDraft, pending, commit, cancel } = useTextInlineEdit({
     value,
@@ -62,13 +64,18 @@ export function EditableTextCell({
     input.setSelectionRange(end, end);
   }, [isEditing]);
 
-  const fieldShellClass = "w-full min-w-0 overflow-hidden";
+  const fieldShellClass = cn("w-full min-w-0", !wrap && "overflow-hidden");
+  const displayTextClass = wrap ? "whitespace-normal break-words" : "truncate";
+  const triggerClass = wrap
+    ? "flex min-h-7 w-full items-start rounded-md px-2 py-1 text-left text-sm transition hover:bg-background"
+    : inlineFieldTriggerClass;
 
   if (disabled) {
     return (
       <span
         className={cn(
-          "block min-h-7 truncate px-2 py-0.5 text-sm",
+          "block min-h-7 px-2 py-0.5 text-sm",
+          displayTextClass,
           !value && displayPlaceholder && "text-text-muted/70 italic",
           className,
         )}
@@ -110,8 +117,9 @@ export function EditableTextCell({
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => setEditing(true)}
         className={cn(
-          inlineFieldTriggerClass,
-          "max-w-full truncate",
+          triggerClass,
+          !wrap && "max-w-full",
+          displayTextClass,
           !value && displayPlaceholder && "text-text-muted/70 italic",
           className,
         )}

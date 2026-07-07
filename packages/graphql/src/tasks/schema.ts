@@ -1,5 +1,6 @@
 export const taskTypeDefs = `#graphql
   enum TaskStatus {
+    BACKLOG
     TODO
     IN_PROGRESS
     WAITING

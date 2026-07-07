@@ -25,7 +25,7 @@ import { TASK_LIST_COLUMN_GRID } from "@/components/tasks/task-table/column-layo
 import type { HouseholdUser } from "./types";
 const TASK_LIST_CELL = "flex min-h-7 w-full min-w-0 items-center px-4 py-1.5";
 
-const DEFAULT_STATUS: TaskStatus = "TODO";
+const DEFAULT_STATUS: TaskStatus = "BACKLOG";
 const DEFAULT_PRIORITY: TaskPriority = "LOW";
 
 type QuickAddTaskRowProps = {

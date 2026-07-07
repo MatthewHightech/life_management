@@ -182,22 +182,19 @@ export function KanbanBoard() {
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
         >
-          <div className="flex gap-3 pb-4">
+          <div className="flex gap-2 pb-4">
             {kanbanColumns.map((column) => (
               <KanbanColumnView
                 key={column.status}
                 column={column}
                 tasks={tasksByStatus[column.status] ?? []}
                 users={users}
-                collapsed={column.collapsible ? (collapsedByStatus[column.status] ?? false) : false}
-                onToggleCollapsed={
-                  column.collapsible
-                    ? () =>
-                        setCollapsedByStatus((current) => ({
-                          ...current,
-                          [column.status]: !current[column.status],
-                        }))
-                    : undefined
+                collapsed={collapsedByStatus[column.status] ?? false}
+                onToggleCollapsed={() =>
+                  setCollapsedByStatus((current) => ({
+                    ...current,
+                    [column.status]: !current[column.status],
+                  }))
                 }
                 onAddTask={handleAddTask}
                 onUpdateTask={handleUpdate}

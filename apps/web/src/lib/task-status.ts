@@ -6,10 +6,16 @@ export type KanbanColumn = {
   dotClass: string;
   accentClass: string;
   chipClass: string;
-  collapsible?: boolean;
 };
 
 export const kanbanColumns: KanbanColumn[] = [
+  {
+    status: "BACKLOG",
+    label: "Backlog",
+    dotClass: "bg-status-backlog",
+    accentClass: "border-t-status-backlog",
+    chipClass: "bg-[#e2e6ea] text-[#495057]",
+  },
   {
     status: "TODO",
     label: "Todo",
@@ -37,7 +43,6 @@ export const kanbanColumns: KanbanColumn[] = [
     dotClass: "bg-status-done",
     accentClass: "border-t-status-done",
     chipClass: "bg-status-done text-on-primary",
-    collapsible: true,
   },
 ];
 

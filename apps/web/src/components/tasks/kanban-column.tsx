@@ -39,7 +39,7 @@ export function KanbanColumnView({
   const [clearOpen, setClearOpen] = useState(false);
   const { setNodeRef, isOver } = useDroppable({ id: column.status });
 
-  if (column.collapsible && collapsed) {
+  if (collapsed) {
     return (
       <section
         ref={setNodeRef}
@@ -72,16 +72,14 @@ export function KanbanColumnView({
             {column.label}
           </h2>
           <span className="rounded-full bg-surface px-2 py-0.5 text-xs text-text-muted">{tasks.length}</span>
-          {column.collapsible && (
-            <button
-              type="button"
-              onClick={onToggleCollapsed}
-              className="rounded p-0.5 text-text-muted hover:bg-surface"
-              title={`Hide ${column.label}`}
-            >
-              <ChevronDown className="h-4 w-4" />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            className="rounded p-0.5 text-text-muted hover:bg-surface"
+            title={`Hide ${column.label}`}
+          >
+            <ChevronDown className="h-4 w-4" />
+          </button>
           {onClearTasks && tasks.length > 0 ? (
             <button
               type="button"

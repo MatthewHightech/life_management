@@ -90,11 +90,17 @@ export function KanbanCard({
             <EditableText
               value={task.title}
               onSave={(title) => onUpdate!({ title })}
+              wrap
               className={cn("text-sm font-medium text-text-main", overdue && "text-error")}
               inputClassName="font-medium"
             />
           ) : (
-            <p className={cn("text-sm font-medium leading-snug text-text-main", overdue && "text-error")}>
+            <p
+              className={cn(
+                "text-sm font-medium leading-snug break-words text-text-main",
+                overdue && "text-error",
+              )}
+            >
               {task.title}
             </p>
           )}

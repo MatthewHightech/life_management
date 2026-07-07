@@ -4,7 +4,7 @@ import { compareActiveListTasks, partitionListTasks } from "../../apps/web/src/l
 type BoardTask = {
   id: string;
   title: string;
-  status: "TODO" | "IN_PROGRESS" | "WAITING" | "DONE";
+  status: "TODO" | "IN_PROGRESS" | "WAITING" | "BACKLOG" | "DONE";
   priority: string;
   isShared: boolean;
   isBlocked: boolean;
@@ -46,6 +46,13 @@ describe("task list sort", () => {
 
     expect(activeTasks.map((item) => item.id)).toEqual(["overdue", "waiting", "progress", "todo"]);
     expect(doneTasks.map((item) => item.id)).toEqual(["done"]);
+  });
+
+  it("sorts backlog after todo", () => {
+    const backlog = task({ id: "backlog", title: "Backlog", status: "BACKLOG" });
+    const todo = task({ id: "todo", title: "Todo", status: "TODO" });
+
+    expect(compareActiveListTasks(backlog, todo)).toBeGreaterThan(0);
   });
 
   it("sorts overdue tasks by due date", () => {

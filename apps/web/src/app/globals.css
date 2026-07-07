@@ -16,6 +16,7 @@
   --text-muted: #6c757d;
   --error: #ba1a1a;
   --error-container: #ffdad6;
+  --status-backlog: #7b8794;
   --status-todo: #1a8f9c;
   --status-in-progress: #f1b74b;
   --status-waiting: #ec724d;
@@ -40,6 +41,7 @@
   --color-text-muted: var(--text-muted);
   --color-error: var(--error);
   --color-error-container: var(--error-container);
+  --color-status-backlog: var(--status-backlog);
   --color-status-todo: var(--status-todo);
   --color-status-in-progress: var(--status-in-progress);
   --color-status-waiting: var(--status-waiting);
