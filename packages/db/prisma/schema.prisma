@@ -60,6 +60,7 @@ model Household {
   groceryItems    GroceryListItem[]
   budgetSections  BudgetSection[]
   budgetLineItems BudgetLineItem[]
+  budgetPurchases BudgetPurchase[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 }
@@ -386,6 +387,7 @@ model BudgetLineItem {
   type         BudgetLineType
   sortOrder    Int               @default(0)
   spendRecords BudgetLineSpend[]
+  allocations  BudgetPurchaseAllocation[]
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
@@ -402,6 +404,41 @@ model BudgetLineSpend {
   spentCents Int            @default(0)
 
   @@unique([lineItemId, year, month])
+  @@index([lineItemId])
+}
+
+enum BudgetPurchaseSource {
+  MANUAL
+  VISA
+}
+
+model BudgetPurchase {
+  id                   String                     @id @default(cuid())
+  householdId          String
+  household            Household                  @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  name                 String
+  amountCents          Int
+  purchaseDate         DateTime                   @db.Date
+  source               BudgetPurchaseSource       @default(MANUAL)
+  externalTransactionId String?
+  allocations          BudgetPurchaseAllocation[]
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+
+  @@index([householdId, purchaseDate])
+}
+
+model BudgetPurchaseAllocation {
+  id         String         @id @default(cuid())
+  purchaseId String
+  purchase   BudgetPurchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  lineItemId String
+  lineItem   BudgetLineItem @relation(fields: [lineItemId], references: [id], onDelete: Cascade)
+  amountCents Int
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([purchaseId])
   @@index([lineItemId])
 }
 

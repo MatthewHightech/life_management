@@ -27,20 +27,55 @@ const BUDGET_SECTION_FIELDS = gql`
   }
 `;
 
+const BUDGET_PURCHASE_FIELDS = gql`
+  fragment BudgetPurchaseFields on BudgetPurchase {
+    id
+    name
+    amountCents
+    purchaseDate
+    source
+  }
+`;
+
+const BUDGET_PURCHASE_ALLOCATION_FIELDS = gql`
+  fragment BudgetPurchaseAllocationFields on BudgetPurchaseAllocation {
+    id
+    purchaseId
+    lineItemId
+    amountCents
+    purchaseName
+    purchaseDate
+    source
+  }
+`;
+
 export const BUDGET_MONTH_QUERY = gql`
   ${BUDGET_SECTION_FIELDS}
+  ${BUDGET_PURCHASE_FIELDS}
   query BudgetMonth {
     budgetMonth {
       year
       month
       title
       annualTitle
+      purchases {
+        ...BudgetPurchaseFields
+      }
       monthlySections {
         ...BudgetSectionFields
       }
       annualSections {
         ...BudgetSectionFields
       }
+    }
+  }
+`;
+
+export const BUDGET_LINE_ALLOCATIONS_QUERY = gql`
+  ${BUDGET_PURCHASE_ALLOCATION_FIELDS}
+  query BudgetLineAllocations($lineItemId: ID!) {
+    budgetLineAllocations(lineItemId: $lineItemId) {
+      ...BudgetPurchaseAllocationFields
     }
   }
 `;
@@ -90,5 +125,44 @@ export const UPDATE_BUDGET_LINE_ITEM_MUTATION = gql`
 export const DELETE_BUDGET_LINE_ITEM_MUTATION = gql`
   mutation DeleteBudgetLineItem($id: ID!) {
     deleteBudgetLineItem(id: $id)
+  }
+`;
+
+export const CREATE_BUDGET_PURCHASE_MUTATION = gql`
+  ${BUDGET_PURCHASE_FIELDS}
+  mutation CreateBudgetPurchase($input: CreateBudgetPurchaseInput!) {
+    createBudgetPurchase(input: $input) {
+      ...BudgetPurchaseFields
+    }
+  }
+`;
+
+export const DELETE_BUDGET_PURCHASE_MUTATION = gql`
+  mutation DeleteBudgetPurchase($id: ID!) {
+    deleteBudgetPurchase(id: $id)
+  }
+`;
+
+export const ALLOCATE_BUDGET_PURCHASE_MUTATION = gql`
+  ${BUDGET_PURCHASE_ALLOCATION_FIELDS}
+  mutation AllocateBudgetPurchase($purchaseId: ID!, $lineItemId: ID!) {
+    allocateBudgetPurchase(purchaseId: $purchaseId, lineItemId: $lineItemId) {
+      ...BudgetPurchaseAllocationFields
+    }
+  }
+`;
+
+export const UPDATE_BUDGET_PURCHASE_MUTATION = gql`
+  ${BUDGET_PURCHASE_FIELDS}
+  mutation UpdateBudgetPurchase($id: ID!, $input: UpdateBudgetPurchaseInput!) {
+    updateBudgetPurchase(id: $id, input: $input) {
+      ...BudgetPurchaseFields
+    }
+  }
+`;
+
+export const DELETE_BUDGET_PURCHASE_ALLOCATION_MUTATION = gql`
+  mutation DeleteBudgetPurchaseAllocation($id: ID!) {
+    deleteBudgetPurchaseAllocation(id: $id)
   }
 `;

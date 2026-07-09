@@ -11,15 +11,19 @@ type FloatingPanelProps = {
   children: React.ReactNode;
   className?: string;
   minWidth?: number;
+  align?: "start" | "end";
 };
 
 const PANEL_GAP_PX = 4;
+const VIEWPORT_PADDING_PX = 8;
 
 function useFloatingPanelPosition(
   open: boolean,
   anchorRef: React.RefObject<HTMLElement | null>,
   panelRef: React.RefObject<HTMLDivElement | null>,
   children: React.ReactNode,
+  minWidth: number,
+  align: "start" | "end",
 ) {
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
 
@@ -37,13 +41,20 @@ function useFloatingPanelPosition(
       }
 
       const rect = anchor.getBoundingClientRect();
+      const panelWidth = panel?.offsetWidth ?? minWidth;
       const panelHeight = panel?.offsetHeight ?? 0;
       const spaceBelow = window.innerHeight - rect.bottom - PANEL_GAP_PX;
       const spaceAbove = rect.top - PANEL_GAP_PX;
       const showAbove = panelHeight > spaceBelow && spaceAbove > spaceBelow;
 
+      let left = align === "end" ? rect.right - panelWidth : rect.left;
+      left = Math.max(
+        VIEWPORT_PADDING_PX,
+        Math.min(left, window.innerWidth - panelWidth - VIEWPORT_PADDING_PX),
+      );
+
       setCoords({
-        left: rect.left,
+        left,
         top: showAbove ? rect.top - panelHeight - PANEL_GAP_PX : rect.bottom + PANEL_GAP_PX,
       });
     }
@@ -59,7 +70,7 @@ function useFloatingPanelPosition(
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [open, anchorRef, panelRef, children]);
+  }, [open, anchorRef, panelRef, children, minWidth, align]);
 
   return coords;
 }
@@ -105,9 +116,10 @@ export function FloatingPanel({
   children,
   className,
   minWidth = 160,
+  align = "start",
 }: FloatingPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
-  const coords = useFloatingPanelPosition(open, anchorRef, panelRef, children);
+  const coords = useFloatingPanelPosition(open, anchorRef, panelRef, children, minWidth, align);
 
   useDismissFloatingPanel(open, anchorRef, panelRef, onClose);
 

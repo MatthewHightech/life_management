@@ -129,3 +129,11 @@ export function budgetRemainingPercent(spentCents: number, budgetCents: number):
 export function budgetRemainingCents(budgetCents: number, spentCents: number): number {
   return budgetCents - spentCents;
 }
+
+export function formatBudgetRemainingLabel(budgetCents: number, spentCents: number): string {
+  const remaining = budgetRemainingCents(budgetCents, spentCents);
+  if (remaining < 0) {
+    return `${formatCadCents(-remaining)} over budget`;
+  }
+  return formatCadCents(remaining);
+}

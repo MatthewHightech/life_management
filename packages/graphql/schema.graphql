@@ -25,6 +25,7 @@ type Query {
   gearLibrary: GearLibrary!
   gearLending: GearLending!
   budgetMonth: BudgetMonthView!
+  budgetLineAllocations(lineItemId: ID!): [BudgetPurchaseAllocation!]!
 }
 
 type Mutation {
@@ -78,6 +79,11 @@ type Mutation {
   createBudgetLineItem(input: CreateBudgetLineItemInput!): BudgetLineItem!
   updateBudgetLineItem(id: ID!, input: UpdateBudgetLineItemInput!): BudgetLineItem!
   deleteBudgetLineItem(id: ID!): Boolean!
+  createBudgetPurchase(input: CreateBudgetPurchaseInput!): BudgetPurchase!
+  updateBudgetPurchase(id: ID!, input: UpdateBudgetPurchaseInput!): BudgetPurchase!
+  deleteBudgetPurchase(id: ID!): Boolean!
+  allocateBudgetPurchase(purchaseId: ID!, lineItemId: ID!): BudgetPurchaseAllocation!
+  deleteBudgetPurchaseAllocation(id: ID!): Boolean!
 }
 
 enum FolderNamespace {
@@ -482,6 +488,11 @@ enum BudgetLineType {
   ANNUAL
 }
 
+enum BudgetPurchaseSource {
+  MANUAL
+  VISA
+}
+
 type BudgetLineItem {
   id: ID!
   sectionId: ID!
@@ -502,11 +513,30 @@ type BudgetSection {
   progressPercent: Int!
 }
 
+type BudgetPurchase {
+  id: ID!
+  name: String!
+  amountCents: Int!
+  purchaseDate: String!
+  source: BudgetPurchaseSource!
+}
+
+type BudgetPurchaseAllocation {
+  id: ID!
+  purchaseId: ID!
+  lineItemId: ID!
+  amountCents: Int!
+  purchaseName: String!
+  purchaseDate: String!
+  source: BudgetPurchaseSource!
+}
+
 type BudgetMonthView {
   year: Int!
   month: Int!
   title: String!
   annualTitle: String!
+  purchases: [BudgetPurchase!]!
   monthlySections: [BudgetSection!]!
   annualSections: [BudgetSection!]!
 }
@@ -520,6 +550,18 @@ input CreateBudgetLineItemInput {
 input UpdateBudgetLineItemInput {
   name: String
   amountCents: Int
+}
+
+input CreateBudgetPurchaseInput {
+  name: String!
+  amountCents: Int!
+  purchaseDate: String!
+}
+
+input UpdateBudgetPurchaseInput {
+  name: String
+  amountCents: Int
+  purchaseDate: String
 }
 
 schema {

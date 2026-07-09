@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import type { BudgetScope } from "@/components/finance/budget-scope";
 import type { BudgetSection } from "@/components/finance/types";
 import { BudgetSectionRow } from "@/components/finance/budget-section-row";
 import { BudgetProgressBar } from "@/components/finance/budget-progress-bar";
 import { Button } from "@/components/ui/button";
-import { formatCadCents } from "@/lib/budget-money";
+import { formatBudgetRemainingLabel, formatCadCents } from "@/lib/budget-money";
 import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
 import { budgetRemainingCents, budgetRemainingPercent } from "@life/shared";
 import { cn } from "@/lib/cn";
@@ -14,6 +15,7 @@ import { cn } from "@/lib/cn";
 type BudgetTableProps = {
   title: string;
   sections: BudgetSection[];
+  scope: BudgetScope;
   onAddSection: () => void;
   collapsible?: boolean;
   defaultCollapsed?: boolean;
@@ -23,6 +25,7 @@ type BudgetTableProps = {
 export function BudgetTable({
   title,
   sections,
+  scope,
   onAddSection,
   collapsible = false,
   defaultCollapsed = false,
@@ -83,6 +86,7 @@ export function BudgetTable({
             <BudgetSectionRow
               key={section.id}
               section={section}
+              scope={scope}
               expanded={isExpanded(section.id)}
               isAddingItem={addingItemSectionId === section.id}
               onToggleExpanded={() =>
@@ -108,8 +112,13 @@ export function BudgetTable({
             <td className="px-3 py-2.5 text-right tabular-nums font-semibold">
               {formatCadCents(totals.spentCents)}
             </td>
-            <td className="px-3 py-2.5 text-right tabular-nums font-semibold">
-              {formatCadCents(totals.remainingCents)}
+            <td
+              className={cn(
+                "px-3 py-2.5 text-right tabular-nums font-semibold",
+                totals.remainingCents < 0 ? "text-error" : undefined,
+              )}
+            >
+              {formatBudgetRemainingLabel(totals.budgetCents, totals.spentCents)}
             </td>
             <td className="px-3 py-2.5">
               <BudgetProgressBar percent={totals.progressPercent} />

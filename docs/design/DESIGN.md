@@ -310,7 +310,7 @@ List:    filter chips deferred (REQ-TASK-15)
 | `/tasks/people` | By assignee | Later pass |
 | `/meals` | Meal planning (library + week grid + grocery) | **Phase 1b** |
 | `/receipts` | Receipt management (upload + folders + preview) | **Phase 1c** |
-| `/finance/budget` | Household budget (collapsible section table) | **Phase 1e — V1** |
+| `/finance/budget` | Household budget (purchases inbox + monthly + annual tables) | **Phase 1e — V1** · **1f purchases inbox** |
 | `/finance/reports` | Monthly Reports | Placeholder (Phase 1e nav only) |
 | `/finance/purchase-list` | Purchase List | Placeholder (Phase 1e nav only) |
 
@@ -320,15 +320,16 @@ List:    filter chips deferred (REQ-TASK-15)
 Header:  Finance                  [Budget] [Monthly Reports] [Purchase List]
                                               ↑ segmented control (Tasks toggle pattern)
 
-Budget:  July Budget
-         collapsible section table (Food · Car · Home …)
-         inline quick-add for sections + line items
+Budget:  [Purchases inbox — collapsible]     ← Phase 1f
+         July Budget (monthly table)
+         2026 Annual Budget (annual table — collapsible)
+         scoped sections + line items per table
 ```
 
 | Route | View | Status |
 |-------|------|--------|
 | `/finance` | Redirect → `/finance/budget` | **Phase 1e** |
-| `/finance/budget` | Current-month budget table | **Phase 1e — V1** |
+| `/finance/budget` | Purchases inbox + monthly/annual budget tables | **Phase 1e — V1** · **1f inbox** |
 | `/finance/reports` | Monthly Reports | Placeholder |
 | `/finance/purchase-list` | Purchase List | Placeholder |
 
@@ -427,71 +428,124 @@ Reference: [`list_view_homepage.png`](list_view_homepage.png)
 - Tinted background + dark text of same hue (e.g. warm amber + dark brown for “Urgent”).
 - Blocked / overdue: soft amber, not aggressive red unless critical.
 
-### 8.8 Finance — Budget table (Phase 1e)
+### 8.8 Finance — Budget page (Phase 1e + 1f)
 
-Reference: REQ-FIN-07 … REQ-FIN-16 · module accent **sage green** (`sage` / `bg-sage` on section headers — §4.2.4).
+Reference: REQ-FIN-07 … REQ-FIN-16 (tables) · REQ-FIN-17 … REQ-FIN-26 (purchases inbox) · module accent **sage green** (`sage` / `bg-sage` on section headers — §4.2.4).
 
 **Page shell:** `ModulePageLayout` + `FinancePageLayout` (wraps sub-nav toggle, mirror `TasksPageLayout`).
 
-**Sub-navigation:** `FinanceViewToggle` — segmented control with three links (same classes as `TasksViewToggle`): **Budget** · **Monthly Reports** · **Purchase List**.
+**Sub-navigation:** `FinanceViewToggle` — segmented control with three links (same classes as `TasksViewToggle`): **Budget** · **Monthly Reports** · **Purchase List**. **Purchase List tab is unrelated** to the purchases inbox on the Budget page.
 
-**Budget header:** `{Month} Budget` (e.g. “July Budget”) — current calendar month in household timezone; no month picker in V1.
-
-**Table structure:**
+**Page layout (top → bottom on `/finance/budget`):**
 
 ```
-[Add section]                              ← button → modal (gear “Add item class”)
+[Budget] [Monthly Reports] [Purchase List]
 
-▾ Food  [+]  …pencil… …trash…              $800  $0  $800  [====····]
-    Groceries                               $500  $0  $500  [====····]
-    [draft row after + click]               name · amount · Monthly|Annual
-▸ Car     …                                 $400  $0  $400  [====····]
+▾ Purchases                          [Add purchase]   ← Phase 1f; collapsible
+    [inline draft: name · amount · date]
+    ┌─ draggable purchase chip ─┐
+    │  Costco · $142.50 · Jul 3  │
+    └────────────────────────────┘
+    … scroll after ~5 items …
+
+▾ July Budget                        [Add section]
+    (monthly-scoped sections table)
+
+▸ 2026 Annual Budget                 [Add section]   ← collapsed by default
+    (annual-scoped sections table)
+```
+
+#### 8.8.1 Purchases inbox (Phase 1f)
+
+Reference: REQ-FIN-17 … REQ-FIN-26.
+
+**Placement:** Collapsible `sectionCardClass` block **above the monthly budget table only** (not above annual).
+
+**Inbox list:** Mini-inbox — vertical draggable rows/chips; **max ~5 visible** then scroll. Shows **unassigned remainder** for the current budget month (PST).
+
+**Add purchase:** **Inline draft row** at top (gear quick-add pattern) — **not** a modal. Fields: name · amount · purchase date. Date: **`CalendarPicker`** only (`components/ui/calendar-picker`, same as Tasks due date) — **no text date input**. If date is outside the displayed budget month → **save to correct month** + **non-blocking notice**.
+
+**Drag-and-drop:** `@dnd-kit` — purchases (or remainder portions) draggable onto **monthly or annual** budget **line item** rows. Budget rows are drop targets (highlight on hover). Mirror Gear lend-staging → library drop affordances.
+
+**Splitting model:**
+
+| Concept | Rule |
+|---------|------|
+| **Purchase** | household, name, amountCents, purchaseDate, source (`MANUAL` \| `VISA`), optional `externalTransactionId` |
+| **Allocation** | links purchase → budget line with `amountCents` |
+| **Inbox visibility** | purchase visible while `sum(allocations) < purchase.total` |
+| **Fully assigned** | when allocations sum = purchase total → **removed from inbox** |
+
+**Spend:** Allocations increment line **Spent** — monthly lines in purchase month; annual lines as **YTD** in purchase year. **Remaining** shows **"$X over budget"** when over (REQ-FIN-15).
+
+**Line-item purchases sidebar:** **Open** icon (e.g. panel icon) on each budget line row → **right slide-in panel** (`TaskCommentsSidebar` pattern: overlay, slide animation, close button). Table of allocations — **monthly lines:** current month only; **annual lines:** YTD. Columns: name · date · amount · source badge. Rows **draggable** to reassign to another line. **Inline edit** allocation amount. **Trash** delete allocation (`ConfirmModal`).
+
+**Delete:** Any household adult. Delete unassigned purchase from inbox; delete allocation (restores remainder to inbox). VISA rows may be read-only on some fields post-import (defer to REQ-FIN-20).
+
+**Future:** REQ-FIN-20 pipes Visa transactions into the same inbox with `source: VISA`.
+
+#### 8.8.2 Budget tables (Phase 1e — shipped)
+
+**Monthly header:** `{Month} Budget` (e.g. “July Budget”) — current calendar month in PST; no month picker.
+
+**Annual header:** `{Year} Annual Budget` — collapsible, **collapsed by default**.
+
+**Table structure (per table — monthly and annual are independent):**
+
+```
+[Add section]                              ← button → modal (scope = table)
+
+▾ Food  [+]  …trash…                       $800  $0  $800  [████████··]  [open]
+    Groceries                               $500  $0  $500  [████████··]  [open]
+    [draft row after + click]               name · amount
+▸ Car     …                                 $400  $0  $400  [████████··]
 ```
 
 | Row type | Columns | Notes |
 |----------|---------|-------|
-| **Section** (collapsible) | Name · Budget · Spent · Remaining · progress | Totals = sum of children; **+** adds inline draft line; chevron expand/collapse |
-| **Line item** | Name · Budget · Spent · Remaining · progress | Indented under section; inline edit |
+| **Section** (collapsible) | Name · Budget · Spent · Remaining · progress · actions | Totals = sum of children; **+** adds inline draft line; chevron expand/collapse |
+| **Line item** | Name · Budget · Spent · Remaining · progress · **open** · trash | Indented under section; inline edit; **open** → purchases sidebar (§8.8.1) |
 | **Draft line item** | Inline inputs | Appears after **+** on section row; commit on Enter/blur |
+| **Footer** | **Total** row | Sum of line items in that table |
+
+**Scoped sections:** `BudgetSection.scope` = `MONTHLY` | `ANNUAL`. Monthly and annual tables each have **their own section lists** (same name allowed in both).
 
 **Add flows (mirror Gear library):**
 
 | Action | Pattern |
 |--------|---------|
-| **Add section** | Header **“Add section”** button → `Modal` (name only) |
-| **Rename section** | Pencil on section row → same modal |
+| **Add section** | Header **“Add section”** button → `Modal` (name only; scope from active table) |
+| **Rename section** | Inline `EditableTextCell` on section row |
 | **Add line item** | **+** on section row → inline draft row under that section |
 | **Delete section** | Trash → `ConfirmModal` cascade delete children |
 
-**Line item types:**
+**Line item scope:**
 
-| Type | Limit applies to | Spent resets |
-|------|------------------|--------------|
+| Table | Limit applies to | Spent resets |
+|-------|------------------|--------------|
 | **Monthly** | Current calendar month | 1st of each month |
 | **Annual** | Calendar year (Jan–Dec) | January 1 |
 
-**V1 spend:** Always display **$0** spent / full remaining until bank sync (REQ-FIN-14). Persist spend rows in DB per month (monthly) and per year (annual YTD) for future Monthly Reports.
+**Spend (Phase 1f):** Populated by **purchase allocations** (REQ-FIN-23 … REQ-FIN-24). Persist spend rows in DB per month (monthly) and per year (annual YTD).
 
 **Interactions:**
 
-- **Sections:** **Add section** modal · pencil rename modal · trash + `ConfirmModal` cascade.
-- **Line items:** **+** on section row → inline draft row · inline edit on saved rows · trash + confirm.
-- **No DnD** on budget rows.
-- Reuse: `sectionCardClass` / `sectionHeaderClass`, `EditableTextCell`, `EditableSelectCell` or pill for Monthly/Annual, `ConfirmModal`, icon row actions (gear/receipts pattern).
+- **Sections:** **Add section** modal · inline rename · trash + `ConfirmModal` cascade.
+- **Line items:** **+** on section row → inline draft row · inline edit on saved rows · trash + confirm · **open** purchases sidebar.
+- **Purchases:** DnD from inbox → line items; DnD from sidebar → reassign (§8.8.1).
+- Reuse: `sectionCardClass` / `sectionHeaderClass`, `EditableTextCell`, `ConfirmModal`, `CalendarPicker`, `BudgetTable` + `budget-scope.ts` config, `@dnd-kit`, `TaskCommentsSidebar` slide pattern.
 
 **Visual:**
 
 - Monospaced/tabular numerals, **right-aligned** amount columns (REQ-FIN-15).
-- **Progress bar** per row (section totals and line items): spent ÷ budget; sage scale; cap at 100% when over budget.
-- Sage tint on page section wrapper (single `sectionCardClass` around table).
+- **Progress bar** per row: **remaining** budget (full bar = green; shrinks; green → yellow → red). Over budget: **"$X over budget"** in Remaining column.
+- Sage tint on page section wrappers (`sectionCardClass`).
 
 **Currency:** CAD only — format as `$1,234.56`; no currency selector.
 
 **Timezone:** Month and year boundaries use **America/Los_Angeles** (PST/PDT).
 
-**Delete section:** `ConfirmModal` cascade delete all child line items (gear-class pattern).
-
-**Out of scope (Budget V1):** Monthly Reports UI, Purchase List UI, manual transaction log, month browser, bank sync UI, income rows, recurring bills.
+**Out of scope (Budget 1e/1f):** Monthly Reports UI, **Purchase List** sub-page, general expense/income log, month browser, VISA import UI (REQ-FIN-20), income rows, recurring bills.
 
 ### 8.9 Calendar views (future)
 
@@ -829,18 +883,27 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 
 **Not in Phase 1d:** search/filter, promote standalone→class, partial returns, email reminders (schema-ready), mobile layout.
 
-### 9.7 Finance Budget pass (Phase 1e — awaiting owner GO)
+### 9.7 Finance Budget pass (Phase 1e — shipped)
 
 | Layer | Work |
 |-------|------|
-| **Database** | `BudgetSection` · `BudgetLineItem` (name, amount, type `MONTHLY` \| `ANNUAL`, sectionId, householdId, sortOrder) · `BudgetLineSpend` (lineItemId, year, month nullable for annual YTD keying, spentCents) — retain full history |
-| **GraphQL** | `budgetMonth` query (current month sections + items + computed totals) · section/line CRUD · spend fields returned (0 in V1 UI) |
-| **Web `/finance`** | `FinancePageLayout` + `FinanceViewToggle` · `/finance/budget` collapsible table · **Add section** modal + per-section **+** draft rows · placeholder `/finance/reports` + `/finance/purchase-list` · sage accents |
-| **Nav** | `/finance` redirect · enable Budget sub-route as default landing |
-| **Reuse** | `ModulePageLayout`, `sectionCardClass`, `EditableTextCell`, `ConfirmModal`, `Modal`, gear-class **+** / draft-row pattern, pencil/trash icons |
-| **Codegen / tests** | Operations · monthly vs annual reset rules · section total aggregation · cascade delete section |
+| **Database** | `BudgetSection` (with `scope` `MONTHLY` \| `ANNUAL`) · `BudgetLineItem` · `BudgetLineSpend` (lineItemId, year, month — `0` = annual YTD) |
+| **GraphQL** | `budgetMonth` → `monthlySections` + `annualSections` · section/line CRUD · computed spent/remaining/progress |
+| **Web `/finance`** | `FinancePageLayout` + `FinanceViewToggle` · `BudgetTable` ×2 (monthly + collapsible annual) · `budget-scope.ts` config · sage accents |
+| **Reuse** | `ModulePageLayout`, `sectionCardClass`, `EditableTextCell`, `ConfirmModal`, gear **+** / draft-row pattern |
 
-**Not in Budget V1:** Monthly Reports content, Purchase List, manual spend entry, bank/Plaid sync (REQ-FIN-20), month picker, income rows, recurring bills.
+### 9.8 Finance Budget purchases inbox (Phase 1f — awaiting owner GO)
+
+| Layer | Work |
+|-------|------|
+| **Database** | `BudgetPurchase` (householdId, name, amountCents, purchaseDate, source `MANUAL` \| `VISA`, optional `externalTransactionId`) · `BudgetPurchaseAllocation` (purchaseId, lineItemId, amountCents) — allocations drive `BudgetLineSpend` |
+| **GraphQL** | Extend `budgetMonth` with `purchases` inbox for current month (unassigned + partial remainders) · purchase CRUD · allocate / reassign / split mutations · update allocation amount · delete purchase/allocation · line-item `allocations` for sidebar |
+| **Web `/finance/budget`** | `PurchasesInbox` (collapsible, scroll) · inline draft row + `CalendarPicker` · draggable purchase chips · drop targets on `BudgetLineItemRow` (both tables) · `BudgetPurchasesSidebar` (slide panel, allocation table, DnD reassign, inline amount edit) · **open** icon on line rows · over-budget remaining copy |
+| **DnD** | `@dnd-kit` — inbox → line, sidebar → line; shared drag overlay pattern from Gear |
+| **Reuse** | `BudgetTable`, `BudgetLineItemRow`, `CalendarPicker`, `TaskCommentsSidebar` shell, `ConfirmModal`, `formatCadCents`, existing spend rollup helpers |
+| **Codegen / tests** | Operations · allocation sum invariant · spend roll-up monthly vs annual · split remainder · delete restores inbox · date-month notice |
+
+**Not in Phase 1f:** VISA/Plaid import UI (REQ-FIN-20), Purchase List sub-page, auto-categorization, month browser for past purchases.
 
 ---
 
@@ -882,7 +945,7 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 | Multi-assignee | REQ-TASK-05 |
 | Task fields | REQ-TASK-01 … REQ-TASK-04 |
 | Push reminders (UI) | REQ-TASK-20 |
-| Finance Budget | REQ-FIN-07 … REQ-FIN-16, REQ-FIN-20 |
+| Finance Budget | REQ-FIN-07 … REQ-FIN-16, REQ-FIN-17 … REQ-FIN-26, REQ-FIN-20 |
 | Google Calendar | REQ-CAL-01 … REQ-CAL-04 |
 | Meals | REQ-MEAL-01 … REQ-MEAL-08 |
 | Receipts | REQ-RCPT-01 … REQ-RCPT-13 |
@@ -896,7 +959,8 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 
 | Date | Change |
 |------|--------|
-| 2026-07-07 | **Finance Budget V1 (Phase 1e):** §8.8 collapsible section budget table, in-module nav (Budget / Monthly Reports / Purchase List), monthly vs annual line items, sage accent, current-month UI. Implementation plan §9.7 (awaiting owner GO). |
+| 2026-07-08 | **Finance Budget purchases inbox (Phase 1f):** §8.8 restructured (§8.8.1 inbox + §8.8.2 tables); purchases DnD/splitting, sidebar, `CalendarPicker`, scoped sections doc sync. Implementation plan §9.8 (awaiting owner GO). REQ-FIN-17 … REQ-FIN-26. |
+| 2026-07-07 | **Finance Budget V1 (Phase 1e):** §8.8 budget tables, in-module nav, separate monthly/annual tables, sage accent. Implementation plan §9.7 (shipped). |
 | 2026-07-06 | **Gear inventory (Phase 1d):** §8.14 standalone items + item classes/variants, photos, lending staging + active loans + history; `GEAR` folder namespace. Implementation plan §9.6 (awaiting owner GO). |
 | 2026-07-02 | **Task comments:** §8.13 overlay sidebar thread (newest-first, linkify, unread + count, author delete); remove description (REQ-TASK-09). Status columns → TODO / IN_PROGRESS / WAITING / DONE. Implementation plan §9.5 (awaiting GO). |
 | 2026-07-02 | **Receipt management (Phase 1c):** §8.11 upload/preview/rename/delete, sage accent, `/receipts` nav. **Shared folders:** §8.12 — `FolderBrowser`, migrate meals off `RecipeFolder`. Implementation plan §9.4. |

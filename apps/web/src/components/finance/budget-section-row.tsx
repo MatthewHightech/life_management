@@ -3,18 +3,21 @@
 import { useMutation } from "@apollo/client";
 import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import type { BudgetScope } from "@/components/finance/budget-scope";
 import type { BudgetSection } from "@/components/finance/types";
 import { BudgetLineDraftRow } from "@/components/finance/budget-line-draft-row";
 import { BudgetLineItemRow } from "@/components/finance/budget-line-item-row";
 import { BudgetProgressBar } from "@/components/finance/budget-progress-bar";
 import { EditableTextCell } from "@/components/editable-table";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
-import { formatCadCents } from "@/lib/budget-money";
+import { formatBudgetRemainingLabel, formatCadCents } from "@/lib/budget-money";
 import { BUDGET_PAGE_REFETCH } from "@/lib/budget-queries";
 import { DELETE_BUDGET_SECTION_MUTATION, UPDATE_BUDGET_SECTION_MUTATION } from "@/graphql";
+import { cn } from "@/lib/cn";
 
 type BudgetSectionRowProps = {
   section: BudgetSection;
+  scope: BudgetScope;
   expanded: boolean;
   isAddingItem: boolean;
   onToggleExpanded: () => void;
@@ -24,6 +27,7 @@ type BudgetSectionRowProps = {
 
 export function BudgetSectionRow({
   section,
+  scope,
   expanded,
   isAddingItem,
   onToggleExpanded,
@@ -71,8 +75,13 @@ export function BudgetSectionRow({
         <td className="px-3 py-2 text-right tabular-nums text-text-muted">
           {formatCadCents(section.spentCents)}
         </td>
-        <td className="px-3 py-2 text-right tabular-nums font-medium text-text-main">
-          {formatCadCents(section.remainingCents)}
+        <td
+          className={cn(
+            "px-3 py-2 text-right tabular-nums font-medium",
+            section.remainingCents < 0 ? "text-error" : "text-text-main",
+          )}
+        >
+          {formatBudgetRemainingLabel(section.budgetCents, section.spentCents)}
         </td>
         <td className="px-3 py-2">
           <BudgetProgressBar percent={section.progressPercent} />
@@ -100,7 +109,9 @@ export function BudgetSectionRow({
       </tr>
 
       {expanded
-        ? section.lineItems.map((item) => <BudgetLineItemRow key={item.id} item={item} />)
+        ? section.lineItems.map((item) => (
+            <BudgetLineItemRow key={item.id} item={item} scope={scope} />
+          ))
         : null}
       {expanded && isAddingItem ? (
         <BudgetLineDraftRow

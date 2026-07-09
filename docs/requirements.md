@@ -234,34 +234,51 @@ The **family banking app remains the source of truth** for account balances and 
 
 **REQ-FIN-08 (P0):** **Budget page** shows the **current calendar month only** — header title e.g. **“July Budget”** (month name + year). No month picker or browse past/future months in V1 UI.
 
-**REQ-FIN-09 (P0):** Budget is a **collapsible section table**:
-- **Sections** (e.g. Food, Car, Home) — created via **“Add section”** button → **modal** for name (same pattern as **Add item class** on Gear). Section rows show rollup **Budget / Spent / Remaining** + progress bar (sums of children). **Pencil** rename · **trash** delete with **cascade confirm**.
-- **Line items** nested under an expanded section — added via **“+” on the section row** (same pattern as **Add variant** on a gear class); inserts an **inline draft row** below the section header for name, amount, and type.
-- **No drag-and-drop** reordering in V1.
+**REQ-FIN-09 (P0):** Budget page has **two independent section tables** — **Monthly** (always expanded) and **Annual** (collapsible, collapsed by default). Each table has its own **scoped sections** (`MONTHLY` scope vs `ANNUAL` scope — same section name may exist in both). Section rows show rollup **Budget / Spent / Remaining** + progress bar (sums of children). **Inline rename** (no pencil icon) · **trash** delete with **cascade confirm**. **+** on section row adds inline draft line item. Footer **Total** row per table. **No drag-and-drop reordering** of budget rows (purchase assignment DnD is separate — REQ-FIN-22).
 
-**REQ-FIN-10 (P0):** **Budget line items** fields: **name**, **amount** (CAD; store as integer cents in DB; display with 2 decimal places; **no multi-currency**), **type** — `MONTHLY` or `ANNUAL`. **Draft row** commits on blur/Enter (gear variant / task quick-add pattern). Inline edit for existing rows. Reuse shared editable-table primitives where applicable.
+**REQ-FIN-10 (P0):** **Budget line items** fields: **name**, **amount** (CAD; integer cents in DB; 2 decimal display; **no multi-currency**). **Type is implicit** from the table/section scope (`MONTHLY` or `ANNUAL`) — **no type column or picker in UI**. **Draft row** commits on blur/Enter (gear variant pattern). Inline edit on saved rows. Reuse shared `editable-table` primitives.
 
-**REQ-FIN-11 (P0):** **Sections** — **modal** create and rename; delete with **ConfirmModal** cascade (removes all child line items). Pencil/trash icon actions on section rows (gear-class pattern).
+**REQ-FIN-11 (P0):** **Sections** — **modal** create (per table scope) and **inline rename**; delete with **ConfirmModal** cascade (removes all child line items in that scope). **+** / trash icon actions on section rows (gear-class pattern).
 
 **REQ-FIN-12 (P0):** **Monthly line items:** `amount` is the limit for the current calendar month; **`spent` resets to $0 on the 1st** of each month. **Annual line items:** `amount` is the limit for the **calendar year (Jan 1 – Dec 31)**; **`spent` tracks year-to-date** and **resets on January 1**.
 
-**REQ-FIN-13 (P0):** **Budget line item definitions persist** across months (name, section, amount, type). **Per-period spend history is stored in the database** for every month (and annual YTD per year) even when the Budget UI only shows the current month — required for future **Monthly Reports**.
+**REQ-FIN-13 (P0):** **Budget line item definitions persist** across months (name, section, amount, scope/type). **Per-period spend history is stored in the database** for every month (and annual YTD per year) even when the Budget UI only shows the current month — required for future **Monthly Reports**.
 
-**REQ-FIN-14 (P0):** **Budget V1 spend display:** UI shows **$0 spent** for all lines (and section totals). **Do not build manual spend entry** in this pass. Database and GraphQL must support stored spend values so **bank/card transaction sync** (future) can populate them without schema churn.
+**REQ-FIN-14 (P0):** ~~Budget V1 spend display: $0 until bank sync.~~ **Superseded for manual spend by Phase 1f (REQ-FIN-17 … REQ-FIN-26).** Spend is populated by **purchase allocations** (manual now; VISA via REQ-FIN-20 later). Database and GraphQL must continue to support stored spend values per line per period.
 
-**REQ-FIN-15 (P0):** Budget table columns (section header row and line item row): **Name** · **Budget** · **Spent** · **Remaining** · **progress bar** (spent ÷ budget; sage scale; full bar when spent ≥ budget). Amounts use **tabular/monospaced numerals**, right-aligned. Display as CAD (e.g. `$1,234.56`) without a currency picker.
+**REQ-FIN-15 (P0):** Budget table columns (section header row and line item row): **Name** · **Budget** · **Spent** · **Remaining** · **progress bar**. Progress bar shows **remaining budget** (full = green; shrinks and shifts green → yellow → red as spent increases). When spent > budget, **Remaining** shows **"$X over budget"** (not a negative dollar amount). Amounts use **tabular/monospaced numerals**, right-aligned. Display as CAD (e.g. `$1,234.56`) without a currency picker.
 
-**REQ-FIN-16 (P1):** **Monthly Reports** and **Purchase List** sub-pages — nav + placeholder only in V1; requirements defined in a later pass.
+**REQ-FIN-16 (P1):** **Monthly Reports** and **Purchase List** sub-pages — nav + placeholder only until their own requirements pass; **Purchase List is unrelated** to the Budget page purchases inbox (REQ-FIN-17).
 
-#### 4.3.3 Explicitly not in Budget V1 scope
+#### 4.3.3 Budget purchases inbox (Phase 1f — Budget page)
+
+**REQ-FIN-17 (P0):** **Purchases inbox** — collapsible section on the Budget page **above the monthly budget table** (annual table remains below). **Mini-inbox** layout: vertical list, **scrollable after ~5 visible items**. Holds **unassigned** purchases (not yet fully allocated to budget lines). Future **VISA import** (REQ-FIN-20) feeds this same pool. **Not** the same as the **Purchase List** sub-nav tab (`/finance/purchase-list`) — that is a separate future feature.
+
+**REQ-FIN-18 (P0):** **Add purchase** — **inline draft row** at the top of the purchases inbox (not a modal). Fields: **name**, **amount** (CAD cents), **purchase date**.
+
+**REQ-FIN-19 (P0):** **Purchase date** uses **`CalendarPicker` only** (reuse `components/ui/calendar-picker` from Tasks) — **no free-text date input**. Purchase date determines the purchase's **budget month** (PST, REQ-FIN-05). When the user picks a date **outside the currently displayed budget month**, **save to the correct month** and show a **non-blocking notice** (e.g. toast or inline hint) that the purchase belongs to another month. Inbox shows unassigned purchases for the **current budget month** only.
+
+**REQ-FIN-22 (P0):** **Drag-and-drop assignment** — purchases (or unassigned **remainder** of a partially split purchase) are draggable onto **monthly or annual** budget line item rows (`@dnd-kit`, same stack as Gear/Receipts). Budget line rows are **drop targets** in both tables.
+
+**REQ-FIN-23 (P0):** **Splitting & allocation** — assigning links a **portion** of a purchase to a budget line (**allocation**: purchaseId, lineItemId, amountCents). One purchase may be **split across multiple budget lines** (allocations must sum to ≤ purchase total). A purchase **leaves the inbox when fully allocated** (allocations sum = purchase total). **Partially allocated** purchases remain in the inbox showing the **unassigned remainder** until fully assigned.
+
+**REQ-FIN-24 (P0):** **Spend roll-up** — each allocation **increases Spent** on the target line: **monthly** lines in the purchase's calendar month; **annual** lines as **YTD** in the purchase's calendar year (REQ-FIN-12). Section totals and table footer totals update accordingly. Over-budget lines use **"$X over budget"** in Remaining (REQ-FIN-15).
+
+**REQ-FIN-25 (P0):** **Purchases sidebar** — **open** icon on each budget line row opens a **right slide-in panel** (mirror `TaskCommentsSidebar` animation/pattern). Table lists allocations for that line: **monthly lines** = **current calendar month** only; **annual lines** = **YTD** (current calendar year). Minimum columns: purchase name, purchase date, allocated amount, **source** badge (`Manual` / `Visa`). Allocations are **draggable from the sidebar** onto other budget line rows (reassign). **Inline edit** of allocation amount (updates Spent on affected lines).
+
+**REQ-FIN-26 (P0):** **Delete & edit** — any household adult may delete: an **unassigned purchase** from the inbox (removes the purchase entirely); an **allocation** from the sidebar (subtracts from line Spent; unassigned remainder returns to inbox unless the whole purchase is deleted). `ConfirmModal` on delete. Store **`source`**: `MANUAL` | `VISA` (reserve `externalTransactionId` / provider fields for REQ-FIN-20). **Manual** purchases: name, amount, and date editable while unassigned; allocation amount editable when assigned.
+
+#### 4.3.4 Explicitly not in Budget V1 / 1f scope
 
 - **Monthly Reports** content, charts, or export.
-- **Purchase List** content.
-- Manual expense/income transaction log UI (REQ-FIN-01 deferred past Budget V1 setup pass).
+- **Purchase List** sub-page content (separate from purchases inbox).
+- Manual expense/income transaction log UI (REQ-FIN-01 deferred).
 - **Recurring bills** tracker UI (REQ-FIN-03 deferred).
 - Month navigation / editing historical months in Budget UI.
+- **VISA / bank import** implementation (REQ-FIN-20 — schema-ready via `source` field only in Phase 1f).
+- Auto-categorization rules for imported transactions.
 
-#### 4.3.4 Explicitly not in MVP finance scope
+#### 4.3.5 Explicitly not in MVP finance scope
 
 - Financial **account entities** (checking, savings, credit card records as first-class objects).
 - Bank/credit card **sync** (Plaid or similar).
@@ -269,9 +286,9 @@ The **family banking app remains the source of truth** for account balances and 
 - Split transactions, multi-currency, tax tagging.
 - Receipt storage (see **§4.7 Receipt management** — separate module, not finance attachments in MVP).
 
-#### 4.3.5 Future finance
+#### 4.3.6 Future finance
 
-**REQ-FIN-20 (P2):** **Bank/card transaction import** — connect household Visa (or similar) and **auto-update budget line spend** from categorized transactions. Assess provider (e.g. Plaid), security, and categorization rules before implementation. Until then, Budget page remains **setup + $0 spent display** (REQ-FIN-14).
+**REQ-FIN-20 (P2):** **Bank/card transaction import** — connect household Visa (or similar). Imported transactions appear in the **purchases inbox** (REQ-FIN-17) with `source: VISA` for user assignment (or future auto-categorization). Assess provider (e.g. Plaid), security, and deduplication (`externalTransactionId`) before implementation.
 
 **REQ-FIN-21 (P3):** Broader read-only bank import / net-worth — assess years from now (supersedes narrow REQ-FIN-20 scope if expanded).
 
@@ -773,7 +790,8 @@ All open questions are resolved. Reference for agents and future you:
 
 | Date | Change |
 |------|--------|
-| 2026-07-07 | **Finance Budget V1 (Phase 1e):** REQ-FIN-07 … REQ-FIN-16 — in-module nav (Budget / Monthly Reports / Purchase List); collapsible section budget table; monthly vs annual line items; current-month UI; persistent line items + stored spend history; $0 spent until bank sync (REQ-FIN-20). See `docs/design/DESIGN.md` §8.15. |
+| 2026-07-08 | **Finance Budget purchases inbox (Phase 1f):** REQ-FIN-17 … REQ-FIN-26 — collapsible purchases inbox above monthly table; manual inline add with `CalendarPicker`; DnD assignment to monthly/annual lines with splitting; spend roll-up; line-item purchases sidebar with reassign; delete/edit rules; `MANUAL` \| `VISA` source. Updated REQ-FIN-09 … REQ-FIN-15 for shipped budget tables. REQ-FIN-20 → inbox import. See `docs/design/DESIGN.md` §8.8.1, §9.8. **Awaiting owner GO before implementation.** |
+| 2026-07-07 | **Finance Budget V1 (Phase 1e):** REQ-FIN-07 … REQ-FIN-16 — in-module nav (Budget / Monthly Reports / Purchase List); separate monthly + annual budget tables with scoped sections; current-month UI; persistent line items + stored spend history. See `docs/design/DESIGN.md` §8.8, §9.7. |
 | 2026-07-06 | **Gear variant table:** REQ-GEAR-08 — inline-editable variant rows (task-list pattern); + adds draft row with Name focus; shared `editable-table` primitives. |
 | 2026-07-06 | **Gear inventory (Phase 1d):** REQ-GEAR-01 … REQ-GEAR-19 — `/gear` nav, `GEAR` folder namespace, standalone items + item classes/variants, photos, lending staging + active loans + history. See `docs/design/DESIGN.md` §8.14. |
 | 2026-07-02 | **Task comments:** REQ-TASK-08 … REQ-TASK-23 — per-task thread sidebar (overlay, newest-first, plain text + linkify, unread badge + count, author-only delete); remove `description` field (drop existing data). Status enum trimmed to TODO / IN_PROGRESS / WAITING / DONE (REQ-TASK-06). See `docs/design/DESIGN.md` §8.13. |
@@ -798,7 +816,7 @@ All open questions are resolved. Reference for agents and future you:
 **Permissions:** REQ-PERM-01 … REQ-PERM-03  
 **Shell:** REQ-SHELL-01 … REQ-SHELL-03  
 **Tasks:** REQ-TASK-01 … REQ-TASK-09, REQ-TASK-10 … REQ-TASK-15, REQ-TASK-20 … REQ-TASK-23  
-**Finance:** REQ-FIN-01 … REQ-FIN-16, REQ-FIN-20, REQ-FIN-21  
+**Finance:** REQ-FIN-01 … REQ-FIN-16, REQ-FIN-17 … REQ-FIN-26, REQ-FIN-20, REQ-FIN-21  
 **Calendar:** REQ-CAL-01 … REQ-CAL-05  
 **Meals:** REQ-MEAL-01 … REQ-MEAL-08  
 **Receipts:** REQ-RCPT-01 … REQ-RCPT-13  

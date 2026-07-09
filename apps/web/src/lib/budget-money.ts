@@ -1,1 +1,1 @@
-export { formatCadCents, parseCadInputToCents } from "@life/shared";
+export { formatCadCents, formatBudgetRemainingLabel, parseCadInputToCents } from "@life/shared";
