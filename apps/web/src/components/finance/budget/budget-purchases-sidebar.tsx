@@ -3,11 +3,11 @@
 import { useQuery } from "@apollo/client";
 import { X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BudgetAllocationRow } from "@/components/finance/budget-allocation-row";
+import { BudgetAllocationRow } from "@/components/finance/budget/budget-allocation-row";
 import {
   useBudgetPurchases,
   type BudgetPurchasesTarget,
-} from "@/components/finance/budget-purchases-context";
+} from "@/components/finance/budget/budget-purchases-context";
 import { BUDGET_LINE_ALLOCATIONS_QUERY } from "@/graphql";
 import type { BudgetLineAllocationsQuery, BudgetLineAllocationsQueryVariables } from "@/graphql";
 import { formatBudgetRemainingLabel, formatCadCents } from "@/lib/budget-money";

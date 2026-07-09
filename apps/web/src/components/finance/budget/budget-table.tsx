@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import type { BudgetScope } from "@/components/finance/budget-scope";
-import type { BudgetSection } from "@/components/finance/types";
-import { BudgetSectionRow } from "@/components/finance/budget-section-row";
-import { BudgetProgressBar } from "@/components/finance/budget-progress-bar";
+import type { BudgetScope } from "@/components/finance/budget/budget-scope";
+import type { BudgetSection } from "@/components/finance/budget/types";
+import { BudgetSectionRow } from "@/components/finance/budget/budget-section-row";
+import { BudgetProgressBar } from "@/components/finance/budget/budget-progress-bar";
 import { Button } from "@/components/ui/button";
 import { formatBudgetRemainingLabel, formatCadCents } from "@/lib/budget-money";
 import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";

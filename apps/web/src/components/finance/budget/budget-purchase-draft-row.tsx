@@ -7,7 +7,7 @@ import {
   purchaseDateOutsideBudgetMonthNotice,
   startOfDay,
 } from "@life/shared";
-import { BudgetPurchaseDatePicker } from "@/components/finance/budget-purchase-date-picker";
+import { BudgetPurchaseDatePicker } from "@/components/finance/budget/budget-purchase-date-picker";
 import { CREATE_BUDGET_PURCHASE_MUTATION } from "@/graphql";
 import { focusLeavesRow } from "@/lib/focus-utils";
 import { parseCadInputToCents } from "@/lib/budget-money";

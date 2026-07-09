@@ -3,9 +3,9 @@
 import { useMutation } from "@apollo/client";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { useState } from "react";
-import type { BudgetPurchase } from "@/components/finance/types";
-import { BudgetPurchaseChip } from "@/components/finance/budget-purchase-chip";
-import { BudgetPurchaseDraftRow } from "@/components/finance/budget-purchase-draft-row";
+import type { BudgetPurchase } from "@/components/finance/budget/types";
+import { BudgetPurchaseChip } from "@/components/finance/budget/budget-purchase-chip";
+import { BudgetPurchaseDraftRow } from "@/components/finance/budget/budget-purchase-draft-row";
 import { Button } from "@/components/ui/button";
 import { DELETE_BUDGET_PURCHASE_MUTATION } from "@/graphql";
 import { BUDGET_PAGE_REFETCH } from "@/lib/budget-queries";

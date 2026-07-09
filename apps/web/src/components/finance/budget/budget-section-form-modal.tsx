@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useMutation } from "@apollo/client";
 import { CREATE_BUDGET_SECTION_MUTATION } from "@/graphql";
-import type { BudgetScope } from "@/components/finance/budget-scope";
+import type { BudgetScope } from "@/components/finance/budget/budget-scope";
 import { BUDGET_PAGE_REFETCH } from "@/lib/budget-queries";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";

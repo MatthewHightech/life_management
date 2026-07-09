@@ -3,8 +3,8 @@
 import { useMutation } from "@apollo/client";
 import { formatShortDate } from "@life/shared";
 import { Trash2 } from "lucide-react";
-import type { BudgetPurchaseAllocation } from "@/components/finance/types";
-import { BudgetAmountCell } from "@/components/finance/budget-amount-cell";
+import type { BudgetPurchaseAllocation } from "@/components/finance/budget/types";
+import { BudgetAmountCell } from "@/components/finance/budget/budget-amount-cell";
 import { EditableTextCell } from "@/components/editable-table";
 import {
   DELETE_BUDGET_PURCHASE_ALLOCATION_MUTATION,

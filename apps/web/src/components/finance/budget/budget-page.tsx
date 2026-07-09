@@ -20,14 +20,14 @@ import {
   budgetSectionsForScope,
   budgetTitleForScope,
   type BudgetScope,
-} from "@/components/finance/budget-scope";
-import { BudgetPurchaseChip } from "@/components/finance/budget-purchase-chip";
-import { BudgetPurchasesInbox } from "@/components/finance/budget-purchases-inbox";
-import { BudgetPurchasesProvider } from "@/components/finance/budget-purchases-context";
-import { BudgetPurchasesSidebar } from "@/components/finance/budget-purchases-sidebar";
-import { BudgetSectionFormModal } from "@/components/finance/budget-section-form-modal";
-import { BudgetTable } from "@/components/finance/budget-table";
-import type { BudgetPurchase } from "@/components/finance/types";
+} from "@/components/finance/budget/budget-scope";
+import { BudgetPurchaseChip } from "@/components/finance/budget/budget-purchase-chip";
+import { BudgetPurchasesInbox } from "@/components/finance/budget/budget-purchases-inbox";
+import { BudgetPurchasesProvider } from "@/components/finance/budget/budget-purchases-context";
+import { BudgetPurchasesSidebar } from "@/components/finance/budget/budget-purchases-sidebar";
+import { BudgetSectionFormModal } from "@/components/finance/budget/budget-section-form-modal";
+import { BudgetTable } from "@/components/finance/budget/budget-table";
+import type { BudgetPurchase } from "@/components/finance/budget/types";
 import { FinancePageLayout } from "@/components/finance/finance-page-layout";
 import { BUDGET_LINE_ALLOCATIONS_REFETCH } from "@/lib/budget-queries";
 

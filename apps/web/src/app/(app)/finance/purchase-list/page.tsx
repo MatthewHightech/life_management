@@ -1,5 +1,5 @@
-import { FinancePlaceholderPage } from "@/components/finance/finance-placeholder-page";
+import { PurchaseListPage } from "@/components/finance/purchase-list/purchase-list-page";
 
 export default function FinancePurchaseListPage() {
-  return <FinancePlaceholderPage message="Purchase List will be available in a future update." />;
+  return <PurchaseListPage />;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, type ReactNode } from "react";
-import type { BudgetScope } from "@/components/finance/budget-scope";
+import type { BudgetScope } from "@/components/finance/budget/budget-scope";
 
 export type BudgetPurchasesTarget = {
   id: string;

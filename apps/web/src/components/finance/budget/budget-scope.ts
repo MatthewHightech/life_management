@@ -1,4 +1,4 @@
-import type { BudgetMonth } from "@/components/finance/types";
+import type { BudgetMonth } from "@/components/finance/budget/types";
 import type { BudgetLineType } from "@/graphql";
 
 export type BudgetScope = BudgetLineType;

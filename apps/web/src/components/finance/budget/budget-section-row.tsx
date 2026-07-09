@@ -3,11 +3,11 @@
 import { useMutation } from "@apollo/client";
 import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import type { BudgetScope } from "@/components/finance/budget-scope";
-import type { BudgetSection } from "@/components/finance/types";
-import { BudgetLineDraftRow } from "@/components/finance/budget-line-draft-row";
-import { BudgetLineItemRow } from "@/components/finance/budget-line-item-row";
-import { BudgetProgressBar } from "@/components/finance/budget-progress-bar";
+import type { BudgetScope } from "@/components/finance/budget/budget-scope";
+import type { BudgetSection } from "@/components/finance/budget/types";
+import { BudgetLineDraftRow } from "@/components/finance/budget/budget-line-draft-row";
+import { BudgetLineItemRow } from "@/components/finance/budget/budget-line-item-row";
+import { BudgetProgressBar } from "@/components/finance/budget/budget-progress-bar";
 import { EditableTextCell } from "@/components/editable-table";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { formatBudgetRemainingLabel, formatCadCents } from "@/lib/budget-money";
