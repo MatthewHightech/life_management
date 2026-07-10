@@ -166,3 +166,83 @@ export const DELETE_BUDGET_PURCHASE_ALLOCATION_MUTATION = gql`
     deleteBudgetPurchaseAllocation(id: $id)
   }
 `;
+
+const BANK_ACCOUNT_FIELDS = gql`
+  fragment BankAccountFields on BankAccount {
+    id
+    plaidAccountId
+    name
+    officialName
+    mask
+    type
+    subtype
+    syncEnabled
+    isCreditCard
+  }
+`;
+
+const BANK_CONNECTION_FIELDS = gql`
+  ${BANK_ACCOUNT_FIELDS}
+  fragment BankConnectionFields on BankConnection {
+    id
+    institutionId
+    institutionName
+    status
+    lastSyncedAt
+    lastError
+    accounts {
+      ...BankAccountFields
+    }
+  }
+`;
+
+export const BANK_CONNECTIONS_QUERY = gql`
+  ${BANK_CONNECTION_FIELDS}
+  query BankConnections {
+    bankConnections {
+      ...BankConnectionFields
+    }
+  }
+`;
+
+export const CREATE_PLAID_LINK_TOKEN_MUTATION = gql`
+  mutation CreatePlaidLinkToken {
+    createPlaidLinkToken {
+      linkToken
+      expiration
+    }
+  }
+`;
+
+export const COMPLETE_PLAID_LINK_MUTATION = gql`
+  ${BANK_CONNECTION_FIELDS}
+  mutation CompletePlaidLink($publicToken: String!) {
+    completePlaidLink(publicToken: $publicToken) {
+      ...BankConnectionFields
+    }
+  }
+`;
+
+export const UPDATE_BANK_ACCOUNT_SYNC_MUTATION = gql`
+  ${BANK_CONNECTION_FIELDS}
+  mutation UpdateBankAccountSync($connectionId: ID!, $enabledAccountIds: [ID!]!) {
+    updateBankAccountSync(connectionId: $connectionId, enabledAccountIds: $enabledAccountIds) {
+      ...BankConnectionFields
+    }
+  }
+`;
+
+export const DISCONNECT_BANK_CONNECTION_MUTATION = gql`
+  mutation DisconnectBankConnection($connectionId: ID!) {
+    disconnectBankConnection(connectionId: $connectionId)
+  }
+`;
+
+export const SYNC_BANK_CONNECTION_NOW_MUTATION = gql`
+  ${BANK_CONNECTION_FIELDS}
+  mutation SyncBankConnectionNow($connectionId: ID!) {
+    syncBankConnectionNow(connectionId: $connectionId) {
+      ...BankConnectionFields
+    }
+  }
+`;

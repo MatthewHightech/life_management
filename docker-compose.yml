@@ -33,6 +33,11 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       ALLOWED_EMAILS: ${ALLOWED_EMAILS:-you@example.com,partner@example.com}
+      PLAID_CLIENT_ID: ${PLAID_CLIENT_ID:-}
+      PLAID_SECRET: ${PLAID_SECRET:-}
+      PLAID_ENV: ${PLAID_ENV:-sandbox}
+      PLAID_TOKEN_ENCRYPTION_KEY: ${PLAID_TOKEN_ENCRYPTION_KEY:-}
+      PLAID_REDIRECT_URI: ${PLAID_REDIRECT_URI:-}
       PORT: 4000
     volumes:
       - .:/app

@@ -2,6 +2,7 @@
 
 import { useMutation } from "@apollo/client";
 import { formatShortDate, parseOptionalDate, startOfDay, toIsoString } from "@life/shared";
+import { Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { TaskPriority, TaskStatus } from "@/graphql";
 import { CREATE_TASK_MUTATION } from "@/graphql";
@@ -224,9 +225,16 @@ export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) 
           type="button"
           disabled={loading}
           onClick={() => void handleAdd()}
-          className="whitespace-nowrap px-3 py-1.5 text-xs"
+          className="gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs"
         >
-          {loading ? "Adding…" : "Add Task"}
+          {loading ? (
+            "Adding…"
+          ) : (
+            <>
+              <Plus className="h-4 w-4" />
+              Add Task
+            </>
+          )}
         </Button>
       </div>
     </div>

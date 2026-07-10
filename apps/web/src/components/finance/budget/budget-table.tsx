@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import type { BudgetScope } from "@/components/finance/budget/budget-scope";
 import type { BudgetSection } from "@/components/finance/budget/types";
 import { BudgetSectionRow } from "@/components/finance/budget/budget-section-row";
@@ -152,13 +152,13 @@ export function BudgetTable({
         {!collapsed ? (
           <Button
             type="button"
-            variant="secondary"
-            className="px-3 py-1.5 text-xs"
+            className="gap-1.5 px-3 py-1.5 text-xs"
             onClick={(event) => {
               event.stopPropagation();
               onAddSection();
             }}
           >
+            <Plus className="h-4 w-4" />
             Add section
           </Button>
         ) : null}

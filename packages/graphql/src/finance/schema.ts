@@ -83,6 +83,41 @@ export const financeTypeDefs = /* GraphQL */ `
   extend type Query {
     budgetMonth: BudgetMonthView!
     budgetLineAllocations(lineItemId: ID!): [BudgetPurchaseAllocation!]!
+    bankConnections: [BankConnection!]!
+  }
+
+  type BankAccount {
+    id: ID!
+    plaidAccountId: String!
+    name: String!
+    officialName: String
+    mask: String
+    type: String!
+    subtype: String
+    syncEnabled: Boolean!
+    isCreditCard: Boolean!
+  }
+
+  enum BankConnectionStatus {
+    PENDING_SETUP
+    ACTIVE
+    ERROR
+    DISCONNECTED
+  }
+
+  type BankConnection {
+    id: ID!
+    institutionId: String
+    institutionName: String!
+    status: BankConnectionStatus!
+    lastSyncedAt: String
+    lastError: String
+    accounts: [BankAccount!]!
+  }
+
+  type PlaidLinkToken {
+    linkToken: String!
+    expiration: String!
   }
 
   extend type Mutation {
@@ -97,5 +132,10 @@ export const financeTypeDefs = /* GraphQL */ `
     deleteBudgetPurchase(id: ID!): Boolean!
     allocateBudgetPurchase(purchaseId: ID!, lineItemId: ID!): BudgetPurchaseAllocation!
     deleteBudgetPurchaseAllocation(id: ID!): Boolean!
+    createPlaidLinkToken: PlaidLinkToken!
+    completePlaidLink(publicToken: String!): BankConnection!
+    updateBankAccountSync(connectionId: ID!, enabledAccountIds: [ID!]!): BankConnection!
+    disconnectBankConnection(connectionId: ID!): Boolean!
+    syncBankConnectionNow(connectionId: ID!): BankConnection!
   }
 `;

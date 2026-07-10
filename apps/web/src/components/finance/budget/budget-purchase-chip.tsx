@@ -55,6 +55,7 @@ export function BudgetPurchaseChip({
         <p className="truncate text-sm font-medium text-text-main">{purchase.name}</p>
         <p className="text-xs text-text-muted">
           {formatCadCents(purchase.amountCents)} · {formatShortDate(purchase.purchaseDate)}
+          {purchase.source === "VISA" ? " · Card" : ""}
         </p>
       </div>
 

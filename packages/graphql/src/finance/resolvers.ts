@@ -9,6 +9,7 @@ import {
 } from "@life/shared";
 import { GraphQLContext } from "../context";
 import { ForbiddenError, requireHouseholdUser } from "../auth";
+import { bankResolvers } from "./bank-resolvers";
 
 type AllocationWithPurchase = {
   id: string;
@@ -363,6 +364,8 @@ export const financeResolvers = {
       const { householdId } = await requireHouseholdUser(context);
       return loadLineAllocations(context, householdId, args.lineItemId);
     },
+
+    ...bankResolvers.Query,
   },
 
   Mutation: {
@@ -621,7 +624,11 @@ export const financeResolvers = {
 
     deleteBudgetPurchase: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
-      await assertPurchaseInHousehold(context, args.id, householdId);
+      const purchase = await assertPurchaseInHousehold(context, args.id, householdId);
+
+      if (purchase.source !== BudgetPurchaseSource.MANUAL) {
+        throw new ForbiddenError("Imported credit card purchases cannot be deleted");
+      }
 
       await context.prisma.budgetPurchase.delete({ where: { id: args.id } });
       return true;
@@ -663,5 +670,7 @@ export const financeResolvers = {
       await context.prisma.budgetPurchaseAllocation.delete({ where: { id: args.id } });
       return true;
     },
+
+    ...bankResolvers.Mutation,
   },
 };

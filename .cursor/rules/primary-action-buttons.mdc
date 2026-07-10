@@ -1,0 +1,35 @@
+---
+description: Keep primary create/action buttons visually consistent across the app
+globs: apps/web/src/components/**/*.tsx
+alwaysApply: true
+---
+
+# Primary action buttons
+
+Section-header and page primary **create** actions (Add recipe, Add item, Add section, Add purchase, Add Task, etc.) must share one look.
+
+## Pattern
+
+Use the shared `Button` with the **default primary** variant (do not use `variant="secondary"` for these):
+
+```tsx
+<Button type="button" className="gap-1.5 px-3 py-1.5 text-xs" onClick={...}>
+  <Plus className="h-4 w-4" />
+  Add thing
+</Button>
+```
+
+## Rules
+
+- **Primary create actions** → default `Button` (primary colors + hover) with Lucide `Plus` (`h-4 w-4`)
+- **Sizing** → `gap-1.5 px-3 py-1.5 text-xs` in section headers and compact toolbars
+- **Secondary / lesser actions** (Sync Credit Card, Add folder, Cancel, Disconnect) → `variant="secondary"` or `variant="ghost"` — not primary, and no `Plus` unless it is an add/create action
+- Do not invent one-off colors, muted “disabled-looking” styles, or custom hover for primary CTAs
+
+## Examples to match
+
+- Meals: `Add recipe`
+- Gear: `Add item`
+- Tasks: `Add Task`
+- Finance: `Add section`, `Add purchase`
+- Finance secondary: `Sync Credit Card` (connect flow when no bank; sync-now when connected)

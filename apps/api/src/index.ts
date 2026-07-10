@@ -8,6 +8,7 @@ import express from "express";
 import { authRouter } from "./auth/routes";
 import { extractBearerToken, verifyAuthToken } from "./auth/jwt";
 import { runMealPlanWeekRollover } from "./cron/meal-plan-rollover";
+import { runBankTransactionSync } from "./cron/bank-transaction-sync";
 import { createReceiptRouter } from "./receipts/routes.js";
 import { createGearRouter } from "./gear/routes.js";
 import { createLocalFileStorage } from "./storage/local.js";
@@ -83,6 +84,16 @@ async function main() {
     () => {
       void runMealPlanWeekRollover().catch((error) => {
         console.error("[meal-plan] rollover failed", error);
+      });
+    },
+    { timezone: "America/Los_Angeles" },
+  );
+
+  cron.schedule(
+    "0 21 * * *",
+    () => {
+      void runBankTransactionSync().catch((error) => {
+        console.error("[plaid] nightly sync failed", error);
       });
     },
     { timezone: "America/Los_Angeles" },

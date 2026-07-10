@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { BudgetPurchase } from "@/components/finance/budget/types";
 import { BudgetPurchaseChip } from "@/components/finance/budget/budget-purchase-chip";
 import { BudgetPurchaseDraftRow } from "@/components/finance/budget/budget-purchase-draft-row";
+import { SyncCreditCardButton } from "@/components/finance/budget/sync-credit-card-button";
 import { Button } from "@/components/ui/button";
 import { DELETE_BUDGET_PURCHASE_MUTATION } from "@/graphql";
 import { BUDGET_PAGE_REFETCH } from "@/lib/budget-queries";
@@ -55,16 +56,19 @@ export function BudgetPurchasesInbox({ purchases, budgetYear, budgetMonth }: Bud
             ) : null}
           </div>
         </div>
-        <span
-          className={cn(
-            "shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
-            purchases.length > 0
-              ? "min-w-6 bg-primary text-center text-white shadow-sm"
-              : "bg-background text-text-muted",
-          )}
-        >
-          {purchases.length}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <SyncCreditCardButton />
+          <span
+            className={cn(
+              "rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
+              purchases.length > 0
+                ? "min-w-6 bg-primary text-center text-white shadow-sm"
+                : "bg-background text-text-muted",
+            )}
+          >
+            {purchases.length}
+          </span>
+        </div>
       </header>
 
       {!collapsed ? (
@@ -86,12 +90,16 @@ export function BudgetPurchasesInbox({ purchases, budgetYear, budgetMonth }: Bud
                   <BudgetPurchaseChip
                     purchase={purchase}
                     deleting={deletingId === purchase.id}
-                    onDelete={() => {
-                      setDeletingId(purchase.id);
-                      void deletePurchase({ variables: { id: purchase.id } }).finally(() =>
-                        setDeletingId(null),
-                      );
-                    }}
+                    onDelete={
+                      purchase.source === "MANUAL"
+                        ? () => {
+                            setDeletingId(purchase.id);
+                            void deletePurchase({ variables: { id: purchase.id } }).finally(() =>
+                              setDeletingId(null),
+                            );
+                          }
+                        : undefined
+                    }
                   />
                 </li>
               ))}
@@ -111,14 +119,13 @@ export function BudgetPurchasesInbox({ purchases, budgetYear, budgetMonth }: Bud
           ) : (
             <Button
               type="button"
-              variant="secondary"
-              className="px-3 py-1.5 text-xs"
+              className="gap-1.5 px-3 py-1.5 text-xs"
               onClick={() => {
                 setNotice(null);
                 setAdding(true);
               }}
             >
-              <Plus className="mr-1 h-3.5 w-3.5" />
+              <Plus className="h-4 w-4" />
               Add purchase
             </Button>
           )}

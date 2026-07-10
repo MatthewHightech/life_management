@@ -13,6 +13,7 @@
     "@apollo/server": "^4.11.3",
     "@life/db": "*",
     "@life/graphql": "*",
+    "@life/plaid": "*",
     "@life/shared": "*",
     "@types/multer": "^2.2.0",
     "@types/node-cron": "^3.0.11",

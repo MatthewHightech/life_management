@@ -58,6 +58,12 @@ export {
   UpdateBudgetPurchaseDocument as UPDATE_BUDGET_PURCHASE_MUTATION,
   AllocateBudgetPurchaseDocument as ALLOCATE_BUDGET_PURCHASE_MUTATION,
   DeleteBudgetPurchaseAllocationDocument as DELETE_BUDGET_PURCHASE_ALLOCATION_MUTATION,
+  BankConnectionsDocument as BANK_CONNECTIONS_QUERY,
+  CreatePlaidLinkTokenDocument as CREATE_PLAID_LINK_TOKEN_MUTATION,
+  CompletePlaidLinkDocument as COMPLETE_PLAID_LINK_MUTATION,
+  UpdateBankAccountSyncDocument as UPDATE_BANK_ACCOUNT_SYNC_MUTATION,
+  DisconnectBankConnectionDocument as DISCONNECT_BANK_CONNECTION_MUTATION,
+  SyncBankConnectionNowDocument as SYNC_BANK_CONNECTION_NOW_MUTATION,
 } from "./generated/graphql";
 
 export type {
@@ -209,4 +215,19 @@ export type {
   AllocateBudgetPurchaseMutationVariables,
   DeleteBudgetPurchaseAllocationMutation,
   DeleteBudgetPurchaseAllocationMutationVariables,
+  BankConnectionsQuery,
+  BankConnectionsQueryVariables,
+  BankConnection,
+  BankAccount,
+  BankConnectionStatus,
+  CreatePlaidLinkTokenMutation,
+  CreatePlaidLinkTokenMutationVariables,
+  CompletePlaidLinkMutation,
+  CompletePlaidLinkMutationVariables,
+  UpdateBankAccountSyncMutation,
+  UpdateBankAccountSyncMutationVariables,
+  DisconnectBankConnectionMutation,
+  DisconnectBankConnectionMutationVariables,
+  SyncBankConnectionNowMutation,
+  SyncBankConnectionNowMutationVariables,
 } from "./generated/graphql";

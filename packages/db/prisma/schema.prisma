@@ -61,6 +61,7 @@ model Household {
   budgetSections  BudgetSection[]
   budgetLineItems BudgetLineItem[]
   budgetPurchases BudgetPurchase[]
+  bankConnections BankConnection[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 }
@@ -413,18 +414,19 @@ enum BudgetPurchaseSource {
 }
 
 model BudgetPurchase {
-  id                   String                     @id @default(cuid())
-  householdId          String
-  household            Household                  @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  name                 String
-  amountCents          Int
-  purchaseDate         DateTime                   @db.Date
-  source               BudgetPurchaseSource       @default(MANUAL)
+  id                    String                     @id @default(cuid())
+  householdId           String
+  household             Household                  @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  name                  String
+  amountCents           Int
+  purchaseDate          DateTime                   @db.Date
+  source                BudgetPurchaseSource       @default(MANUAL)
   externalTransactionId String?
-  allocations          BudgetPurchaseAllocation[]
-  createdAt            DateTime                   @default(now())
-  updatedAt            DateTime                   @updatedAt
+  allocations           BudgetPurchaseAllocation[]
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
 
+  @@unique([householdId, externalTransactionId])
   @@index([householdId, purchaseDate])
 }
 
@@ -440,6 +442,50 @@ model BudgetPurchaseAllocation {
 
   @@index([purchaseId])
   @@index([lineItemId])
+}
+
+enum BankConnectionStatus {
+  PENDING_SETUP
+  ACTIVE
+  ERROR
+  DISCONNECTED
+}
+
+model BankConnection {
+  id                   String               @id @default(cuid())
+  householdId          String
+  household            Household            @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  plaidItemId          String               @unique
+  accessTokenEncrypted String
+  institutionId        String?
+  institutionName      String
+  syncCursor           String?
+  status               BankConnectionStatus @default(PENDING_SETUP)
+  lastSyncedAt         DateTime?
+  lastError            String?
+  accounts             BankAccount[]
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  @@index([householdId])
+}
+
+model BankAccount {
+  id             String         @id @default(cuid())
+  connectionId   String
+  connection     BankConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  plaidAccountId String
+  name           String
+  officialName   String?
+  mask           String?
+  type           String
+  subtype        String?
+  syncEnabled    Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([connectionId, plaidAccountId])
+  @@index([connectionId])
 }
 
 model Recipe {

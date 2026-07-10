@@ -480,9 +480,9 @@ Reference: REQ-FIN-17 … REQ-FIN-26.
 
 **Line-item purchases sidebar:** **Open** icon (e.g. panel icon) on each budget line row → **right slide-in panel** (`TaskCommentsSidebar` pattern: overlay, slide animation, close button). Table of allocations — **monthly lines:** current month only; **annual lines:** YTD. Columns: name · date · amount · source badge. Rows **draggable** to reassign to another line. **Inline edit** allocation amount. **Trash** delete allocation (`ConfirmModal`).
 
-**Delete:** Any household adult. Delete unassigned purchase from inbox; delete allocation (restores remainder to inbox). VISA rows may be read-only on some fields post-import (defer to REQ-FIN-20).
+**Delete:** Any household adult may delete unassigned **MANUAL** purchases from the inbox; may delete allocations from the sidebar (returns purchase to inbox). **VISA (imported) purchases cannot be deleted** from the inbox.
 
-**Future:** REQ-FIN-20 pipes Visa transactions into the same inbox with `source: VISA`.
+**Plaid sync (REQ-FIN-20):** **Sync Credit Card** in inbox header → security modal → Plaid Link → account picker (credit cards only). **Bank settings** in Finance header manages synced accounts / disconnect. Nightly sync 9pm PST; sync on setup. Tokens encrypted at rest (`PLAID_TOKEN_ENCRYPTION_KEY`).
 
 #### 8.8.2 Budget tables (Phase 1e — shipped)
 
@@ -545,7 +545,7 @@ Reference: REQ-FIN-17 … REQ-FIN-26.
 
 **Timezone:** Month and year boundaries use **America/Los_Angeles** (PST/PDT).
 
-**Out of scope (Budget 1e/1f):** Monthly Reports UI, **Purchase List** sub-page, general expense/income log, month browser, VISA import UI (REQ-FIN-20), income rows, recurring bills.
+**Out of scope (Budget 1e/1f tables):** Monthly Reports UI, **Purchase List** sub-page, general expense/income log, month browser, income rows, recurring bills.
 
 ### 8.9 Calendar views (future)
 
@@ -903,7 +903,18 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 | **Reuse** | `BudgetTable`, `BudgetLineItemRow`, `CalendarPicker`, `TaskCommentsSidebar` shell, `ConfirmModal`, `formatCadCents`, existing spend rollup helpers |
 | **Codegen / tests** | Operations · allocation sum invariant · spend roll-up monthly vs annual · split remainder · delete restores inbox · date-month notice |
 
-**Not in Phase 1f:** VISA/Plaid import UI (REQ-FIN-20), Purchase List sub-page, auto-categorization, month browser for past purchases.
+**Not in Phase 1f:** Purchase List sub-page, auto-categorization, month browser for past purchases.
+
+### 9.9 Finance Plaid credit-card sync (REQ-FIN-20)
+
+| Layer | Work |
+|-------|------|
+| **Database** | `BankConnection` (encrypted access token, plaidItemId, syncCursor, status) · `BankAccount` (syncEnabled) · unique `(householdId, externalTransactionId)` on purchases |
+| **Package** | `@life/plaid` — client, AES-GCM token crypto, transaction filters, sync |
+| **GraphQL** | `bankConnections` · `createPlaidLinkToken` · `completePlaidLink` · `updateBankAccountSync` · `disconnectBankConnection` · `syncBankConnectionNow` · block delete of VISA purchases |
+| **API cron** | Nightly `0 21 * * *` America/Los_Angeles |
+| **Web** | `SyncCreditCardButton` + intro modal · `BankAccountSetupModal` · `BankSettingsButton` in Finance header · `react-plaid-link` |
+| **Security** | Transactions product only · CA country codes · no bank passwords in app · encrypted tokens · persist Item to avoid re-link |
 
 ---
 
@@ -959,6 +970,7 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 
 | Date | Change |
 |------|--------|
+| 2026-07-10 | **Plaid credit-card sync (REQ-FIN-20):** §8.8.1 bank sync UX; implementation plan §9.9. |
 | 2026-07-08 | **Finance Budget purchases inbox (Phase 1f):** §8.8 restructured (§8.8.1 inbox + §8.8.2 tables); purchases DnD/splitting, sidebar, `CalendarPicker`, scoped sections doc sync. Implementation plan §9.8 (awaiting owner GO). REQ-FIN-17 … REQ-FIN-26. |
 | 2026-07-07 | **Finance Budget V1 (Phase 1e):** §8.8 budget tables, in-module nav, separate monthly/annual tables, sage accent. Implementation plan §9.7 (shipped). |
 | 2026-07-06 | **Gear inventory (Phase 1d):** §8.14 standalone items + item classes/variants, photos, lending staging + active loans + history; `GEAR` folder namespace. Implementation plan §9.6 (awaiting owner GO). |

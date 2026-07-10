@@ -266,7 +266,7 @@ The **family banking app remains the source of truth** for account balances and 
 
 **REQ-FIN-25 (P0):** **Purchases sidebar** — **open** icon on each budget line row opens a **right slide-in panel** (mirror `TaskCommentsSidebar` animation/pattern). Table lists allocations for that line: **monthly lines** = **current calendar month** only; **annual lines** = **YTD** (current calendar year). Minimum columns: purchase name, purchase date, allocated amount, **source** badge (`Manual` / `Visa`). Allocations are **draggable from the sidebar** onto other budget line rows (reassign). **Inline edit** of allocation amount (updates Spent on affected lines).
 
-**REQ-FIN-26 (P0):** **Delete & edit** — any household adult may delete: an **unassigned purchase** from the inbox (removes the purchase entirely); an **allocation** from the sidebar (subtracts from line Spent; unassigned remainder returns to inbox unless the whole purchase is deleted). `ConfirmModal` on delete. Store **`source`**: `MANUAL` | `VISA` (reserve `externalTransactionId` / provider fields for REQ-FIN-20). **Manual** purchases: name, amount, and date editable while unassigned; allocation amount editable when assigned.
+**REQ-FIN-26 (P0):** **Delete & edit** — any household adult may delete an **unassigned MANUAL purchase** from the inbox; may delete an **allocation** from the sidebar (returns the purchase to the inbox). `ConfirmModal` on delete. Store **`source`**: `MANUAL` | `VISA`. **Imported VISA purchases cannot be deleted** from the inbox (they remain until assigned or the bank removes/voids them). **Manual** purchases: name, amount, and date editable while unassigned.
 
 #### 4.3.4 Explicitly not in Budget V1 / 1f scope
 
@@ -275,20 +275,17 @@ The **family banking app remains the source of truth** for account balances and 
 - Manual expense/income transaction log UI (REQ-FIN-01 deferred).
 - **Recurring bills** tracker UI (REQ-FIN-03 deferred).
 - Month navigation / editing historical months in Budget UI.
-- **VISA / bank import** implementation (REQ-FIN-20 — schema-ready via `source` field only in Phase 1f).
 - Auto-categorization rules for imported transactions.
 
 #### 4.3.5 Explicitly not in MVP finance scope
 
-- Financial **account entities** (checking, savings, credit card records as first-class objects).
-- Bank/credit card **sync** (Plaid or similar).
 - Investment, loan, or net-worth tracking.
 - Split transactions, multi-currency, tax tagging.
 - Receipt storage (see **§4.7 Receipt management** — separate module, not finance attachments in MVP).
 
-#### 4.3.6 Future finance
+#### 4.3.6 Bank / card sync (REQ-FIN-20)
 
-**REQ-FIN-20 (P2):** **Bank/card transaction import** — connect household Visa (or similar). Imported transactions appear in the **purchases inbox** (REQ-FIN-17) with `source: VISA` for user assignment (or future auto-categorization). Assess provider (e.g. Plaid), security, and deduplication (`externalTransactionId`) before implementation.
+**REQ-FIN-20 (P0):** **Plaid credit-card sync** — household adults connect TD / Simplii (or other CA institutions) via **Plaid Link** (Transactions product only). Access tokens are **encrypted at rest** and persisted so banks are not re-linked. After Link, user selects which **credit** accounts to sync (editable later in **Bank settings**). Imported rows appear in the purchases inbox with `source: VISA` and `externalTransactionId` for dedupe. **Filters:** posted only; current budget month (PST); credit-card purchases only (exclude payments, transfers, interest, refunds/credits). **Immediate sync** on account selection save; **nightly sync at 9pm America/Los_Angeles**. **Bank settings** icon in Finance header when connections exist (edit synced cards, sync now, disconnect). Inbox **Sync Credit Card** button opens a security/how-it-works modal before Link.
 
 **REQ-FIN-21 (P3):** Broader read-only bank import / net-worth — assess years from now (supersedes narrow REQ-FIN-20 scope if expanded).
 
@@ -790,6 +787,7 @@ All open questions are resolved. Reference for agents and future you:
 
 | Date | Change |
 |------|--------|
+| 2026-07-10 | **Plaid credit-card sync (REQ-FIN-20):** BankConnection/BankAccount, encrypted tokens, Link + account picker, Bank settings, nightly 9pm PST sync, VISA purchases non-deletable. See `docs/design/DESIGN.md` §8.8.1, §9.9. |
 | 2026-07-08 | **Finance Budget purchases inbox (Phase 1f):** REQ-FIN-17 … REQ-FIN-26 — collapsible purchases inbox above monthly table; manual inline add with `CalendarPicker`; DnD assignment to monthly/annual lines with splitting; spend roll-up; line-item purchases sidebar with reassign; delete/edit rules; `MANUAL` \| `VISA` source. Updated REQ-FIN-09 … REQ-FIN-15 for shipped budget tables. REQ-FIN-20 → inbox import. See `docs/design/DESIGN.md` §8.8.1, §9.8. **Awaiting owner GO before implementation.** |
 | 2026-07-07 | **Finance Budget V1 (Phase 1e):** REQ-FIN-07 … REQ-FIN-16 — in-module nav (Budget / Monthly Reports / Purchase List); separate monthly + annual budget tables with scoped sections; current-month UI; persistent line items + stored spend history. See `docs/design/DESIGN.md` §8.8, §9.7. |
 | 2026-07-06 | **Gear variant table:** REQ-GEAR-08 — inline-editable variant rows (task-list pattern); + adds draft row with Name focus; shared `editable-table` primitives. |
