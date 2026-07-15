@@ -21,6 +21,7 @@ type Query {
   taskProjects: [TaskProject!]!
   taskComments(taskId: ID!): [TaskComment!]!
   mealPlan: MealPlan!
+  importRecipeFromUrl(url: String!): ImportedRecipeDraft!
   receiptLibrary: ReceiptLibrary!
   gearLibrary: GearLibrary!
   gearLending: GearLending!
@@ -309,6 +310,20 @@ type MealPlan {
   folders: [Folder!]!
   slots: [MealPlanSlot!]!
   groceryItems: [GroceryListItem!]!
+}
+
+type ImportedRecipeIngredient {
+  name: String!
+  quantity: String
+  unit: String
+}
+
+type ImportedRecipeDraft {
+  name: String!
+  instructions: String
+  servings: Int
+  ingredients: [ImportedRecipeIngredient!]!
+  sourceUrl: String!
 }
 
 input RecipeIngredientInput {

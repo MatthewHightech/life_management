@@ -554,11 +554,11 @@ Reference: REQ-FIN-17 … REQ-FIN-26.
 
 ### 8.10 Meal planning (Phase 1b)
 
-Reference: REQ-MEAL-01 … REQ-MEAL-08 · module accent **warm amber** (`warm-amber` / tertiary tints on section headers and chips — not on task cards).
+Reference: REQ-MEAL-01 … REQ-MEAL-09 · module accent **warm amber** (`warm-amber` / tertiary tints on section headers and chips — not on task cards).
 
 **Page structure** (desktop, top → bottom, inside `ModulePageLayout`):
 
-1. **Recipe library** — household-shared saved meals. Each recipe: name, ingredients (name + optional qty/unit), instructions, servings. **Nested colored folders** (shared folder components — §8.12). **Create / edit** via **modal** (`Modal` in `components/ui`). Delete from library row/card. Compact **draggable** list rows (pattern: kanban card density + grip handle).
+1. **Recipe library** — household-shared saved meals. Each recipe: name, ingredients (name + optional qty/unit), instructions, servings. **Nested colored folders** (shared folder components — §8.12). **Create / edit** via **modal** (`Modal` in `components/ui`). **Import from URL** (secondary) → fetch Schema.org Recipe JSON-LD on the API (`@life/recipe-import`) → prefill create modal for review. Delete from library row/card. Compact **draggable** list rows (pattern: kanban card density + grip handle).
 2. **Weekly plan grid** — **Sunday → Saturday** columns (or rows on mobile). Each day: **breakfast · lunch · dinner** drop targets. Show **day names only** (Sun, Mon, … Sat) — no calendar dates on the grid. Empty slots are valid. **One meal per slot**; drop replaces existing assignment. **DnD:** `@dnd-kit` (same stack as Tasks kanban).
 3. **Grocery list** — auto-built from week grid ingredients; merge by name per REQ-MEAL-05. Manual add/edit/delete. **Bought** checkbox + strikethrough. Header action: **Remove bought items** (deletes checked rows only).
 
@@ -970,6 +970,7 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 
 | Date | Change |
 |------|--------|
+| 2026-07-10 | **Recipe URL import (REQ-MEAL-09):** §8.10 Import from URL via Schema.org JSON-LD (`@life/recipe-import`). |
 | 2026-07-10 | **Plaid credit-card sync (REQ-FIN-20):** §8.8.1 bank sync UX; implementation plan §9.9. |
 | 2026-07-08 | **Finance Budget purchases inbox (Phase 1f):** §8.8 restructured (§8.8.1 inbox + §8.8.2 tables); purchases DnD/splitting, sidebar, `CalendarPicker`, scoped sections doc sync. Implementation plan §9.8 (awaiting owner GO). REQ-FIN-17 … REQ-FIN-26. |
 | 2026-07-07 | **Finance Budget V1 (Phase 1e):** §8.8 budget tables, in-module nav, separate monthly/annual tables, sage accent. Implementation plan §9.7 (shipped). |

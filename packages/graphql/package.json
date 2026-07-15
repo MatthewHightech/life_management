@@ -20,6 +20,7 @@
     "@apollo/server": "^4.11.3",
     "@life/db": "*",
     "@life/plaid": "*",
+    "@life/recipe-import": "*",
     "@life/shared": "*",
     "graphql": "^16.11.0"
   },

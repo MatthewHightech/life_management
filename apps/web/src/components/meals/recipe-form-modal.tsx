@@ -2,11 +2,13 @@
 
 import { useMutation } from "@apollo/client";
 import { FormEvent, useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { CREATE_RECIPE_MUTATION, UPDATE_RECIPE_MUTATION } from "@/graphql";
 import { MEAL_PLAN_REFETCH } from "@/lib/meal-plan-queries";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import type { MealRecipe, RecipeFormValues } from "@/components/meals/types";
+import { cn } from "@/lib/cn";
 
 const emptyIngredient = { name: "", quantity: "", unit: "" };
 
@@ -40,17 +42,25 @@ type RecipeFormModalProps = {
   onOpenChange: (open: boolean) => void;
   recipe?: MealRecipe | null;
   folderId?: string | null;
+  /** Prefill for create (e.g. URL import). Ignored when editing an existing recipe. */
+  initialValues?: RecipeFormValues | null;
 };
 
-export function RecipeFormModal({ open, onOpenChange, recipe, folderId = null }: RecipeFormModalProps) {
+export function RecipeFormModal({
+  open,
+  onOpenChange,
+  recipe,
+  folderId = null,
+  initialValues = null,
+}: RecipeFormModalProps) {
   const [form, setForm] = useState<RecipeFormValues>(() => toFormValues(recipe));
   const isEdit = Boolean(recipe);
 
   useEffect(() => {
     if (open) {
-      setForm(toFormValues(recipe));
+      setForm(recipe ? toFormValues(recipe) : (initialValues ?? toFormValues(null)));
     }
-  }, [open, recipe]);
+  }, [open, recipe, initialValues]);
 
   const [createRecipe, { loading: creating }] = useMutation(CREATE_RECIPE_MUTATION, {
     refetchQueries: [...MEAL_PLAN_REFETCH],
@@ -172,9 +182,8 @@ export function RecipeFormModal({ open, onOpenChange, recipe, folderId = null }:
                 onChange={(event) => updateIngredient(index, "unit", event.target.value)}
                 className="min-h-10 rounded-lg border border-border-subtle px-3 py-2 text-sm outline-none focus:border-primary"
               />
-              <Button
+              <button
                 type="button"
-                variant="ghost"
                 onClick={() =>
                   setForm((current) => ({
                     ...current,
@@ -182,14 +191,20 @@ export function RecipeFormModal({ open, onOpenChange, recipe, folderId = null }:
                   }))
                 }
                 disabled={form.ingredients.length === 1}
+                className={cn(
+                  "rounded p-1 text-text-muted hover:bg-background hover:text-error",
+                  "disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-text-muted",
+                )}
+                aria-label={`Remove ingredient ${index + 1}`}
               >
-                Remove
-              </Button>
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
             </div>
           ))}
           <Button
             type="button"
-            variant="ghost"
+            variant="secondary"
+            className="px-3 py-1.5 text-xs"
             onClick={() =>
               setForm((current) => ({
                 ...current,

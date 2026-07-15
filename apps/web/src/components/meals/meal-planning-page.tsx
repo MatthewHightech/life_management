@@ -19,10 +19,11 @@ import {
 } from "@/graphql";
 import { FolderFormModal } from "@/components/folders/folder-form-modal";
 import { GroceryListSection } from "@/components/meals/grocery-list-section";
+import { ImportRecipeUrlModal } from "@/components/meals/import-recipe-url-modal";
 import { RecipeFormModal } from "@/components/meals/recipe-form-modal";
 import { RecipeLibrarySection } from "@/components/meals/recipe-library-section";
 import { RecipeRow } from "@/components/meals/recipe-row";
-import type { MealRecipe } from "@/components/meals/types";
+import type { MealRecipe, RecipeFormValues } from "@/components/meals/types";
 import { WeekGridSection } from "@/components/meals/week-grid-section";
 import { ModulePageLayout } from "@/components/shell/module-page-layout";
 import { createLibraryCollisionDetection } from "@/lib/folder-dnd";
@@ -44,8 +45,10 @@ export function MealPlanningPage() {
   const recipeZoneRef = useRef<HTMLElement>(null);
   const scheduleZoneRef = useRef<HTMLElement>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [folderModalOpen, setFolderModalOpen] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<MealRecipe | null>(null);
+  const [importDraft, setImportDraft] = useState<RecipeFormValues | null>(null);
   const [activeRecipe, setActiveRecipe] = useState<MealRecipe | null>(null);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
 
@@ -118,11 +121,19 @@ export function MealPlanningPage() {
 
   function openCreate() {
     setEditingRecipe(null);
+    setImportDraft(null);
+    setModalOpen(true);
+  }
+
+  function openFromImport(values: RecipeFormValues) {
+    setEditingRecipe(null);
+    setImportDraft(values);
     setModalOpen(true);
   }
 
   function openEdit(recipe: MealRecipe) {
     setEditingRecipe(recipe);
+    setImportDraft(null);
     setModalOpen(true);
   }
 
@@ -193,6 +204,7 @@ export function MealPlanningPage() {
               breadcrumbPath={breadcrumbPath}
               onNavigateFolder={handleNavigateFolder}
               onCreate={openCreate}
+              onImport={() => setImportOpen(true)}
               onCreateFolder={() => setFolderModalOpen(true)}
               onEdit={openEdit}
               onFolderDeleted={handleFolderDeleted}
@@ -207,11 +219,22 @@ export function MealPlanningPage() {
         </DndContext>
       )}
 
+      <ImportRecipeUrlModal
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={openFromImport}
+      />
       <RecipeFormModal
         open={modalOpen}
-        onOpenChange={setModalOpen}
+        onOpenChange={(open) => {
+          setModalOpen(open);
+          if (!open) {
+            setImportDraft(null);
+          }
+        }}
         recipe={editingRecipe}
         folderId={currentFolderId}
+        initialValues={importDraft}
       />
       <FolderFormModal
         open={folderModalOpen}

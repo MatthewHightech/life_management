@@ -66,6 +66,22 @@ export const MEAL_PLAN_QUERY = gql`
   }
 `;
 
+export const IMPORT_RECIPE_FROM_URL_QUERY = gql`
+  query ImportRecipeFromUrl($url: String!) {
+    importRecipeFromUrl(url: $url) {
+      name
+      instructions
+      servings
+      sourceUrl
+      ingredients {
+        name
+        quantity
+        unit
+      }
+    }
+  }
+`;
+
 export const CREATE_RECIPE_MUTATION = gql`
   ${RECIPE_FIELDS}
   mutation CreateRecipe($input: CreateRecipeInput!) {

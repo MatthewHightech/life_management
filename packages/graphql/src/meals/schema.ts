@@ -57,6 +57,20 @@ export const mealTypeDefs = /* GraphQL */ `
     groceryItems: [GroceryListItem!]!
   }
 
+  type ImportedRecipeIngredient {
+    name: String!
+    quantity: String
+    unit: String
+  }
+
+  type ImportedRecipeDraft {
+    name: String!
+    instructions: String
+    servings: Int
+    ingredients: [ImportedRecipeIngredient!]!
+    sourceUrl: String!
+  }
+
   input RecipeIngredientInput {
     name: String!
     quantity: String
@@ -91,6 +105,7 @@ export const mealTypeDefs = /* GraphQL */ `
 
   extend type Query {
     mealPlan: MealPlan!
+    importRecipeFromUrl(url: String!): ImportedRecipeDraft!
   }
 
   extend type Mutation {

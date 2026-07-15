@@ -16,6 +16,7 @@ type RecipeLibrarySectionProps = {
   breadcrumbPath: MealFolder[];
   onNavigateFolder: (folderId: string | null) => void;
   onCreate: () => void;
+  onImport: () => void;
   onCreateFolder: () => void;
   onEdit: (recipe: MealRecipe) => void;
   onFolderDeleted?: (folderId: string) => void;
@@ -29,6 +30,7 @@ export const RecipeLibrarySection = forwardRef<HTMLElement, RecipeLibrarySection
       breadcrumbPath,
       onNavigateFolder,
       onCreate,
+      onImport,
       onCreateFolder,
       onEdit,
       onFolderDeleted,
@@ -45,6 +47,9 @@ export const RecipeLibrarySection = forwardRef<HTMLElement, RecipeLibrarySection
             <Button type="button" variant="ghost" onClick={onCreateFolder} className="gap-1.5 px-3 py-1.5 text-xs">
               <FolderPlus className="h-4 w-4" />
               Add folder
+            </Button>
+            <Button type="button" variant="secondary" onClick={onImport} className="px-3 py-1.5 text-xs">
+              Import from URL
             </Button>
             <Button type="button" onClick={onCreate} className="gap-1.5 px-3 py-1.5 text-xs">
               <Plus className="h-4 w-4" />

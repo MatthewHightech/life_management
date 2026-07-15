@@ -4,6 +4,7 @@ import {
   mergeGroceryIngredients,
   parseMealPlanWeekStart,
 } from "@life/shared";
+import { importRecipeFromUrl, RecipeImportError } from "@life/recipe-import";
 import { GraphQLContext } from "../context";
 import { ForbiddenError, requireHouseholdUser } from "../auth";
 import { assertFolderInHousehold, loadFoldersForNamespace } from "../folders/helpers";
@@ -114,6 +115,22 @@ export const mealResolvers = {
     mealPlan: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
       return loadMealPlan(context, householdId);
+    },
+
+    importRecipeFromUrl: async (
+      _parent: unknown,
+      args: { url: string },
+      context: GraphQLContext,
+    ) => {
+      await requireHouseholdUser(context);
+      try {
+        return await importRecipeFromUrl(args.url);
+      } catch (error) {
+        if (error instanceof RecipeImportError) {
+          throw new Error(error.message);
+        }
+        throw error;
+      }
     },
   },
 

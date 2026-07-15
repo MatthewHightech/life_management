@@ -23,13 +23,13 @@ Use the shared `Button` with the **default primary** variant (do not use `varian
 
 - **Primary create actions** → default `Button` (primary colors + hover) with Lucide `Plus` (`h-4 w-4`)
 - **Sizing** → `gap-1.5 px-3 py-1.5 text-xs` in section headers and compact toolbars
-- **Secondary / lesser actions** (Sync Credit Card, Add folder, Cancel, Disconnect) → `variant="secondary"` or `variant="ghost"` — not primary, and no `Plus` unless it is an add/create action
+- **Secondary / lesser actions** (Sync Credit Card, Import from URL, Add folder, Cancel, Disconnect) → `variant="secondary"` or `variant="ghost"` — not primary, and no `Plus` unless it is an add/create action
 - Do not invent one-off colors, muted “disabled-looking” styles, or custom hover for primary CTAs
 
 ## Examples to match
 
-- Meals: `Add recipe`
+- Meals: `Add recipe` (primary); `Import from URL` (secondary)
 - Gear: `Add item`
 - Tasks: `Add Task`
 - Finance: `Add section`, `Add purchase`
-- Finance secondary: `Sync Credit Card` (connect flow when no bank; sync-now when connected)
+- Finance secondary: `Sync Credit Card`
