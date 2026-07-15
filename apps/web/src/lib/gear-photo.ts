@@ -1,4 +1,4 @@
-import { getApiUrl, getAuthToken } from "@/lib/auth-token";
+import { getApiUrl } from "@/lib/auth-token";
 import { GEAR_PHOTO_MAX_BYTE_SIZE } from "@life/shared";
 
 export function getGearItemPhotoUrl(itemId: string) {
@@ -10,13 +10,8 @@ export function getGearVariantPhotoUrl(variantId: string) {
 }
 
 export async function fetchGearItemPhotoBlob(itemId: string) {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error("You must be signed in to view gear photos.");
-  }
-
   const response = await fetch(getGearItemPhotoUrl(itemId), {
-    headers: { authorization: `Bearer ${token}` },
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -27,13 +22,8 @@ export async function fetchGearItemPhotoBlob(itemId: string) {
 }
 
 export async function fetchGearVariantPhotoBlob(variantId: string) {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error("You must be signed in to view gear photos.");
-  }
-
   const response = await fetch(getGearVariantPhotoUrl(variantId), {
-    headers: { authorization: `Bearer ${token}` },
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -44,11 +34,6 @@ export async function fetchGearVariantPhotoBlob(variantId: string) {
 }
 
 export async function uploadGearItemPhoto(itemId: string, file: File) {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error("You must be signed in to upload photos.");
-  }
-
   if (file.size > GEAR_PHOTO_MAX_BYTE_SIZE) {
     throw new Error(`"${file.name}" exceeds the 10 MB limit.`);
   }
@@ -58,7 +43,7 @@ export async function uploadGearItemPhoto(itemId: string, file: File) {
 
   const response = await fetch(`${getApiUrl()}/gear/items/${itemId}/photo`, {
     method: "POST",
-    headers: { authorization: `Bearer ${token}` },
+    credentials: "include",
     body: formData,
   });
 
@@ -69,11 +54,6 @@ export async function uploadGearItemPhoto(itemId: string, file: File) {
 }
 
 export async function uploadGearVariantPhoto(variantId: string, file: File) {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error("You must be signed in to upload photos.");
-  }
-
   if (file.size > GEAR_PHOTO_MAX_BYTE_SIZE) {
     throw new Error(`"${file.name}" exceeds the 10 MB limit.`);
   }
@@ -83,7 +63,7 @@ export async function uploadGearVariantPhoto(variantId: string, file: File) {
 
   const response = await fetch(`${getApiUrl()}/gear/variants/${variantId}/photo`, {
     method: "POST",
-    headers: { authorization: `Bearer ${token}` },
+    credentials: "include",
     body: formData,
   });
 

@@ -6,7 +6,7 @@ import {
   gearPhotoStorageKey,
   isGearPhotoMimeType,
 } from "@life/shared";
-import { extractBearerToken, verifyAuthToken } from "../auth/jwt.js";
+import { extractSessionToken, verifyAuthToken } from "../auth/jwt.js";
 import type { FileStorage } from "../storage/types.js";
 
 const upload = multer({
@@ -31,7 +31,7 @@ export function createGearRouter(fileStorage: FileStorage) {
   const router = Router();
 
   router.use(async (req, res, next) => {
-    const token = extractBearerToken(req.headers.authorization);
+    const token = extractSessionToken(req);
     const user = token ? await verifyAuthToken(token) : null;
 
     if (!user?.id) {

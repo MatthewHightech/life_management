@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { HouseholdShellQuery } from "@/graphql";
 import { HOUSEHOLD_SHELL_QUERY } from "@/graphql";
-import { clearAuthToken } from "@/lib/auth-token";
+import { signOut } from "@/lib/auth-token";
 import { readSidebarCollapsed, writeSidebarCollapsed } from "@/lib/sidebar-preference";
 import { MobileNav } from "@/components/shell/mobile-nav";
 import { Sidebar } from "@/components/shell/sidebar";
@@ -28,8 +28,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   function handleSignOut() {
-    clearAuthToken();
-    router.push("/sign-in");
+    void signOut().then(() => {
+      router.push("/sign-in");
+    });
   }
 
   return (

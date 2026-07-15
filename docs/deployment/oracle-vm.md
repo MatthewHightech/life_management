@@ -131,6 +131,8 @@ Add this **authorized redirect URI** in Google Console:
 https://api.life.example.com/auth/google/callback
 ```
 
+Auth sessions use an **HttpOnly** cookie set by the API on OAuth success (shared across `WEB_DOMAIN` / `API_DOMAIN` via cookie `Domain`). You do **not** need extra Google Console settings for that. After deploy, sign out and sign in once so any old JS-readable cookie is replaced.
+
 ---
 
 ## Step 6 — Deploy

@@ -1,12 +1,7 @@
-import { getApiUrl, getAuthToken } from "@/lib/auth-token";
+import { getApiUrl } from "@/lib/auth-token";
 import { RECEIPT_MAX_BYTE_SIZE } from "@life/shared";
 
 export async function uploadReceiptFiles(files: File[], folderId: string | null) {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error("You must be signed in to upload receipts.");
-  }
-
   for (const file of files) {
     if (file.size > RECEIPT_MAX_BYTE_SIZE) {
       throw new Error(`"${file.name}" exceeds the 10 MB limit.`);
@@ -23,9 +18,7 @@ export async function uploadReceiptFiles(files: File[], folderId: string | null)
 
   const response = await fetch(`${getApiUrl()}/receipts/upload`, {
     method: "POST",
-    headers: {
-      authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
     body: formData,
   });
 
@@ -42,13 +35,8 @@ export function getReceiptFileUrl(receiptId: string) {
 }
 
 export async function fetchReceiptBlob(receiptId: string) {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error("You must be signed in to view receipts.");
-  }
-
   const response = await fetch(getReceiptFileUrl(receiptId), {
-    headers: { authorization: `Bearer ${token}` },
+    credentials: "include",
   });
 
   if (!response.ok) {

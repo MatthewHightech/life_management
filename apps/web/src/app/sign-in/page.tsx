@@ -40,7 +40,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
 
       <a
         href={`${apiUrl}/auth/google`}
-        className="mt-8 inline-flex w-fit rounded-lg bg-accent px-5 py-3 text-sm font-medium text-white transition hover:bg-blue-700"
+        className="mt-8 inline-flex w-fit cursor-pointer items-center justify-center rounded-lg bg-primary-container px-5 py-3 text-sm font-medium text-on-primary transition hover:bg-primary hover:shadow-sm"
       >
         Continue with Google
       </a>

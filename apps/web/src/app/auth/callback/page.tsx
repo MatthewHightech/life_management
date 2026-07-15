@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { clearAuthToken, setAuthToken } from "@/lib/auth-token";
+import { clearLegacyClientAuthCookie, signOut } from "@/lib/auth-token";
 
 function AuthCallbackContent() {
   const router = useRouter();
@@ -10,23 +10,18 @@ function AuthCallbackContent() {
   const [message, setMessage] = useState("Signing you in…");
 
   useEffect(() => {
-    const token = searchParams.get("token");
     const error = searchParams.get("error");
 
-    if (token) {
-      setAuthToken(token);
-      router.replace("/");
-      return;
-    }
-
     if (error) {
-      clearAuthToken();
-      router.replace(`/sign-in?error=${encodeURIComponent(error)}`);
+      void signOut().finally(() => {
+        router.replace(`/sign-in?error=${encodeURIComponent(error)}`);
+      });
       return;
     }
 
-    setMessage("Missing sign-in response. Redirecting…");
-    router.replace("/sign-in");
+    // Session cookie was set HttpOnly by the API before this redirect.
+    clearLegacyClientAuthCookie();
+    router.replace("/");
   }, [router, searchParams]);
 
   return <p className="text-muted">{message}</p>;

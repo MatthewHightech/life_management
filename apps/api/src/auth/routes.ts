@@ -3,6 +3,7 @@ import { OAuth2Client } from "google-auth-library";
 import { prisma } from "@life/db";
 import { isEmailAllowlisted, parseAllowedEmails } from "@life/shared";
 import { signAuthToken } from "./jwt";
+import { clearSessionCookie, setSessionCookie } from "./session-cookie";
 
 const router = Router();
 
@@ -106,11 +107,17 @@ router.get("/google/callback", async (req, res) => {
       image: user.image,
     });
 
-    res.redirect(`${webUrl}/auth/callback?token=${encodeURIComponent(token)}`);
+    setSessionCookie(req, res, token);
+    res.redirect(`${webUrl}/auth/callback`);
   } catch (error) {
     console.error("Google OAuth callback failed", error);
     res.redirect(`${webUrl}/auth/callback?error=AccessDenied`);
   }
+});
+
+router.post("/logout", (req, res) => {
+  clearSessionCookie(req, res);
+  res.status(204).end();
 });
 
 export { router as authRouter };

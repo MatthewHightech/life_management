@@ -52,6 +52,8 @@ export async function verifyAuthToken(token: string): Promise<AuthUser | null> {
   }
 }
 
+import { AUTH_COOKIE_NAME } from "@life/shared";
+
 export function extractBearerToken(authorizationHeader: string | undefined): string | null {
   if (!authorizationHeader?.startsWith("Bearer ")) {
     return null;
@@ -59,4 +61,17 @@ export function extractBearerToken(authorizationHeader: string | undefined): str
 
   const token = authorizationHeader.slice("Bearer ".length).trim();
   return token || null;
+}
+
+/** Prefer HttpOnly session cookie; fall back to Bearer for transitional clients. */
+export function extractSessionToken(req: {
+  headers: { authorization?: string };
+  cookies?: Record<string, string | undefined>;
+}): string | null {
+  const fromCookie = req.cookies?.[AUTH_COOKIE_NAME];
+  if (typeof fromCookie === "string" && fromCookie.trim()) {
+    return fromCookie.trim();
+  }
+
+  return extractBearerToken(req.headers.authorization);
 }

@@ -2,11 +2,12 @@ import { expressMiddleware } from "@apollo/server/express4";
 import { createApolloServer } from "@life/graphql/server";
 import { createGraphQLContext } from "@life/graphql/context";
 import { AuthUser } from "@life/shared";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import cron from "node-cron";
 import express from "express";
 import { authRouter } from "./auth/routes";
-import { extractBearerToken, verifyAuthToken } from "./auth/jwt";
+import { extractSessionToken, verifyAuthToken } from "./auth/jwt";
 import { runMealPlanWeekRollover } from "./cron/meal-plan-rollover";
 import { runBankTransactionSync } from "./cron/bank-transaction-sync";
 import { createReceiptRouter } from "./receipts/routes.js";
@@ -42,6 +43,7 @@ async function main() {
       credentials: true,
     }),
   );
+  app.use(cookieParser());
 
   app.use("/auth", authRouter);
   app.use("/receipts", createReceiptRouter(fileStorage));
@@ -55,7 +57,7 @@ async function main() {
     }),
     express.json(),
     async (req, res, next) => {
-      const token = extractBearerToken(req.headers.authorization);
+      const token = extractSessionToken(req);
       const user = token ? await verifyAuthToken(token) : null;
 
       if (!user) {
