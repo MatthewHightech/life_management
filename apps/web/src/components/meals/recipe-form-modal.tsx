@@ -44,6 +44,8 @@ type RecipeFormModalProps = {
   folderId?: string | null;
   /** Prefill for create (e.g. URL import). Ignored when editing an existing recipe. */
   initialValues?: RecipeFormValues | null;
+  /** Called with the saved recipe instead of only closing (e.g. return to view modal). */
+  onSaved?: (recipe: MealRecipe) => void;
 };
 
 export function RecipeFormModal({
@@ -52,6 +54,7 @@ export function RecipeFormModal({
   recipe,
   folderId = null,
   initialValues = null,
+  onSaved,
 }: RecipeFormModalProps) {
   const [form, setForm] = useState<RecipeFormValues>(() => toFormValues(recipe));
   const isEdit = Boolean(recipe);
@@ -64,12 +67,12 @@ export function RecipeFormModal({
 
   const [createRecipe, { loading: creating }] = useMutation(CREATE_RECIPE_MUTATION, {
     refetchQueries: [...MEAL_PLAN_REFETCH],
-    onCompleted: () => onOpenChange(false),
+    awaitRefetchQueries: true,
   });
 
   const [updateRecipe, { loading: updating }] = useMutation(UPDATE_RECIPE_MUTATION, {
     refetchQueries: [...MEAL_PLAN_REFETCH],
-    onCompleted: () => onOpenChange(false),
+    awaitRefetchQueries: true,
   });
 
   const loading = creating || updating;
@@ -106,11 +109,17 @@ export function RecipeFormModal({
     };
 
     if (isEdit && recipe) {
-      await updateRecipe({ variables: { id: recipe.id, input } });
+      const result = await updateRecipe({ variables: { id: recipe.id, input } });
+      const saved = result.data?.updateRecipe as MealRecipe | undefined;
+      if (saved && onSaved) {
+        onSaved(saved);
+        return;
+      }
+      onOpenChange(false);
       return;
     }
 
-    await createRecipe({
+    const result = await createRecipe({
       variables: {
         input: {
           ...input,
@@ -118,6 +127,12 @@ export function RecipeFormModal({
         },
       },
     });
+    const saved = result.data?.createRecipe as MealRecipe | undefined;
+    if (saved && onSaved) {
+      onSaved(saved);
+      return;
+    }
+    onOpenChange(false);
   }
 
   return (

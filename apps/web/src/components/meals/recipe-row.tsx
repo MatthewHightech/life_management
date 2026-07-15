@@ -10,11 +10,11 @@ import { cn } from "@/lib/cn";
 
 type RecipeRowProps = {
   recipe: MealRecipe;
-  onEdit: (recipe: MealRecipe) => void;
+  onOpen: (recipe: MealRecipe) => void;
   overlay?: boolean;
 };
 
-export function RecipeRow({ recipe, onEdit, overlay = false }: RecipeRowProps) {
+export function RecipeRow({ recipe, onOpen, overlay = false }: RecipeRowProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: recipe.id,
     data: { recipeId: recipe.id },
@@ -49,8 +49,8 @@ export function RecipeRow({ recipe, onEdit, overlay = false }: RecipeRowProps) {
 
       <button
         type="button"
-        onClick={() => onEdit(recipe)}
-        className="min-w-0 flex-1 text-left text-sm font-medium text-text-main hover:opacity-70"
+        onClick={() => onOpen(recipe)}
+        className="min-w-0 flex-1 cursor-pointer text-left text-sm font-medium text-text-main hover:opacity-70"
       >
         {recipe.name}
       </button>

@@ -18,7 +18,7 @@ type RecipeLibrarySectionProps = {
   onCreate: () => void;
   onImport: () => void;
   onCreateFolder: () => void;
-  onEdit: (recipe: MealRecipe) => void;
+  onOpenRecipe: (recipe: MealRecipe) => void;
   onFolderDeleted?: (folderId: string) => void;
 };
 
@@ -32,7 +32,7 @@ export const RecipeLibrarySection = forwardRef<HTMLElement, RecipeLibrarySection
       onCreate,
       onImport,
       onCreateFolder,
-      onEdit,
+      onOpenRecipe,
       onFolderDeleted,
     },
     ref,
@@ -89,7 +89,7 @@ export const RecipeLibrarySection = forwardRef<HTMLElement, RecipeLibrarySection
           {recipes.length > 0 ? (
             <div className="space-y-2">
               {recipes.map((recipe) => (
-                <RecipeRow key={recipe.id} recipe={recipe} onEdit={onEdit} />
+                <RecipeRow key={recipe.id} recipe={recipe} onOpen={onOpenRecipe} />
               ))}
             </div>
           ) : null}

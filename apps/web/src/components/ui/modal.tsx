@@ -10,10 +10,20 @@ type ModalProps = {
   title: string;
   description?: string;
   className?: string;
+  /** Optional action seated to the left of the close control (e.g. Edit). */
+  headerAction?: React.ReactNode;
   children: React.ReactNode;
 };
 
-export function Modal({ open, onOpenChange, title, description, className, children }: ModalProps) {
+export function Modal({
+  open,
+  onOpenChange,
+  title,
+  description,
+  className,
+  headerAction,
+  children,
+}: ModalProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -26,7 +36,7 @@ export function Modal({ open, onOpenChange, title, description, className, child
           )}
         >
           <div className="mb-4 flex shrink-0 items-start justify-between gap-4">
-            <div>
+            <div className="min-w-0">
               <Dialog.Title className="text-lg font-semibold text-text-main">{title}</Dialog.Title>
               {description && (
                 <Dialog.Description className="mt-1 text-sm text-text-muted">
@@ -34,9 +44,12 @@ export function Modal({ open, onOpenChange, title, description, className, child
                 </Dialog.Description>
               )}
             </div>
-            <Dialog.Close className="rounded-lg p-1 text-text-muted hover:bg-background">
-              <X className="h-4 w-4" />
-            </Dialog.Close>
+            <div className="flex shrink-0 items-center gap-2">
+              {headerAction}
+              <Dialog.Close className="rounded-lg p-1 text-text-muted hover:bg-background">
+                <X className="h-4 w-4" />
+              </Dialog.Close>
+            </div>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
         </Dialog.Content>

@@ -311,7 +311,7 @@ The **family banking app remains the source of truth** for account balances and 
 
 **REQ-MEAL-02 (P1):** Assign meals to slots via **drag-and-drop** from the household recipe library onto a slot.
 
-**REQ-MEAL-03 (P1):** Household-shared **recipe library** (CRUD). A recipe includes: **name**, **ingredients** (each with name; quantity and unit optional), **instructions**, and **servings** (stored for display; **does not scale grocery in v1** — schema should allow serving-based scaling later). **Create and edit** open a **modal** (reuse shared `Modal` component). **Import from URL** (REQ-MEAL-09) prefills the create modal. **Delete** removes the recipe and **clears any week slots** that referenced it. Recipes persist across weeks. Recipes may be organized in **nested colored folders** (see REQ-FOLDER-01 … REQ-FOLDER-05).
+**REQ-MEAL-03 (P1):** Household-shared **recipe library** (CRUD). A recipe includes: **name**, **ingredients** (each with name; quantity and unit optional), **instructions**, and **servings** (stored for display; **does not scale grocery in v1** — schema should allow serving-based scaling later). **Clicking a saved recipe** opens a **view modal** (readable ingredients + instructions). **Edit Recipe** (primary, pencil icon) in the view modal header switches to the existing **edit modal**. **Create** opens the create modal. **Import from URL** (REQ-MEAL-09) prefills the create modal. **Delete** removes the recipe and **clears any week slots** that referenced it. Recipes persist across weeks. Recipes may be organized in **nested colored folders** (see REQ-FOLDER-01 … REQ-FOLDER-05).
 
 **REQ-MEAL-04 (P1):** **Week rollover:** all planned slot assignments **auto-clear at 00:00 each Sunday** (**Pacific Time**, `America/Los_Angeles`) via a **server cron job**. The recipe library and grocery list are **not** auto-cleared on rollover.
 
@@ -330,6 +330,8 @@ The **family banking app remains the source of truth** for account balances and 
 **REQ-MEAL-08 (P2):** **Calendar integration** — meal plans may reference calendar events in a later pass; **Google Calendar remains the event source of truth** (see REQ-CAL-01).
 
 **REQ-MEAL-09 (P1):** **Import recipe from URL** — paste a public recipe page URL; server fetches HTML and extracts **Schema.org `Recipe` JSON-LD** (name, ingredients, instructions, servings). No cloud LLM. Result prefills the create-recipe modal for review/edit before save. Sites without structured recipe data show a clear error; user can still add manually.
+
+**REQ-MEAL-10 (P1):** **View recipe modal** — clicking a library recipe opens a read-only view (name, servings, ingredients list, instructions). Header primary action **Edit Recipe** (pencil icon) closes the view and opens the existing edit form modal for that recipe.
 
 > Phase 1b is **MVP-lite**: full recipes and drag-to-plan, not a meal-kit replacement. Defer pantry inventory (REQ-HOME-01), nutrition, meal prep timers, and multi-week history until requirements are updated.
 
@@ -789,6 +791,7 @@ All open questions are resolved. Reference for agents and future you:
 
 | Date | Change |
 |------|--------|
+| 2026-07-15 | **View recipe modal (REQ-MEAL-10):** Click library recipe → readable view; **Edit Recipe** opens existing edit form. Updated REQ-MEAL-03. |
 | 2026-07-10 | **Recipe URL import (REQ-MEAL-09):** Schema.org JSON-LD parse via `@life/recipe-import`; `importRecipeFromUrl` query; Import from URL → prefill create modal. |
 | 2026-07-10 | **Plaid credit-card sync (REQ-FIN-20):** BankConnection/BankAccount, encrypted tokens, Link + account picker, Bank settings, nightly 9pm PST sync, VISA purchases non-deletable. See `docs/design/DESIGN.md` §8.8.1, §9.9. |
 | 2026-07-08 | **Finance Budget purchases inbox (Phase 1f):** REQ-FIN-17 … REQ-FIN-26 — collapsible purchases inbox above monthly table; manual inline add with `CalendarPicker`; DnD assignment to monthly/annual lines with splitting; spend roll-up; line-item purchases sidebar with reassign; delete/edit rules; `MANUAL` \| `VISA` source. Updated REQ-FIN-09 … REQ-FIN-15 for shipped budget tables. REQ-FIN-20 → inbox import. See `docs/design/DESIGN.md` §8.8.1, §9.8. **Awaiting owner GO before implementation.** |
@@ -819,7 +822,7 @@ All open questions are resolved. Reference for agents and future you:
 **Tasks:** REQ-TASK-01 … REQ-TASK-09, REQ-TASK-10 … REQ-TASK-15, REQ-TASK-20 … REQ-TASK-23  
 **Finance:** REQ-FIN-01 … REQ-FIN-16, REQ-FIN-17 … REQ-FIN-26, REQ-FIN-20, REQ-FIN-21  
 **Calendar:** REQ-CAL-01 … REQ-CAL-05  
-**Meals:** REQ-MEAL-01 … REQ-MEAL-08  
+**Meals:** REQ-MEAL-01 … REQ-MEAL-10  
 **Receipts:** REQ-RCPT-01 … REQ-RCPT-13  
 **Gear:** REQ-GEAR-01 … REQ-GEAR-19  
 **Folders (shared):** REQ-FOLDER-01 … REQ-FOLDER-06  

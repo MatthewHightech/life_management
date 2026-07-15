@@ -23,6 +23,7 @@ import { ImportRecipeUrlModal } from "@/components/meals/import-recipe-url-modal
 import { RecipeFormModal } from "@/components/meals/recipe-form-modal";
 import { RecipeLibrarySection } from "@/components/meals/recipe-library-section";
 import { RecipeRow } from "@/components/meals/recipe-row";
+import { RecipeViewModal } from "@/components/meals/recipe-view-modal";
 import type { MealRecipe, RecipeFormValues } from "@/components/meals/types";
 import { WeekGridSection } from "@/components/meals/week-grid-section";
 import { ModulePageLayout } from "@/components/shell/module-page-layout";
@@ -45,8 +46,10 @@ export function MealPlanningPage() {
   const recipeZoneRef = useRef<HTMLElement>(null);
   const scheduleZoneRef = useRef<HTMLElement>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [folderModalOpen, setFolderModalOpen] = useState(false);
+  const [viewingRecipe, setViewingRecipe] = useState<MealRecipe | null>(null);
   const [editingRecipe, setEditingRecipe] = useState<MealRecipe | null>(null);
   const [importDraft, setImportDraft] = useState<RecipeFormValues | null>(null);
   const [activeRecipe, setActiveRecipe] = useState<MealRecipe | null>(null);
@@ -120,21 +123,40 @@ export function MealPlanningPage() {
   );
 
   function openCreate() {
+    setViewOpen(false);
+    setViewingRecipe(null);
     setEditingRecipe(null);
     setImportDraft(null);
     setModalOpen(true);
   }
 
   function openFromImport(values: RecipeFormValues) {
+    setViewOpen(false);
+    setViewingRecipe(null);
     setEditingRecipe(null);
     setImportDraft(values);
     setModalOpen(true);
   }
 
+  function openView(recipe: MealRecipe) {
+    setViewingRecipe(recipe);
+    setViewOpen(true);
+  }
+
   function openEdit(recipe: MealRecipe) {
+    setViewOpen(false);
+    setViewingRecipe(recipe);
     setEditingRecipe(recipe);
     setImportDraft(null);
     setModalOpen(true);
+  }
+
+  function handleRecipeSaved(recipe: MealRecipe) {
+    setModalOpen(false);
+    setImportDraft(null);
+    setEditingRecipe(null);
+    setViewingRecipe(recipe);
+    setViewOpen(true);
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -206,7 +228,7 @@ export function MealPlanningPage() {
               onCreate={openCreate}
               onImport={() => setImportOpen(true)}
               onCreateFolder={() => setFolderModalOpen(true)}
-              onEdit={openEdit}
+              onOpenRecipe={openView}
               onFolderDeleted={handleFolderDeleted}
             />
             <WeekGridSection ref={scheduleZoneRef} slots={mealPlan.slots} onClear={handleClear} />
@@ -214,7 +236,7 @@ export function MealPlanningPage() {
           </div>
 
           <DragOverlay dropAnimation={null}>
-            {activeRecipe ? <RecipeRow recipe={activeRecipe} onEdit={() => undefined} overlay /> : null}
+            {activeRecipe ? <RecipeRow recipe={activeRecipe} onOpen={() => undefined} overlay /> : null}
           </DragOverlay>
         </DndContext>
       )}
@@ -224,17 +246,36 @@ export function MealPlanningPage() {
         onOpenChange={setImportOpen}
         onImported={openFromImport}
       />
+      <RecipeViewModal
+        recipe={viewingRecipe}
+        open={viewOpen}
+        onOpenChange={(open) => {
+          setViewOpen(open);
+          if (!open) {
+            setViewingRecipe(null);
+          }
+        }}
+        onEdit={openEdit}
+      />
       <RecipeFormModal
         open={modalOpen}
         onOpenChange={(open) => {
           setModalOpen(open);
           if (!open) {
             setImportDraft(null);
+            // Cancel from edit → return to view when we still have that recipe.
+            if (editingRecipe && viewingRecipe) {
+              setEditingRecipe(null);
+              setViewOpen(true);
+              return;
+            }
+            setEditingRecipe(null);
           }
         }}
         recipe={editingRecipe}
         folderId={currentFolderId}
         initialValues={importDraft}
+        onSaved={handleRecipeSaved}
       />
       <FolderFormModal
         open={folderModalOpen}
