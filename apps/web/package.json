@@ -19,6 +19,8 @@
     "@life/shared": "*",
     "@radix-ui/react-dialog": "^1.1.17",
     "graphql": "^16.11.0",
+    "html2canvas-pro": "^2.2.4",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.21.0",
     "next": "^15.3.3",
     "react": "^19.1.0",

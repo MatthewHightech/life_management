@@ -311,7 +311,7 @@ List:    filter chips deferred (REQ-TASK-15)
 | `/meals` | Meal planning (library + week grid + grocery) | **Phase 1b** |
 | `/receipts` | Receipt management (upload + folders + preview) | **Phase 1c** |
 | `/finance/budget` | Household budget (purchases inbox + monthly + annual tables) | **Phase 1e — V1** · **1f purchases inbox** |
-| `/finance/reports` | Monthly Reports | Placeholder (Phase 1e nav only) |
+| `/finance/reports` | Monthly Reports | Monthly financial report (REQ-FIN-27 … REQ-FIN-32) |
 | `/finance/purchase-list` | Purchase List | Placeholder (Phase 1e nav only) |
 
 **Inside Finance module** (`/finance/budget`, default):
@@ -330,7 +330,7 @@ Budget:  [Purchases inbox — collapsible]     ← Phase 1f
 |-------|------|--------|
 | `/finance` | Redirect → `/finance/budget` | **Phase 1e** |
 | `/finance/budget` | Purchases inbox + monthly/annual budget tables | **Phase 1e — V1** · **1f inbox** |
-| `/finance/reports` | Monthly Reports | Placeholder |
+| `/finance/reports` | Monthly Reports | Read-only report + PDF export |
 | `/finance/purchase-list` | Purchase List | Placeholder |
 
 **Do not** merge task due-date calendar with Google Calendar — separate modules (REQ-TASK-11 vs REQ-CAL-01).
@@ -545,7 +545,56 @@ Reference: REQ-FIN-17 … REQ-FIN-26.
 
 **Timezone:** Month and year boundaries use **America/Los_Angeles** (PST/PDT).
 
-**Out of scope (Budget 1e/1f tables):** Monthly Reports UI, **Purchase List** sub-page, general expense/income log, month browser, income rows, recurring bills.
+**Out of scope (Budget 1e/1f tables):** **Purchase List** sub-page, general expense/income log, month browser on Budget page, income rows, recurring bills.
+
+#### 8.8.3 Monthly Reports (Phase 1g)
+
+Reference: REQ-FIN-27 … REQ-FIN-32.
+
+**Route:** `/finance/reports` — same `FinancePageLayout` + `FinanceViewToggle` shell as Budget.
+
+**Read-only:** No inline edit, no DnD, no add/delete. Month navigation only.
+
+**Header row:**
+
+```
+  ←   July 2025   →                    [Download PDF]
+```
+
+- Arrows change calendar month (PST). **Forward disabled** on current month. **No future months.**
+- Default: current month (live totals).
+
+**Empty state:** When monthly **spent = $0** → centered **“No report for {Month} {Year}”**; arrows still work.
+
+**Overview card** (`sectionCardClass`):
+
+| Block | Content |
+|-------|---------|
+| **Totals** | Household Budget · Spent · Remaining (tabular nums, REQ-FIN-15) |
+| **Vs last month** | Total spent $ + % when previous calendar month had spend &gt; $0; else omit |
+| **Over budget** | Section names over limit — `text-error` (same as Budget §8.8.2) |
+| **Chart** | Horizontal stacked bars per section: **spent** (marigold / status-in-progress) + **remaining budget** (soft green) + **over budget** (error red). Bar width scales by section total vs max; no empty track past the stack. |
+
+**Detail** — accordions per **monthly** budget section (all expanded for PDF capture):
+
+```
+▾ Food
+    Groceries   $500 · $600 · $100 over budget   [progress]
+      Jul 3   Costco run              $142.00
+      …
+```
+
+- Line rows: Name · Budget · Spent · Remaining · progress (read-only `BudgetProgressBar`).
+- Purchase rows under each line: **date** (`formatShortDate`) · **description** · **amount** (right-aligned tabular).
+- Section headers: name + optional vs-last-month delta — **no** Budget/Spent/Remaining rollup in the header.
+
+**Vs last month (sections):** Per-section spent $ + % under section header when comparable; else omit.
+
+**PDF:** `Download PDF` — client-side (`html2canvas` + `jspdf`); captures overview + detail with **all accordions forced open**.
+
+**GraphQL:** `budgetMonthReport(year, month)` — monthly sections, line spend, allocations for month, comparison fields, `hasReport`.
+
+**Out of scope:** Annual table, inbox/unassigned purchases, CSV export, print stylesheet-only flow.
 
 ### 8.9 Calendar views (future)
 
@@ -957,6 +1006,7 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 | Task fields | REQ-TASK-01 … REQ-TASK-04 |
 | Push reminders (UI) | REQ-TASK-20 |
 | Finance Budget | REQ-FIN-07 … REQ-FIN-16, REQ-FIN-17 … REQ-FIN-26, REQ-FIN-20 |
+| Finance Monthly Reports | REQ-FIN-27 … REQ-FIN-32 |
 | Google Calendar | REQ-CAL-01 … REQ-CAL-04 |
 | Meals | REQ-MEAL-01 … REQ-MEAL-10 |
 | Receipts | REQ-RCPT-01 … REQ-RCPT-13 |
@@ -970,6 +1020,7 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 
 | Date | Change |
 |------|--------|
+| 2026-07-15 | **Monthly Reports (REQ-FIN-27 … REQ-FIN-32):** §8.8.3 read-only report, month nav, overview chart, section accordions, PDF export. |
 | 2026-07-15 | **View recipe modal (REQ-MEAL-10):** §8.10 click recipe → view modal; Edit Recipe → form modal. |
 | 2026-07-10 | **Recipe URL import (REQ-MEAL-09):** §8.10 Import from URL via Schema.org JSON-LD (`@life/recipe-import`). |
 | 2026-07-10 | **Plaid credit-card sync (REQ-FIN-20):** §8.8.1 bank sync UX; implementation plan §9.9. |

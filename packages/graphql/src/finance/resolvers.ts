@@ -2,9 +2,13 @@ import { BudgetLineType, BudgetPurchaseSource, Prisma } from "@prisma/client";
 import {
   budgetRemainingCents,
   budgetRemainingPercent,
+  formatBudgetReportTitle,
   getBudgetCalendarPeriod,
+  isBudgetMonthInFuture,
+  previousBudgetYearMonth,
   purchaseMatchesAnnualBudget,
   purchaseMatchesMonthlyBudget,
+  spendComparison,
   spendMonthKey,
 } from "@life/shared";
 import { GraphQLContext } from "../context";
@@ -278,6 +282,174 @@ async function loadBudgetMonth(context: GraphQLContext, householdId: string) {
   };
 }
 
+function validateBudgetMonthArgs(year: number, month: number) {
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+    throw new ForbiddenError("Invalid budget year");
+  }
+
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    throw new ForbiddenError("Invalid budget month");
+  }
+
+  if (isBudgetMonthInFuture(year, month)) {
+    throw new ForbiddenError("Future budget months are not available");
+  }
+}
+
+function allocationsForMonthlyLine(
+  lineItemId: string,
+  allocations: AllocationWithPurchase[],
+  budgetYear: number,
+  budgetMonth: number,
+) {
+  return allocations
+    .filter((allocation) => allocation.lineItemId === lineItemId)
+    .filter((allocation) =>
+      purchaseMatchesMonthlyBudget(allocation.purchase.purchaseDate, budgetYear, budgetMonth),
+    )
+    .sort((left, right) => {
+      const dateCompare = right.purchase.purchaseDate.getTime() - left.purchase.purchaseDate.getTime();
+      if (dateCompare !== 0) {
+        return dateCompare;
+      }
+      return right.amountCents - left.amountCents;
+    });
+}
+
+function toReportPurchase(
+  allocation: AllocationWithPurchase,
+): { id: string; name: string; purchaseDate: string; amountCents: number } {
+  return {
+    id: allocation.id,
+    name: allocation.purchase.name,
+    purchaseDate: toIsoDate(allocation.purchase.purchaseDate),
+    amountCents: allocation.amountCents,
+  };
+}
+
+function buildReportSections(
+  sections: BudgetSectionRecord[],
+  allocations: AllocationWithPurchase[],
+  budgetYear: number,
+  budgetMonth: number,
+  previousSectionSpent: Map<string, number>,
+  includeComparison: boolean,
+) {
+  return sections.map((section) => {
+    const lineItems = section.lineItems.map((lineItem) => {
+      const lineAllocations = allocationsForMonthlyLine(
+        lineItem.id,
+        allocations,
+        budgetYear,
+        budgetMonth,
+      );
+      const spentCents = lineAllocations.reduce((sum, allocation) => sum + allocation.amountCents, 0);
+      const remainingCents = budgetRemainingCents(lineItem.amountCents, spentCents);
+
+      return {
+        id: lineItem.id,
+        name: lineItem.name,
+        amountCents: lineItem.amountCents,
+        spentCents,
+        remainingCents,
+        progressPercent: budgetRemainingPercent(spentCents, lineItem.amountCents),
+        purchases: lineAllocations.map(toReportPurchase),
+      };
+    });
+
+    const budgetCents = lineItems.reduce((sum, item) => sum + item.amountCents, 0);
+    const spentCents = lineItems.reduce((sum, item) => sum + item.spentCents, 0);
+    const remainingCents = budgetRemainingCents(budgetCents, spentCents);
+
+    const previousSpent = previousSectionSpent.get(section.id) ?? 0;
+    const comparison = includeComparison ? spendComparison(spentCents, previousSpent) : null;
+
+    return {
+      id: section.id,
+      name: section.name,
+      budgetCents,
+      spentCents,
+      remainingCents,
+      progressPercent: budgetRemainingPercent(spentCents, budgetCents),
+      spentDeltaCents: comparison?.deltaCents ?? null,
+      spentDeltaPercent: comparison?.deltaPercent ?? null,
+      lineItems,
+    };
+  });
+}
+
+async function loadBudgetMonthReport(
+  context: GraphQLContext,
+  householdId: string,
+  year: number,
+  month: number,
+) {
+  validateBudgetMonthArgs(year, month);
+
+  const allocations = await loadHouseholdAllocations(context, householdId);
+  const sections = await context.prisma.budgetSection.findMany({
+    where: { householdId, scope: BudgetLineType.MONTHLY },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    include: {
+      lineItems: {
+        where: { type: BudgetLineType.MONTHLY },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      },
+    },
+  });
+
+  const previous = previousBudgetYearMonth(year, month);
+  const previousSections = buildReportSections(
+    sections,
+    allocations,
+    previous.year,
+    previous.month,
+    new Map(),
+    false,
+  );
+  const previousSpentTotal = previousSections.reduce((sum, section) => sum + section.spentCents, 0);
+  const includeComparison = previousSpentTotal > 0;
+  const previousSectionSpent = new Map(
+    previousSections.map((section) => [section.id, section.spentCents]),
+  );
+
+  const reportSections = buildReportSections(
+    sections,
+    allocations,
+    year,
+    month,
+    previousSectionSpent,
+    includeComparison,
+  );
+
+  const budgetCents = reportSections.reduce((sum, section) => sum + section.budgetCents, 0);
+  const spentCents = reportSections.reduce((sum, section) => sum + section.spentCents, 0);
+  const remainingCents = budgetRemainingCents(budgetCents, spentCents);
+  const hasReport = spentCents > 0;
+  const totalComparison = includeComparison ? spendComparison(spentCents, previousSpentTotal) : null;
+
+  return {
+    year,
+    month,
+    title: formatBudgetReportTitle(year, month),
+    hasReport,
+    budgetCents,
+    spentCents,
+    remainingCents,
+    progressPercent: budgetRemainingPercent(spentCents, budgetCents),
+    overBudgetSectionNames: reportSections
+      .filter((section) => section.remainingCents < 0)
+      .map((section) => section.name),
+    comparison: totalComparison
+      ? {
+          spentDeltaCents: totalComparison.deltaCents,
+          spentDeltaPercent: totalComparison.deltaPercent,
+        }
+      : null,
+    sections: reportSections,
+  };
+}
+
 async function loadSectionGraph(context: GraphQLContext, householdId: string, sectionId: string) {
   const period = getBudgetCalendarPeriod();
   const section = await context.prisma.budgetSection.findFirst({
@@ -354,6 +526,15 @@ export const financeResolvers = {
     budgetMonth: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
       return loadBudgetMonth(context, householdId);
+    },
+
+    budgetMonthReport: async (
+      _parent: unknown,
+      args: { year: number; month: number },
+      context: GraphQLContext,
+    ) => {
+      const { householdId } = await requireHouseholdUser(context);
+      return loadBudgetMonthReport(context, householdId, args.year, args.month);
     },
 
     budgetLineAllocations: async (

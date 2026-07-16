@@ -57,6 +57,54 @@ export const financeTypeDefs = /* GraphQL */ `
     annualSections: [BudgetSection!]!
   }
 
+  type BudgetReportPurchase {
+    id: ID!
+    name: String!
+    purchaseDate: String!
+    amountCents: Int!
+  }
+
+  type BudgetReportLineItem {
+    id: ID!
+    name: String!
+    amountCents: Int!
+    spentCents: Int!
+    remainingCents: Int!
+    progressPercent: Int!
+    purchases: [BudgetReportPurchase!]!
+  }
+
+  type BudgetReportSection {
+    id: ID!
+    name: String!
+    budgetCents: Int!
+    spentCents: Int!
+    remainingCents: Int!
+    progressPercent: Int!
+    spentDeltaCents: Int
+    spentDeltaPercent: Int
+    lineItems: [BudgetReportLineItem!]!
+  }
+
+  type BudgetReportComparison {
+    spentDeltaCents: Int!
+    spentDeltaPercent: Int!
+  }
+
+  type BudgetMonthReport {
+    year: Int!
+    month: Int!
+    title: String!
+    hasReport: Boolean!
+    budgetCents: Int!
+    spentCents: Int!
+    remainingCents: Int!
+    progressPercent: Int!
+    overBudgetSectionNames: [String!]!
+    comparison: BudgetReportComparison
+    sections: [BudgetReportSection!]!
+  }
+
   input CreateBudgetLineItemInput {
     sectionId: ID!
     name: String!
@@ -82,6 +130,7 @@ export const financeTypeDefs = /* GraphQL */ `
 
   extend type Query {
     budgetMonth: BudgetMonthView!
+    budgetMonthReport(year: Int!, month: Int!): BudgetMonthReport!
     budgetLineAllocations(lineItemId: ID!): [BudgetPurchaseAllocation!]!
     bankConnections: [BankConnection!]!
   }

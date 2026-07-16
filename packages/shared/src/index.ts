@@ -1,4 +1,5 @@
 export * from "./budget";
+export * from "./budget-report";
 export * from "./purchases";
 export * from "./allowlist";
 export * from "./auth";

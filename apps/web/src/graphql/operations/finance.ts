@@ -71,6 +71,71 @@ export const BUDGET_MONTH_QUERY = gql`
   }
 `;
 
+const BUDGET_REPORT_PURCHASE_FIELDS = gql`
+  fragment BudgetReportPurchaseFields on BudgetReportPurchase {
+    id
+    name
+    purchaseDate
+    amountCents
+  }
+`;
+
+const BUDGET_REPORT_LINE_ITEM_FIELDS = gql`
+  ${BUDGET_REPORT_PURCHASE_FIELDS}
+  fragment BudgetReportLineItemFields on BudgetReportLineItem {
+    id
+    name
+    amountCents
+    spentCents
+    remainingCents
+    progressPercent
+    purchases {
+      ...BudgetReportPurchaseFields
+    }
+  }
+`;
+
+const BUDGET_REPORT_SECTION_FIELDS = gql`
+  ${BUDGET_REPORT_LINE_ITEM_FIELDS}
+  fragment BudgetReportSectionFields on BudgetReportSection {
+    id
+    name
+    budgetCents
+    spentCents
+    remainingCents
+    progressPercent
+    spentDeltaCents
+    spentDeltaPercent
+    lineItems {
+      ...BudgetReportLineItemFields
+    }
+  }
+`;
+
+export const BUDGET_MONTH_REPORT_QUERY = gql`
+  ${BUDGET_REPORT_SECTION_FIELDS}
+  query BudgetMonthReport($year: Int!, $month: Int!) {
+    budgetMonthReport(year: $year, month: $month) {
+      year
+      month
+      title
+      hasReport
+      budgetCents
+      spentCents
+      remainingCents
+      progressPercent
+      overBudgetSectionNames
+      comparison {
+        spentDeltaCents
+        spentDeltaPercent
+      }
+      sections {
+        ...BudgetReportSectionFields
+      }
+    }
+  }
+`;
+
 export const BUDGET_LINE_ALLOCATIONS_QUERY = gql`
   ${BUDGET_PURCHASE_ALLOCATION_FIELDS}
   query BudgetLineAllocations($lineItemId: ID!) {
