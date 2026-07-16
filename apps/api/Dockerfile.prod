@@ -12,6 +12,8 @@ COPY packages/db/package.json ./packages/db/
 COPY packages/db/prisma ./packages/db/prisma/
 COPY packages/graphql/package.json ./packages/graphql/
 COPY packages/shared/package.json ./packages/shared/
+COPY packages/plaid/package.json ./packages/plaid/
+COPY packages/recipe-import/package.json ./packages/recipe-import/
 
 RUN npm ci
 
