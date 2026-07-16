@@ -29,7 +29,7 @@ export async function downloadMonthlyReportPdf(container: HTMLElement, title: st
   const contentWidth = pageWidth - margin * 2;
   const imageHeight = (canvas.height * contentWidth) / canvas.width;
 
-  let offsetY = margin;
+  const offsetY = margin;
   let heightLeft = imageHeight;
 
   pdf.setFontSize(14);

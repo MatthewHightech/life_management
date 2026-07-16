@@ -18,6 +18,7 @@ apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin git
 
 echo "==> Configuring firewall (UFW): allow SSH, HTTP, HTTPS only"
+apt-get install -y ufw
 ufw allow OpenSSH
 ufw allow 80/tcp
 ufw allow 443/tcp

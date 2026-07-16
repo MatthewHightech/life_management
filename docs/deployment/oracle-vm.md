@@ -237,7 +237,7 @@ ssh -i ~/.ssh/oracle_life ubuntu@YOUR_VM_PUBLIC_IP
 ```bash
 sudo mkdir -p /opt/life-management
 sudo chown "$USER":"$USER" /opt/life-management
-git clone https://github.com/YOUR_GITHUB_USER/life_management.git /opt/life-management
+git clone https://github.com/MatthewHightech/life_management.git /opt/life-management
 cd /opt/life-management
 sudo ./scripts/setup-vm.sh
 ```
