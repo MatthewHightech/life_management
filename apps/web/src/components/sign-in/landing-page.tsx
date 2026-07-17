@@ -141,7 +141,7 @@ export function LandingPage({
                 </Button>
               </div>
               <p className="mt-4 text-xs text-text-muted">
-                Private by default. Access is limited to your household.
+                Account registration is whitelisted for beta-testing. Please try the demo!
               </p>
             </div>
 

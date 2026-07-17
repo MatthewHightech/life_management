@@ -24,7 +24,7 @@ function sectionTransform(
   scale: number,
 ) {
   const vertical = position * 22;
-  const horizontal = position * 18;
+  const horizontal = position * 30;
 
   if (variant === "slide-left") {
     return `translate3d(${horizontal}px, ${vertical * 0.45}px, 0) scale(${scale})`;

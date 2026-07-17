@@ -55,24 +55,24 @@ export function LandingVisuals() {
 
         <div className="mt-14 grid gap-6 lg:grid-cols-12">
           <LandingParallax
-            speed={0.045}
-            maxOffset={28}
+            speed={0.025}
+            maxOffset={16}
             className="lg:col-span-7"
           >
             <BudgetVisual />
           </LandingParallax>
 
           <LandingParallax
-            speed={-0.04}
-            maxOffset={26}
+            speed={-0.022}
+            maxOffset={14}
             className="lg:col-span-5"
           >
             <MealPlanVisual />
           </LandingParallax>
 
           <LandingParallax
-            speed={0.03}
-            maxOffset={20}
+            speed={0.018}
+            maxOffset={12}
             className="lg:col-span-12"
           >
             <ConnectedModulesVisual />
