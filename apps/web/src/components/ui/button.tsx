@@ -1,12 +1,13 @@
 import { cn } from "@/lib/cn";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "ghost";
+  variant?: "primary" | "secondary" | "outline" | "ghost";
 };
 
 const variants = {
   primary: "bg-primary-container text-on-primary hover:bg-primary hover:shadow-sm",
   secondary: "bg-sage text-primary hover:bg-sage/70 hover:shadow-sm",
+  outline: "border border-primary-container bg-transparent text-primary-container hover:bg-sage/40",
   ghost: "border border-transparent text-text-main hover:border-border-subtle hover:bg-surface",
 };
 
