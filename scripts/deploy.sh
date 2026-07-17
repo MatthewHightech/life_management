@@ -18,6 +18,9 @@ git pull --ff-only
 echo "==> Building and starting production stack..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build
 
+echo "==> Applying database migrations..."
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T api npm run db:migrate:deploy -w @life/db
+
 echo "==> Running database seed (idempotent)..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" exec -T api npm run db:seed -w @life/db || true
 

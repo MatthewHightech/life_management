@@ -412,9 +412,10 @@ What this does:
 
 1. `git pull --ff-only`
 2. `docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build`
-3. Runs an idempotent DB seed (default household)
+3. Applies Prisma migrations (`db:migrate:deploy`)
+4. Runs an idempotent DB seed (default household)
 
-On API container start, Prisma **migrations** also run (`db:migrate:deploy`). First build can take several minutes (Next.js + npm).
+The API container also checks migrations on startup, so this remains safe across restarts. First build can take several minutes (Next.js + npm).
 
 Watch progress:
 

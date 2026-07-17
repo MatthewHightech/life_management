@@ -312,12 +312,12 @@ List:    filter chips deferred (REQ-TASK-15)
 | `/receipts` | Receipt management (upload + folders + preview) | **Phase 1c** |
 | `/finance/budget` | Household budget (purchases inbox + monthly + annual tables) | **Phase 1e — V1** · **1f purchases inbox** |
 | `/finance/reports` | Monthly Reports | Monthly financial report (REQ-FIN-27 … REQ-FIN-32) |
-| `/finance/purchase-list` | Purchase List | Placeholder (Phase 1e nav only) |
+| `/finance/shopping-list` | Shopping List | Household planned purchases (REQ-FIN-33 … REQ-FIN-38) |
 
 **Inside Finance module** (`/finance/budget`, default):
 
 ```
-Header:  Finance                  [Budget] [Monthly Reports] [Purchase List]
+Header:  Finance                  [Budget] [Monthly Reports] [Shopping List]
                                               ↑ segmented control (Tasks toggle pattern)
 
 Budget:  [Purchases inbox — collapsible]     ← Phase 1f
@@ -331,7 +331,8 @@ Budget:  [Purchases inbox — collapsible]     ← Phase 1f
 | `/finance` | Redirect → `/finance/budget` | **Phase 1e** |
 | `/finance/budget` | Purchases inbox + monthly/annual budget tables | **Phase 1e — V1** · **1f inbox** |
 | `/finance/reports` | Monthly Reports | Read-only report + PDF export |
-| `/finance/purchase-list` | Purchase List | Placeholder |
+| `/finance/shopping-list` | Shopping List | Inline household list + comments |
+| `/finance/purchase-list` | Legacy redirect → Shopping List | Compatibility |
 
 **Do not** merge task due-date calendar with Google Calendar — separate modules (REQ-TASK-11 vs REQ-CAL-01).
 
@@ -434,12 +435,12 @@ Reference: REQ-FIN-07 … REQ-FIN-16 (tables) · REQ-FIN-17 … REQ-FIN-26 (purc
 
 **Page shell:** `ModulePageLayout` + `FinancePageLayout` (wraps sub-nav toggle, mirror `TasksPageLayout`).
 
-**Sub-navigation:** `FinanceViewToggle` — segmented control with three links (same classes as `TasksViewToggle`): **Budget** · **Monthly Reports** · **Purchase List**. **Purchase List tab is unrelated** to the purchases inbox on the Budget page.
+**Sub-navigation:** `FinanceViewToggle` — segmented control with three links (same classes as `TasksViewToggle`): **Budget** · **Monthly Reports** · **Shopping List**. Shopping List is unrelated to the purchases inbox on the Budget page.
 
 **Page layout (top → bottom on `/finance/budget`):**
 
 ```
-[Budget] [Monthly Reports] [Purchase List]
+[Budget] [Monthly Reports] [Shopping List]
 
 ▾ Purchases                          [Add purchase]   ← Phase 1f; collapsible
     [inline draft: name · amount · date]
@@ -545,7 +546,7 @@ Reference: REQ-FIN-17 … REQ-FIN-26.
 
 **Timezone:** Month and year boundaries use **America/Los_Angeles** (PST/PDT).
 
-**Out of scope (Budget 1e/1f tables):** **Purchase List** sub-page, general expense/income log, month browser on Budget page, income rows, recurring bills.
+**Out of scope (Budget 1e/1f tables):** Shopping List behavior (separate §8.8.4), general expense/income log, month browser on Budget page, income rows, recurring bills.
 
 #### 8.8.3 Monthly Reports (Phase 1g)
 
@@ -595,6 +596,36 @@ Reference: REQ-FIN-27 … REQ-FIN-32.
 **GraphQL:** `budgetMonthReport(year, month)` — monthly sections, line spend, allocations for month, comparison fields, `hasReport`.
 
 **Out of scope:** Annual table, inbox/unassigned purchases, CSV export, print stylesheet-only flow.
+
+#### 8.8.4 Shopping List
+
+Reference: REQ-FIN-33 … REQ-FIN-38.
+
+**Route:** `/finance/shopping-list`; legacy `/finance/purchase-list` redirects here.
+
+**Table:** Same compact inline-table language as Tasks List:
+
+```
+[inline create: Item · Budget · Urgency · Added by]                    [Add item]
+
+Item                       Budget        Urgency       Added by       Actions
+☐ Winter tires             $1,200.00     [High]        (avatar)       comments · delete
+☐ New coffee grinder       —             [Medium]      (avatar)       comments · delete
+
+▸ Purchased (2)                                             [Clear purchased]
+```
+
+- **Item:** required; inline editable.
+- **Budget:** optional CAD cents; inline editable; unset displays `—`.
+- **Urgency:** reuses `TaskPriority`, `EditablePriority`, and task priority pill colors.
+- **Added by:** immutable creator avatar; create automatically uses current user.
+- **Create:** name-only minimum; urgency defaults to `MEDIUM`.
+- **Ordering:** active urgency descending, then newest first.
+- **Purchased:** collapsed section; restore/delete individual items; bulk clear with `ConfirmModal`.
+
+**Comments architecture:** Shared `CommentsProvider`, `CommentsButton`, and `CommentsSidebar` own the presentation and interaction pattern used by Tasks and Shopping List. Each domain retains its own GraphQL adapter and relational comment/read models, preserving foreign-key integrity without duplicating the sidebar UI.
+
+**Data:** `ShoppingItem` belongs to household and creator; optional `budgetCents`; `TaskPriority urgency`; nullable `purchasedAt`. `ShoppingItemComment` + `ShoppingItemCommentRead` mirror task comment semantics.
 
 ### 8.9 Calendar views (future)
 
@@ -952,7 +983,7 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 | **Reuse** | `BudgetTable`, `BudgetLineItemRow`, `CalendarPicker`, `TaskCommentsSidebar` shell, `ConfirmModal`, `formatCadCents`, existing spend rollup helpers |
 | **Codegen / tests** | Operations · allocation sum invariant · spend roll-up monthly vs annual · split remainder · delete restores inbox · date-month notice |
 
-**Not in Phase 1f:** Purchase List sub-page, auto-categorization, month browser for past purchases.
+**Not in Phase 1f:** Shopping List behavior (separate §8.8.4), auto-categorization, month browser for past purchases.
 
 ### 9.9 Finance Plaid credit-card sync (REQ-FIN-20)
 
@@ -1007,6 +1038,7 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 | Push reminders (UI) | REQ-TASK-20 |
 | Finance Budget | REQ-FIN-07 … REQ-FIN-16, REQ-FIN-17 … REQ-FIN-26, REQ-FIN-20 |
 | Finance Monthly Reports | REQ-FIN-27 … REQ-FIN-32 |
+| Finance Shopping List | REQ-FIN-33 … REQ-FIN-38 |
 | Google Calendar | REQ-CAL-01 … REQ-CAL-04 |
 | Meals | REQ-MEAL-01 … REQ-MEAL-10 |
 | Receipts | REQ-RCPT-01 … REQ-RCPT-13 |
@@ -1020,6 +1052,7 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 
 | Date | Change |
 |------|--------|
+| 2026-07-16 | **Household Shopping List (REQ-FIN-33 … REQ-FIN-38):** §8.8.4 inline table, purchased lifecycle, and shared Tasks-style comments UI. |
 | 2026-07-15 | **Monthly Reports (REQ-FIN-27 … REQ-FIN-32):** §8.8.3 read-only report, month nav, overview chart, section accordions, PDF export. |
 | 2026-07-15 | **View recipe modal (REQ-MEAL-10):** §8.10 click recipe → view modal; Edit Recipe → form modal. |
 | 2026-07-10 | **Recipe URL import (REQ-MEAL-09):** §8.10 Import from URL via Schema.org JSON-LD (`@life/recipe-import`). |

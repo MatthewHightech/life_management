@@ -62,6 +62,7 @@ model Household {
   budgetLineItems BudgetLineItem[]
   budgetPurchases BudgetPurchase[]
   bankConnections BankConnection[]
+  shoppingItems   ShoppingItem[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 }
@@ -80,6 +81,9 @@ model User {
   createdTasks  Task[]     @relation("CreatedTasks")
   taskComments  TaskComment[]
   taskCommentReads TaskCommentRead[]
+  createdShoppingItems ShoppingItem[]        @relation("CreatedShoppingItems")
+  shoppingItemComments ShoppingItemComment[]
+  shoppingItemCommentReads ShoppingItemCommentRead[]
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 }
@@ -213,6 +217,47 @@ model TaskCommentRead {
 
   @@id([userId, taskId])
   @@index([taskId])
+}
+
+model ShoppingItem {
+  id            String       @id @default(cuid())
+  householdId   String
+  household     Household    @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  name          String
+  budgetCents   Int?
+  urgency       TaskPriority @default(MEDIUM)
+  purchasedAt   DateTime?
+  createdById   String
+  createdBy     User         @relation("CreatedShoppingItems", fields: [createdById], references: [id], onDelete: Cascade)
+  comments      ShoppingItemComment[]
+  commentReads  ShoppingItemCommentRead[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([householdId, purchasedAt])
+}
+
+model ShoppingItemComment {
+  id             String       @id @default(cuid())
+  shoppingItemId String
+  shoppingItem   ShoppingItem @relation(fields: [shoppingItemId], references: [id], onDelete: Cascade)
+  authorId       String
+  author         User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body           String
+  createdAt      DateTime     @default(now())
+
+  @@index([shoppingItemId, createdAt])
+}
+
+model ShoppingItemCommentRead {
+  userId         String
+  shoppingItemId String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shoppingItem   ShoppingItem @relation(fields: [shoppingItemId], references: [id], onDelete: Cascade)
+  readAt         DateTime     @default(now())
+
+  @@id([userId, shoppingItemId])
+  @@index([shoppingItemId])
 }
 
 enum FolderNamespace {

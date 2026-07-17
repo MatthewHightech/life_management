@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 const FINANCE_VIEWS = [
   { href: "/finance/budget", label: "Budget" },
   { href: "/finance/reports", label: "Monthly Reports" },
-  { href: "/finance/purchase-list", label: "Purchase List" },
+  { href: "/finance/shopping-list", label: "Shopping List" },
 ] as const;
 
 export function FinanceViewToggle() {

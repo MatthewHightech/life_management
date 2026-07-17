@@ -5,6 +5,7 @@ import { gearResolvers } from "./gear/resolvers";
 import { financeResolvers } from "./finance/resolvers";
 import { receiptResolvers } from "./receipts/resolvers";
 import { taskResolvers } from "./tasks/resolvers";
+import { shoppingResolvers } from "./shopping/resolvers";
 
 export const resolvers = {
   Query: {
@@ -43,6 +44,7 @@ export const resolvers = {
     ...receiptResolvers.Query,
     ...gearResolvers.Query,
     ...financeResolvers.Query,
+    ...shoppingResolvers.Query,
   },
   Mutation: {
     ping: () => "pong",
@@ -52,6 +54,7 @@ export const resolvers = {
     ...receiptResolvers.Mutation,
     ...gearResolvers.Mutation,
     ...financeResolvers.Mutation,
+    ...shoppingResolvers.Mutation,
   },
   User: {
     household: (
@@ -86,6 +89,8 @@ export const resolvers = {
   Task: taskResolvers.Task,
   TaskComment: taskResolvers.TaskComment,
   TaskProject: taskResolvers.TaskProject,
+  ShoppingItem: shoppingResolvers.ShoppingItem,
+  ShoppingItemComment: shoppingResolvers.ShoppingItemComment,
   Recipe: mealResolvers.Recipe,
   Folder: folderResolvers.Folder,
   Receipt: receiptResolvers.Receipt,

@@ -230,7 +230,7 @@ The **family banking app remains the source of truth** for account balances and 
 
 #### 4.3.2 Budget module V1 (Phase 1e — Budget page)
 
-**REQ-FIN-07 (P0):** Finance module has **in-module sub-navigation** (same segmented-control pattern as Tasks Kanban/List toggle): **Budget** · **Monthly Reports** · **Purchase List**. Routes: `/finance/budget` (default), `/finance/reports`, `/finance/purchase-list`. Redirect `/finance` → `/finance/budget`. **Purchase List** remains placeholder until its own requirements pass; **Monthly Reports** implemented per REQ-FIN-27 … REQ-FIN-32.
+**REQ-FIN-07 (P0):** Finance module has **in-module sub-navigation** (same segmented-control pattern as Tasks Kanban/List toggle): **Budget** · **Monthly Reports** · **Shopping List**. Routes: `/finance/budget` (default), `/finance/reports`, `/finance/shopping-list`. Redirect `/finance` → `/finance/budget`; legacy `/finance/purchase-list` redirects to Shopping List.
 
 **REQ-FIN-08 (P0):** **Budget page** shows the **current calendar month only** — header title e.g. **“July Budget”** (month name + year). No month picker or browse past/future months in V1 UI.
 
@@ -248,7 +248,7 @@ The **family banking app remains the source of truth** for account balances and 
 
 **REQ-FIN-15 (P0):** Budget table columns (section header row and line item row): **Name** · **Budget** · **Spent** · **Remaining** · **progress bar**. Progress bar shows **remaining budget** (full = green; shrinks and shifts green → yellow → red as spent increases). When spent > budget, **Remaining** shows **"$X over budget"** (not a negative dollar amount). Amounts use **tabular/monospaced numerals**, right-aligned. Display as CAD (e.g. `$1,234.56`) without a currency picker.
 
-**REQ-FIN-16 (P1):** **Purchase List** sub-page — nav + placeholder only until its own requirements pass; **Purchase List is unrelated** to the Budget page purchases inbox (REQ-FIN-17).
+**REQ-FIN-16 (P1):** ~~**Purchase List** placeholder.~~ Superseded by the household **Shopping List** (REQ-FIN-33 … REQ-FIN-38), which is unrelated to the Budget page purchases inbox (REQ-FIN-17).
 
 #### 4.3.3 Monthly Reports (Phase 1g)
 
@@ -264,9 +264,23 @@ The **family banking app remains the source of truth** for account balances and 
 
 **REQ-FIN-32 (P1):** **Export PDF** — one-click **Download PDF** produces a PDF of **overview + detail with all sections expanded**. Client-side generation is acceptable.
 
-#### 4.3.4 Budget purchases inbox (Phase 1f — Budget page)
+#### 4.3.4 Shopping List
 
-**REQ-FIN-17 (P0):** **Purchases inbox** — collapsible section on the Budget page **above the monthly budget table** (annual table remains below). **Mini-inbox** layout: vertical list, **scrollable after ~5 visible items**. Holds **unassigned** purchases (not yet fully allocated to budget lines). Future **VISA import** (REQ-FIN-20) feeds this same pool. **Not** the same as the **Purchase List** sub-nav tab (`/finance/purchase-list`) — that is a separate future feature.
+**REQ-FIN-33 (P1):** **Household Shopping List** (`/finance/shopping-list`) — shared list of items household adults intend to purchase. It is separate from imported/manual financial purchases and budget allocations. The active table follows the Tasks List inline-table pattern and supports inline create/edit.
+
+**REQ-FIN-34 (P1):** Shopping item fields: required **name**; optional estimated **budget** in CAD integer cents (display `—` when unset); **urgency** using the exact Task priority enum and pill colors (`LOW`, `MEDIUM`, `HIGH`, `URGENT`); immutable **created by** user shown as an avatar. Inline create requires name only, defaults urgency to `MEDIUM`, and assigns the current user as creator.
+
+**REQ-FIN-35 (P1):** Active items sort by urgency (`URGENT` → `LOW`), then newest first. Any household adult may edit or delete household shopping items.
+
+**REQ-FIN-36 (P1):** Marking an item purchased moves it to a collapsed **Purchased** section. Purchased items can be restored or deleted individually. **Clear purchased** permanently deletes all purchased items after confirmation.
+
+**REQ-FIN-37 (P1):** Shopping-item comments reuse the Tasks comment experience: right sidebar, newest-first thread, linkified plain text, comment count + unread indicator, per-user read tracking, and author-only comment deletion.
+
+**REQ-FIN-38 (P1):** Implementation reuses shared inline-edit, priority pill, avatar, confirmation, and comments UI modules. Shopping items and comments remain a distinct domain model to retain database foreign keys and avoid coupling planned purchases to financial transactions.
+
+#### 4.3.5 Budget purchases inbox (Phase 1f — Budget page)
+
+**REQ-FIN-17 (P0):** **Purchases inbox** — collapsible section on the Budget page **above the monthly budget table** (annual table remains below). **Mini-inbox** layout: vertical list, **scrollable after ~5 visible items**. Holds **unassigned** purchases (not yet fully allocated to budget lines). Future **VISA import** (REQ-FIN-20) feeds this same pool. It is **not** the Shopping List (REQ-FIN-33).
 
 **REQ-FIN-18 (P0):** **Add purchase** — **inline draft row** at the top of the purchases inbox (not a modal). Fields: **name**, **amount** (CAD cents), **purchase date**.
 
@@ -282,21 +296,20 @@ The **family banking app remains the source of truth** for account balances and 
 
 **REQ-FIN-26 (P0):** **Delete & edit** — any household adult may delete an **unassigned MANUAL purchase** from the inbox; may delete an **allocation** from the sidebar (returns the purchase to the inbox). `ConfirmModal` on delete. Store **`source`**: `MANUAL` | `VISA`. **Imported VISA purchases cannot be deleted** from the inbox (they remain until assigned or the bank removes/voids them). **Manual** purchases: name, amount, and date editable while unassigned.
 
-#### 4.3.5 Explicitly not in Budget V1 / 1f scope
+#### 4.3.6 Explicitly not in Budget V1 / 1f scope
 
-- **Purchase List** sub-page content (separate from purchases inbox).
 - Manual expense/income transaction log UI (REQ-FIN-01 deferred).
 - **Recurring bills** tracker UI (REQ-FIN-03 deferred).
 - Month navigation / editing historical months in Budget UI.
 - Auto-categorization rules for imported transactions.
 
-#### 4.3.6 Explicitly not in MVP finance scope
+#### 4.3.7 Explicitly not in MVP finance scope
 
 - Investment, loan, or net-worth tracking.
 - Split transactions, multi-currency, tax tagging.
 - Receipt storage (see **§4.7 Receipt management** — separate module, not finance attachments in MVP).
 
-#### 4.3.7 Bank / card sync (REQ-FIN-20)
+#### 4.3.8 Bank / card sync (REQ-FIN-20)
 
 **REQ-FIN-20 (P0):** **Plaid credit-card sync** — household adults connect TD / Simplii (or other CA institutions) via **Plaid Link** (Transactions product only). Access tokens are **encrypted at rest** and persisted so banks are not re-linked. After Link, user selects which **credit** accounts to sync (editable later in **Bank settings**). Imported rows appear in the purchases inbox with `source: VISA` and `externalTransactionId` for dedupe. **Filters:** posted only; current budget month (PST); credit-card purchases only (exclude payments, transfers, interest, refunds/credits). **Immediate sync** on account selection save; **nightly sync at 9pm America/Los_Angeles**. **Bank settings** icon in Finance header when connections exist (edit synced cards, sync now, disconnect). Inbox **Sync Credit Card** button opens a security/how-it-works modal before Link.
 
@@ -804,6 +817,7 @@ All open questions are resolved. Reference for agents and future you:
 
 | Date | Change |
 |------|--------|
+| 2026-07-16 | **Household Shopping List (REQ-FIN-33 … REQ-FIN-38):** Renamed Purchase List; inline name/budget/urgency table, creator avatar, purchased lifecycle, and shared Tasks-style comments. |
 | 2026-07-15 | **Monthly Reports (REQ-FIN-27 … REQ-FIN-32):** Read-only `/finance/reports` with month nav, overview + section accordions, stacked bar chart, PDF export; recomputed from allocations. Updated REQ-FIN-16 (Purchase List placeholder only). |
 | 2026-07-15 | **View recipe modal (REQ-MEAL-10):** Click library recipe → readable view; **Edit Recipe** opens existing edit form. Updated REQ-MEAL-03. |
 | 2026-07-10 | **Recipe URL import (REQ-MEAL-09):** Schema.org JSON-LD parse via `@life/recipe-import`; `importRecipeFromUrl` query; Import from URL → prefill create modal. |
@@ -834,7 +848,7 @@ All open questions are resolved. Reference for agents and future you:
 **Permissions:** REQ-PERM-01 … REQ-PERM-03  
 **Shell:** REQ-SHELL-01 … REQ-SHELL-03  
 **Tasks:** REQ-TASK-01 … REQ-TASK-09, REQ-TASK-10 … REQ-TASK-15, REQ-TASK-20 … REQ-TASK-23  
-**Finance:** REQ-FIN-01 … REQ-FIN-16, REQ-FIN-17 … REQ-FIN-26, REQ-FIN-27 … REQ-FIN-32, REQ-FIN-20, REQ-FIN-21  
+**Finance:** REQ-FIN-01 … REQ-FIN-16, REQ-FIN-17 … REQ-FIN-26, REQ-FIN-27 … REQ-FIN-38, REQ-FIN-20, REQ-FIN-21
 **Calendar:** REQ-CAL-01 … REQ-CAL-05  
 **Meals:** REQ-MEAL-01 … REQ-MEAL-10  
 **Receipts:** REQ-RCPT-01 … REQ-RCPT-13  
