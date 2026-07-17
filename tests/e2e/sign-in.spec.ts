@@ -6,6 +6,6 @@ test("sign-in page renders", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Your home, made simple and connected." }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: "Continue with Google" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Explore Demo" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Continue with Google" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Explore Demo" }).first()).toBeVisible();
 });
