@@ -1,0 +1,18 @@
+---
+description: Preserve the approved landing-page section order and copy
+globs: apps/web/src/components/sign-in/landing-page.tsx
+alwaysApply: false
+---
+
+# Landing page section order
+
+Keep the approved landing-page sequence:
+
+1. Hero
+2. Values ("Four core values")
+3. At a glance (`LandingVisuals`)
+4. "Built for simplicity" benefits section
+5. Feature overview
+6. Final CTA and footer
+
+Do not move "Built for simplicity" above `LandingVisuals`, and do not change its eyebrow copy back to "Built for real households."

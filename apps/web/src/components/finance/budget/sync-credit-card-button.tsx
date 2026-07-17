@@ -14,6 +14,8 @@ import {
 } from "@/graphql";
 import type { BankConnectionsQuery, CompletePlaidLinkMutation } from "@/graphql";
 import { BANK_CONNECTIONS_REFETCH } from "@/lib/budget-queries";
+import { useDemoMode } from "@/demo/demo-context";
+import { DEMO_UNAVAILABLE_MESSAGE } from "@/demo/mode";
 
 type BankConnection = BankConnectionsQuery["bankConnections"][number];
 
@@ -22,6 +24,7 @@ type SyncCreditCardButtonProps = {
 };
 
 export function SyncCreditCardButton({ className }: SyncCreditCardButtonProps) {
+  const demoMode = useDemoMode();
   const [introOpen, setIntroOpen] = useState(false);
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [setupConnection, setSetupConnection] = useState<BankConnection | null>(null);
@@ -130,8 +133,8 @@ export function SyncCreditCardButton({ className }: SyncCreditCardButtonProps) {
         type="button"
         variant="secondary"
         className={className ?? "px-3 py-1.5 text-xs"}
-        disabled={loadingConnections || busy}
-        title={error && !introOpen ? error : undefined}
+        disabled={demoMode || loadingConnections || busy}
+        title={demoMode ? DEMO_UNAVAILABLE_MESSAGE : error && !introOpen ? error : undefined}
         onClick={handleClick}
       >
         {syncing ? "Syncing…" : "Sync Credit Card"}

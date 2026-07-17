@@ -18,7 +18,6 @@ import {
   LandingSectionFocus,
 } from "@/components/sign-in/landing-parallax";
 import { LandingVisuals } from "@/components/sign-in/landing-visuals";
-import { Button } from "@/components/ui/button";
 
 type LandingPageProps = {
   googleSignInUrl: string;
@@ -136,9 +135,12 @@ export function LandingPage({
                 >
                   Continue with Google
                 </a>
-                <Button type="button" variant="outline" className="px-5 py-3">
+                <a
+                  href="/demo/enter"
+                  className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-primary-container bg-transparent px-5 py-3 text-sm font-medium text-primary-container transition hover:bg-sage/40"
+                >
                   Explore Demo
-                </Button>
+                </a>
               </div>
               <p className="mt-4 text-xs text-text-muted">
                 Account registration is whitelisted for beta-testing. Please try the demo!
@@ -203,6 +205,8 @@ export function LandingPage({
         </LandingSectionFocus>
       </section>
 
+      <LandingVisuals />
+
       <section
         className="border-b border-border-subtle bg-surface px-6 py-20 sm:px-10 lg:py-28"
       >
@@ -213,7 +217,7 @@ export function LandingPage({
           <div className="grid items-start gap-12 lg:grid-cols-[0.8fr_1.2fr]">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-secondary">
-                Built for real households
+                Built for simplicity
               </p>
               <h2 className="mt-4 text-3xl font-semibold tracking-tight text-primary sm:text-4xl">
                 Less coordination overhead. More room to live.
@@ -246,8 +250,6 @@ export function LandingPage({
           </div>
         </LandingSectionFocus>
       </section>
-
-      <LandingVisuals />
 
       <section className="bg-primary px-6 py-20 text-on-primary sm:px-10 lg:py-28">
         <LandingSectionFocus

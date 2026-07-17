@@ -12,6 +12,8 @@ type ModalProps = {
   className?: string;
   /** Optional action seated to the left of the close control (e.g. Edit). */
   headerAction?: React.ReactNode;
+  /** Override Radix auto-focus when the dialog opens (defaults to first focusable, often the close button). */
+  onOpenAutoFocus?: (event: Event) => void;
   children: React.ReactNode;
 };
 
@@ -22,6 +24,7 @@ export function Modal({
   description,
   className,
   headerAction,
+  onOpenAutoFocus,
   children,
 }: ModalProps) {
   return (
@@ -29,6 +32,7 @@ export function Modal({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" />
         <Dialog.Content
+          onOpenAutoFocus={onOpenAutoFocus}
           className={cn(
             "fixed top-1/2 left-1/2 z-50 flex w-[min(100%-2rem,32rem)] max-h-[min(90dvh,40rem)] -translate-x-1/2 -translate-y-1/2 flex-col",
             "rounded-xl border border-border-subtle bg-surface p-6 shadow-[0_12px_24px_rgba(0,0,0,0.1)]",

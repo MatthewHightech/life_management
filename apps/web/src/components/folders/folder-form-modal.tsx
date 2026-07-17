@@ -82,7 +82,7 @@ export function FolderFormModal({
 
         <fieldset className="space-y-1.5">
           <legend className="text-sm font-medium text-text-main">Color</legend>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 p-1">
             {FOLDER_COLOR_OPTIONS.map((option) => (
               <button
                 key={option.value}

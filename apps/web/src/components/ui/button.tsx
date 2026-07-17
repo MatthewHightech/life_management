@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { cn } from "@/lib/cn";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -11,9 +12,13 @@ const variants = {
   ghost: "border border-transparent text-text-main hover:border-border-subtle hover:bg-surface",
 };
 
-export function Button({ className, variant = "primary", ...props }: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { className, variant = "primary", ...props },
+  ref,
+) {
   return (
     <button
+      ref={ref}
       className={cn(
         "inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
         variants[variant],
@@ -22,4 +27,4 @@ export function Button({ className, variant = "primary", ...props }: ButtonProps
       {...props}
     />
   );
-}
+});

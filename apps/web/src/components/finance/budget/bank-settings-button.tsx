@@ -16,8 +16,11 @@ import type { BankConnectionsQuery } from "@/graphql";
 import { BANK_CONNECTIONS_REFETCH } from "@/lib/budget-queries";
 import { formatShortDate } from "@life/shared";
 import { cn } from "@/lib/cn";
+import { useDemoMode } from "@/demo/demo-context";
+import { DEMO_UNAVAILABLE_MESSAGE } from "@/demo/mode";
 
 export function BankSettingsButton() {
+  const demoMode = useDemoMode();
   const [open, setOpen] = useState(false);
   const [editConnectionId, setEditConnectionId] = useState<string | null>(null);
   const [disconnectId, setDisconnectId] = useState<string | null>(null);
@@ -35,6 +38,21 @@ export function BankSettingsButton() {
     refetchQueries: [...BANK_CONNECTIONS_REFETCH],
     awaitRefetchQueries: true,
   });
+
+  if (demoMode) {
+    return (
+      <button
+        type="button"
+        disabled
+        className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-border-subtle bg-surface px-2.5 py-1.5 text-sm font-medium text-text-muted opacity-60 shadow-sm"
+        aria-label={DEMO_UNAVAILABLE_MESSAGE}
+        title={DEMO_UNAVAILABLE_MESSAGE}
+      >
+        <Settings2 className="h-4 w-4" />
+        <span className="hidden sm:inline">Bank settings</span>
+      </button>
+    );
+  }
 
   if (!loading && connections.length === 0) {
     return null;

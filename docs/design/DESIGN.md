@@ -167,6 +167,7 @@ These decisions align the Stitch export with [`requirements.md`](../requirements
 | Receipts nav | Top-level **`/receipts`** — standalone module (not under Finance) | REQ-RCPT-01 |
 | Gear nav | Top-level **`/gear`** — Gear Inventory module (Phase 1d) | REQ-GEAR-01 |
 | Shared folders | Generic folder UI + GraphQL reused by Meals, Receipts, and Gear | REQ-FOLDER-01 … REQ-FOLDER-06 |
+| Public demo | Shared production UI with a local, refresh-reset in-memory data plane; bank/Plaid disabled | REQ-DEMO-01 … REQ-DEMO-05 |
 | Create action | **"+ New Task"** on Tasks pages (not sidebar “+ New Entry”) | — |
 | Kanban columns | TODO · IN_PROGRESS · WAITING · **DONE** (collapsible, open by default) | REQ-TASK-06 |
 | Kanban interaction | **Drag-and-drop** between columns updates status | REQ-TASK-07 |
@@ -879,6 +880,25 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 
 **Out of scope (Phase 1d):** search/filter, barcode, finance linking, household-member borrowers, partial returns, email automation.
 
+### 8.15 Public demo mode
+
+The landing-page **Explore Demo** action creates a same-site session cookie and enters the normal app shell. The protected route layout accepts either the real authentication cookie or the demo cookie; the demo cookie is only a mode marker and grants no API authorization.
+
+The root provider selects exactly one data path for the lifetime of the page:
+
+- **Authenticated mode:** Apollo `HttpLink` → GraphQL API → Postgres.
+- **Demo mode:** local Apollo link → one in-memory `DemoStore` seeded with fictional household data.
+
+The demo link implements the same named operations consumed by the production UI. Unsupported operations fail closed and never fall through to `HttpLink`. File helpers for receipt and gear uploads use the same in-memory runtime in demo mode, while bank/Plaid operations throw a controlled unavailable error as defense in depth.
+
+Demo chrome consists of:
+
+- A welcome modal on every landing-page entry (`demoWelcome=1`, removed after opening).
+- A persistent “changes reset when you refresh” banner with **Exit demo**.
+- Visible disabled bank controls with an explanatory tooltip.
+
+Refreshing creates a fresh Apollo client and restores the seed. Exit clears the demo cookie and returns to `/sign-in`.
+
 ---
 
 ## 9. Implementation plan
@@ -1044,6 +1064,7 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 | Receipts | REQ-RCPT-01 … REQ-RCPT-13 |
 | Gear | REQ-GEAR-01 … REQ-GEAR-19 · §8.14 |
 | Shared folders | REQ-FOLDER-01 … REQ-FOLDER-06 |
+| Public demo mode | REQ-DEMO-01 … REQ-DEMO-05 · §8.15 |
 | Out of scope | Dark mode, a11y-specific, real-time collab (§3.2) |
 
 ---
@@ -1052,6 +1073,7 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 
 | Date | Change |
 |------|--------|
+| 2026-07-17 | **Public demo mode (REQ-DEMO-01 … REQ-DEMO-05):** §8.15 isolated in-memory data plane, fictional seed, demo chrome, and disabled bank integration. |
 | 2026-07-16 | **Household Shopping List (REQ-FIN-33 … REQ-FIN-38):** §8.8.4 inline table, purchased lifecycle, and shared Tasks-style comments UI. |
 | 2026-07-15 | **Monthly Reports (REQ-FIN-27 … REQ-FIN-32):** §8.8.3 read-only report, month nav, overview chart, section accordions, PDF export. |
 | 2026-07-15 | **View recipe modal (REQ-MEAL-10):** §8.10 click recipe → view modal; Edit Recipe → form modal. |

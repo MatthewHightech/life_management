@@ -4,6 +4,7 @@ import type { GearLendingQuery } from "@/graphql";
 import { GearLoanItemList } from "@/components/gear/gear-loan-item-list";
 import { Button } from "@/components/ui/button";
 import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
+import { formatLongDate } from "@life/shared";
 import { cn } from "@/lib/cn";
 
 type GearLoan = GearLendingQuery["gearLending"]["activeLoans"][number];
@@ -51,14 +52,16 @@ export function GearActiveLoans({ loans, returningId, onReturn }: GearActiveLoan
                   <td className="px-2 py-2 align-top">
                     <GearLoanItemList items={loan.items} />
                   </td>
-                  <td className="px-2 py-2 align-top text-text-muted">{loan.lentAt}</td>
+                  <td className="px-2 py-2 align-top text-text-muted">
+                    {formatLongDate(loan.lentAt)}
+                  </td>
                   <td
                     className={cn(
                       "px-2 py-2 align-top",
                       loan.isOverdue ? "font-semibold text-error" : "text-text-muted",
                     )}
                   >
-                    {loan.returnBy}
+                    {formatLongDate(loan.returnBy)}
                   </td>
                   <td className="px-2 py-2 align-top">
                     <Button

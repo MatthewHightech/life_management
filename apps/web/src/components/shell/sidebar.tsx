@@ -15,6 +15,7 @@ type SidebarProps = {
   userEmail?: string;
   userImage?: string | null;
   onSignOut: () => void;
+  signOutLabel?: string;
 };
 
 export function Sidebar({
@@ -25,6 +26,7 @@ export function Sidebar({
   userEmail,
   userImage,
   onSignOut,
+  signOutLabel = "Sign out",
 }: SidebarProps) {
   const pathname = usePathname();
 
@@ -106,7 +108,7 @@ export function Sidebar({
             collapsed && "text-center",
           )}
         >
-          {collapsed ? "↩" : "Sign out"}
+          {collapsed ? "↩" : signOutLabel}
         </button>
       </div>
     </aside>

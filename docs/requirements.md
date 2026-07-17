@@ -80,7 +80,19 @@ Both adults use task + budget views, have calendar integrated.
 
 **REQ-USER-06 (P0):** The Google account **allowlist** is managed via **environment variable or config file** for now — no admin UI required.
 
-### 2.2 Visibility & permissions (MVP)
+### 2.2 Public demo
+
+**REQ-DEMO-01 (P1):** Signed-out visitors can enter an always-available **Explore Demo** from the landing page without Google OAuth or allowlist access.
+
+**REQ-DEMO-02 (P1):** Demo mode uses the production UI and GraphQL operations against an isolated, browser-memory data store. It must not call the GraphQL API, Postgres, or authenticated file endpoints.
+
+**REQ-DEMO-03 (P1):** The demo starts with a small fictional dataset spanning Tasks, Finance, Shopping List, Meals, Receipts, and Gear. Changes are usable within the tab and reset to the seed on refresh.
+
+**REQ-DEMO-04 (P1):** Bank connection, setup, and synchronization controls remain visible but disabled with an explanatory tooltip. No Plaid flow may start in demo mode.
+
+**REQ-DEMO-05 (P1):** Every Explore Demo entry opens a welcome modal explaining the sandbox, reset behavior, and disabled bank features. A persistent banner identifies demo mode and exits to the landing page.
+
+### 2.3 Visibility & permissions (MVP)
 
 **REQ-PERM-01 (P0):** All household data is **fully transparent** to all household members in MVP — no per-module or per-item privacy rules yet.
 

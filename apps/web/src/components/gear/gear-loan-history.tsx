@@ -7,6 +7,7 @@ import { GearLoanItemList } from "@/components/gear/gear-loan-item-list";
 import { Button } from "@/components/ui/button";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
+import { formatLongDate } from "@life/shared";
 import { cn } from "@/lib/cn";
 
 type GearLoan = GearLendingQuery["gearLending"]["loanHistory"][number];
@@ -69,10 +70,14 @@ export function GearLoanHistory({ loans, clearing, onClearHistory }: GearLoanHis
                     <td className="px-2 py-2 align-top">
                       <GearLoanItemList items={loan.items} />
                     </td>
-                    <td className="px-2 py-2 align-top text-text-muted">{loan.lentAt}</td>
-                    <td className="px-2 py-2 align-top text-text-muted">{loan.returnBy}</td>
                     <td className="px-2 py-2 align-top text-text-muted">
-                      {loan.returnedAt ? new Date(loan.returnedAt).toLocaleDateString() : "—"}
+                      {formatLongDate(loan.lentAt)}
+                    </td>
+                    <td className="px-2 py-2 align-top text-text-muted">
+                      {formatLongDate(loan.returnBy)}
+                    </td>
+                    <td className="px-2 py-2 align-top text-text-muted">
+                      {loan.returnedAt ? formatLongDate(loan.returnedAt) : "—"}
                     </td>
                   </tr>
                 ))}

@@ -2,14 +2,19 @@
 
 import { ApolloClient, HttpLink, InMemoryCache } from "@apollo/client";
 import { ApolloProvider } from "@apollo/client/react";
+import { useState } from "react";
+import { DemoModeProvider } from "@/demo/demo-context";
+import { createDemoLink } from "@/demo/demo-link";
 import { getApiUrl } from "@/lib/auth-token";
 
-function makeClient() {
+function makeClient(demoMode: boolean) {
   return new ApolloClient({
-    link: new HttpLink({
-      uri: `${getApiUrl()}/graphql`,
-      credentials: "include",
-    }),
+    link: demoMode
+      ? createDemoLink()
+      : new HttpLink({
+          uri: `${getApiUrl()}/graphql`,
+          credentials: "include",
+        }),
     cache: new InMemoryCache({
       typePolicies: {
         // Reports reuse budget section/line IDs across months; do not normalize
@@ -34,8 +39,18 @@ function makeClient() {
   });
 }
 
-const client = makeClient();
+export function Providers({
+  children,
+  demoMode,
+}: {
+  children: React.ReactNode;
+  demoMode: boolean;
+}) {
+  const [client] = useState(() => makeClient(demoMode));
 
-export function Providers({ children }: { children: React.ReactNode }) {
-  return <ApolloProvider client={client}>{children}</ApolloProvider>;
+  return (
+    <DemoModeProvider enabled={demoMode}>
+      <ApolloProvider client={client}>{children}</ApolloProvider>
+    </DemoModeProvider>
+  );
 }

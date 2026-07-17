@@ -1,4 +1,5 @@
 import { getApiUrl } from "@/lib/auth-token";
+import { isDemoRuntimeActive, uploadDemoReceipts } from "@/demo/demo-link";
 import { RECEIPT_MAX_BYTE_SIZE } from "@life/shared";
 
 export async function uploadReceiptFiles(files: File[], folderId: string | null) {
@@ -6,6 +7,10 @@ export async function uploadReceiptFiles(files: File[], folderId: string | null)
     if (file.size > RECEIPT_MAX_BYTE_SIZE) {
       throw new Error(`"${file.name}" exceeds the 10 MB limit.`);
     }
+  }
+
+  if (isDemoRuntimeActive()) {
+    return { receipts: uploadDemoReceipts(files, folderId) };
   }
 
   const formData = new FormData();
@@ -35,6 +40,12 @@ export function getReceiptFileUrl(receiptId: string) {
 }
 
 export async function fetchReceiptBlob(receiptId: string) {
+  if (isDemoRuntimeActive()) {
+    return new Blob([`Demo receipt ${receiptId}\n\nNo real document is stored in demo mode.`], {
+      type: "text/plain",
+    });
+  }
+
   const response = await fetch(getReceiptFileUrl(receiptId), {
     credentials: "include",
   });

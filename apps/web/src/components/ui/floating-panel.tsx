@@ -12,6 +12,8 @@ type FloatingPanelProps = {
   className?: string;
   minWidth?: number;
   align?: "start" | "end";
+  /** When true (default), panel is at least as wide as the trigger. */
+  matchAnchorWidth?: boolean;
 };
 
 const PANEL_GAP_PX = 4;
@@ -117,6 +119,7 @@ export function FloatingPanel({
   className,
   minWidth = 160,
   align = "start",
+  matchAnchorWidth = true,
 }: FloatingPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const coords = useFloatingPanelPosition(open, anchorRef, panelRef, children, minWidth, align);
@@ -136,7 +139,7 @@ export function FloatingPanel({
         position: "fixed",
         top: coords?.top ?? -9999,
         left: coords?.left ?? 0,
-        minWidth: Math.max(minWidth, anchorWidth),
+        minWidth: matchAnchorWidth ? Math.max(minWidth, anchorWidth) : minWidth,
         visibility: coords ? "visible" : "hidden",
       }}
       className={cn("z-50 rounded-lg border border-border-subtle bg-surface shadow-lg", className)}

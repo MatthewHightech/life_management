@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import { Providers } from "@/app/providers";
+import { DEMO_COOKIE_NAME } from "@/demo/mode";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,15 +24,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const demoMode = cookieStore.get(DEMO_COOKIE_NAME)?.value === "1";
+
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Providers>{children}</Providers>
+        <Providers demoMode={demoMode}>{children}</Providers>
       </body>
     </html>
   );

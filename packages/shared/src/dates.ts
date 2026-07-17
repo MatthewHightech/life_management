@@ -1,4 +1,5 @@
 import {
+  addDays,
   addMonths,
   eachDayOfInterval,
   endOfDay,
@@ -12,6 +13,7 @@ import {
   startOfDay,
   startOfMonth,
   startOfWeek,
+  subDays,
   subMonths,
 } from "date-fns";
 
@@ -37,12 +39,17 @@ export function toIsoString(value: Date | null | undefined): string | null {
 }
 
 export function formatShortDate(value: Date | string): string {
-  const date = typeof value === "string" ? parseISO(value) : value;
+  const date = typeof value === "string" ? parseDisplayDate(value) : value;
   return format(date, "MMM d");
 }
 
+export function formatLongDate(value: Date | string): string {
+  const date = typeof value === "string" ? parseDisplayDate(value) : value;
+  return format(date, "MMMM d, yyyy");
+}
+
 export function formatCalendarGroupLabel(value: Date | string): string {
-  const date = typeof value === "string" ? parseISO(value) : value;
+  const date = typeof value === "string" ? parseDisplayDate(value) : value;
   return format(date, "EEE, MMM d");
 }
 
@@ -51,12 +58,11 @@ export function toDateInputValue(value?: string | null): string {
     return "";
   }
 
-  const date = parseISO(value);
-  if (!isValid(date)) {
+  try {
+    return format(parseDisplayDate(value), "yyyy-MM-dd");
+  } catch {
     return "";
   }
-
-  return format(date, "yyyy-MM-dd");
 }
 
 export function buildMonthGrid(month: Date, weekStartsOn: 0 | 1 = 0): Date[] {
@@ -74,4 +80,18 @@ export function calendarDayKey(value: Date): string {
   return format(value, "yyyy-MM-dd");
 }
 
-export { addMonths, isSameDay, isSameMonth, startOfDay, subMonths };
+function parseDisplayDate(value: string): Date {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  const date = parseISO(value);
+  if (!isValid(date)) {
+    throw new Error("Invalid date value");
+  }
+
+  return date;
+}
+
+export { addDays, addMonths, isSameDay, isSameMonth, startOfDay, startOfWeek, subDays, subMonths };

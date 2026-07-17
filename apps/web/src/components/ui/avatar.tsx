@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, User } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/cn";
 
@@ -70,6 +70,20 @@ type AssigneeAvatarsProps = {
 export function AssigneeAvatars({ assignees, max = 3, avatarClassName }: AssigneeAvatarsProps) {
   const visible = assignees.slice(0, max);
   const overflow = assignees.length - visible.length;
+
+  if (assignees.length === 0) {
+    return (
+      <span
+        className={cn(
+          "flex h-7 w-7 items-center justify-center rounded-full border border-dashed border-border-subtle bg-surface text-text-muted ring-2 ring-surface",
+          avatarClassName,
+        )}
+        aria-hidden
+      >
+        <User className="h-[55%] w-[55%]" strokeWidth={2} />
+      </span>
+    );
+  }
 
   return (
     <div className="flex -space-x-2">

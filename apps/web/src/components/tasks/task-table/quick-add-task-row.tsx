@@ -60,6 +60,8 @@ function DraftAssigneePicker({
         ref={anchorRef}
         type="button"
         onClick={toggle}
+        title={assignees.length === 0 ? "Assign" : undefined}
+        aria-label={assignees.length === 0 ? "Assign people" : undefined}
         className={triggerClassName("inline-flex min-h-7 items-center rounded-md px-1 py-0.5")}
       >
         <AssigneeAvatars assignees={assignees} />

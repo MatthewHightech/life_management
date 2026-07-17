@@ -3,6 +3,7 @@ import {
   buildMonthGrid,
   dayBounds,
   formatCalendarGroupLabel,
+  formatLongDate,
   formatShortDate,
   parseOptionalDate,
   toDateInputValue,
@@ -29,6 +30,8 @@ describe("shared dates", () => {
   it("formats dates for display", () => {
     const date = new Date(2025, 5, 24, 12, 0, 0);
     expect(formatShortDate(date)).toBe("Jun 24");
+    expect(formatLongDate(date)).toBe("June 24, 2025");
+    expect(formatLongDate("2026-07-17")).toBe("July 17, 2026");
     expect(formatCalendarGroupLabel(date)).toBe("Tue, Jun 24");
   });
 
