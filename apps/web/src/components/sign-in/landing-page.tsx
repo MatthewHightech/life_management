@@ -13,10 +13,7 @@ import {
   Wallet,
   Zap,
 } from "lucide-react";
-import {
-  LandingParallax,
-  LandingSectionFocus,
-} from "@/components/sign-in/landing-parallax";
+import { LandingReveal } from "@/components/sign-in/landing-reveal";
 import { LandingVisuals } from "@/components/sign-in/landing-visuals";
 
 type LandingPageProps = {
@@ -91,7 +88,7 @@ export function LandingPage({
   return (
     <main
       data-landing-scroll
-      className="h-screen overflow-y-auto scroll-smooth bg-background"
+      className="h-screen overflow-y-auto overflow-x-clip scroll-smooth bg-background"
     >
       <section className="relative flex min-h-[100svh] overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(173,206,195,0.35),transparent_34%),radial-gradient(circle_at_10%_90%,rgba(227,241,244,0.7),transparent_30%)]" />
@@ -147,9 +144,7 @@ export function LandingPage({
               </p>
             </div>
 
-            <LandingParallax speed={0.075} maxOffset={46}>
-              <ProductPreview />
-            </LandingParallax>
+            <ProductPreview />
           </div>
         </div>
 
@@ -164,12 +159,9 @@ export function LandingPage({
 
       <section
         id="learn-more"
-        className="scroll-mt-0 border-y border-border-subtle bg-primary px-6 py-20 text-on-primary sm:px-10 lg:py-28"
+        className="scroll-mt-0 overflow-x-clip border-y border-border-subtle bg-primary px-6 py-20 text-on-primary sm:px-10 lg:py-28"
       >
-        <LandingSectionFocus
-          variant="lift"
-          className="mx-auto max-w-6xl"
-        >
+        <LandingReveal parallax="left" className="mx-auto max-w-6xl">
           <div className="max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-inverse-primary">
               Four core values
@@ -202,18 +194,15 @@ export function LandingPage({
               );
             })}
           </div>
-        </LandingSectionFocus>
+        </LandingReveal>
       </section>
 
       <LandingVisuals />
 
       <section
-        className="border-b border-border-subtle bg-surface px-6 py-20 sm:px-10 lg:py-28"
+        className="overflow-x-clip border-b border-border-subtle bg-surface px-6 py-20 sm:px-10 lg:py-28"
       >
-        <LandingSectionFocus
-          variant="slide-left"
-          className="mx-auto max-w-6xl"
-        >
+        <LandingReveal parallax="right" className="mx-auto max-w-6xl">
           <div className="grid items-start gap-12 lg:grid-cols-[0.8fr_1.2fr]">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-secondary">
@@ -248,14 +237,11 @@ export function LandingPage({
               />
             </div>
           </div>
-        </LandingSectionFocus>
+        </LandingReveal>
       </section>
 
-      <section className="bg-primary px-6 py-20 text-on-primary sm:px-10 lg:py-28">
-        <LandingSectionFocus
-          variant="slide-right"
-          className="mx-auto max-w-6xl"
-        >
+      <section className="overflow-x-clip bg-primary px-6 py-20 text-on-primary sm:px-10 lg:py-28">
+        <LandingReveal parallax="left" className="mx-auto max-w-6xl">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-inverse-primary">
               Everything in its place
@@ -290,14 +276,11 @@ export function LandingPage({
               );
             })}
           </div>
-        </LandingSectionFocus>
+        </LandingReveal>
       </section>
 
-      <section className="px-6 py-20 text-center sm:px-10 lg:py-28">
-        <LandingSectionFocus
-          variant="focus"
-          className="mx-auto max-w-2xl"
-        >
+      <section className="overflow-x-clip px-6 py-20 text-center sm:px-10 lg:py-28">
+        <LandingReveal parallax="right" className="mx-auto max-w-2xl">
           <h2 className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl">
             Make home life feel lighter.
           </h2>
@@ -311,7 +294,7 @@ export function LandingPage({
           >
             Continue with Google
           </a>
-        </LandingSectionFocus>
+        </LandingReveal>
       </section>
 
       <footer className="border-t border-border-subtle bg-surface px-6 py-6 sm:px-10">
@@ -355,7 +338,7 @@ function BenefitCard({
 function ProductPreview() {
   return (
     <div className="relative mx-auto w-full max-w-lg lg:mx-0">
-      <div className="absolute -inset-5 rounded-[2rem] bg-sage/70 blur-2xl" />
+      <div className="pointer-events-none absolute -inset-5 -z-10 rounded-[2rem] bg-sage/70 blur-2xl" />
       <div className="relative overflow-hidden rounded-2xl border border-border-subtle bg-surface shadow-[0_24px_70px_rgba(22,52,45,0.14)]">
         <div className="flex items-center justify-between border-b border-border-subtle bg-background px-5 py-3">
           <div className="flex items-center gap-2">

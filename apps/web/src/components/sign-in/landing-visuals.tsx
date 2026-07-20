@@ -7,10 +7,7 @@ import {
   UtensilsCrossed,
   Wallet,
 } from "lucide-react";
-import {
-  LandingParallax,
-  LandingSectionFocus,
-} from "@/components/sign-in/landing-parallax";
+import { LandingReveal } from "@/components/sign-in/landing-reveal";
 
 const budgetBars = [
   { label: "Food", spent: 68, remaining: 32 },
@@ -37,10 +34,7 @@ const modules = [
 export function LandingVisuals() {
   return (
     <section className="overflow-hidden px-6 py-20 sm:px-10 lg:py-28">
-      <LandingSectionFocus
-        variant="focus"
-        className="mx-auto max-w-6xl"
-      >
+      <LandingReveal className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-secondary">
             See it at a glance
@@ -54,31 +48,17 @@ export function LandingVisuals() {
         </div>
 
         <div className="mt-14 grid gap-6 lg:grid-cols-12">
-          <LandingParallax
-            speed={0.025}
-            maxOffset={16}
-            className="lg:col-span-7"
-          >
+          <div className="lg:col-span-7">
             <BudgetVisual />
-          </LandingParallax>
-
-          <LandingParallax
-            speed={-0.022}
-            maxOffset={14}
-            className="lg:col-span-5"
-          >
+          </div>
+          <div className="lg:col-span-5">
             <MealPlanVisual />
-          </LandingParallax>
-
-          <LandingParallax
-            speed={0.018}
-            maxOffset={12}
-            className="lg:col-span-12"
-          >
+          </div>
+          <div className="lg:col-span-12">
             <ConnectedModulesVisual />
-          </LandingParallax>
+          </div>
         </div>
-      </LandingSectionFocus>
+      </LandingReveal>
     </section>
   );
 }
