@@ -63,7 +63,8 @@ export function TaskTableRow({ task, users, onDelete, onUpdate }: TaskTableRowPr
         <DeleteTaskButton
           taskTitle={task.title}
           onConfirm={onDelete}
-          className="text-xs text-text-muted hover:text-error"
+          variant="icon"
+          className="rounded p-0.5 text-text-muted hover:text-error"
         />
       </TaskTableCell>
     </tr>

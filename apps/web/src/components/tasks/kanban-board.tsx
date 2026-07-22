@@ -30,7 +30,9 @@ type BoardTask = TasksBoardQuery["tasks"][number];
 const kanbanQuery = tasksBoardKanbanQuery;
 
 export function KanbanBoard() {
-  const [collapsedByStatus, setCollapsedByStatus] = useState<Partial<Record<TaskStatus, boolean>>>({});
+  const [collapsedByStatus, setCollapsedByStatus] = useState<Partial<Record<TaskStatus, boolean>>>({
+    DONE: true,
+  });
   const [activeTask, setActiveTask] = useState<BoardTask | null>(null);
   const [activeWidth, setActiveWidth] = useState<number | null>(null);
 

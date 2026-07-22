@@ -122,8 +122,8 @@ export function KanbanCard({
             </div>
           ) : null}
 
-          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-1.5">
-            <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
+            <div className="shrink-0">
               {editable ? (
                 <EditableAssignees
                   assignees={task.assignees}
@@ -137,13 +137,13 @@ export function KanbanCard({
               )}
             </div>
 
-            <div className="min-w-0">
+            <div className="min-w-0 max-w-full">
               {editable ? (
                 <EditableDueDate
                   value={task.dueDate}
                   overdue={overdue}
                   onSave={(dueDate) => onUpdate!({ dueDate })}
-                  className="w-full min-w-0 truncate px-1 text-xs"
+                  className="max-w-full truncate px-0.5 text-xs"
                 />
               ) : task.dueDate ? (
                 <p
@@ -157,7 +157,7 @@ export function KanbanCard({
               ) : null}
             </div>
 
-            <div className="justify-self-end">
+            <div className="shrink-0">
               {editable ? (
                 <EditablePriority
                   value={task.priority}
@@ -173,7 +173,7 @@ export function KanbanCard({
             </div>
 
             {editable ? (
-              <div className="justify-self-end">
+              <div className="shrink-0">
                 <TaskCommentsButton
                   taskId={task.id}
                   taskTitle={task.title}
