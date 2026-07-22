@@ -115,8 +115,8 @@ export function LandingPage({
               </h1>
               <p className="mt-6 max-w-lg text-base leading-7 text-text-muted sm:text-lg">
                 Life Management brings tasks, finances, meal planning, receipts,
-                and shared gear into one thoughtful workspace—so everyone knows
-                what is happening and what comes next.
+                and shared gear into one thoughtful workspace so everyone knows
+                what's happening and what's next.
               </p>
 
               {accessDenied ? (
