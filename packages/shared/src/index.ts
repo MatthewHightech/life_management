@@ -3,6 +3,7 @@ export * from "./budget-report";
 export * from "./purchases";
 export * from "./allowlist";
 export * from "./auth";
+export * from "./mobile-auth";
 export * from "./dates";
 export * from "./folders";
 export * from "./gear";

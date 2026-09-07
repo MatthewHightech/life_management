@@ -7,6 +7,7 @@ RUN apk add --no-cache openssl
 COPY package.json package-lock.json* ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/web/package.json ./apps/web/
+COPY apps/mobile/package.json ./apps/mobile/
 COPY packages/db/package.json ./packages/db/
 COPY packages/db/prisma ./packages/db/prisma/
 COPY packages/graphql/package.json ./packages/graphql/

@@ -7,6 +7,7 @@ import cors from "cors";
 import cron from "node-cron";
 import express from "express";
 import { authRouter } from "./auth/routes";
+import { mobileAuthRouter } from "./auth/mobile-routes";
 import { extractSessionToken, verifyAuthToken } from "./auth/jwt";
 import { runMealPlanWeekRollover } from "./cron/meal-plan-rollover";
 import { runBankTransactionSync } from "./cron/bank-transaction-sync";
@@ -44,8 +45,10 @@ async function main() {
     }),
   );
   app.use(cookieParser());
+  app.use(express.json());
 
   app.use("/auth", authRouter);
+  app.use("/auth/mobile", mobileAuthRouter);
   app.use("/receipts", createReceiptRouter(fileStorage));
   app.use("/gear", createGearRouter(fileStorage));
 

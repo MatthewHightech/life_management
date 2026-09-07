@@ -1,6 +1,6 @@
 # Life Management — Mobile App
 
-> **Status:** Requirements complete — ready for implementation planning  
+> **Status:** Phase 1 in progress — API auth + app shell complete  
 > **Last updated:** 2026-09-02  
 > **Audience:** Project owner, future contributors, LLM coding agents  
 > **Purpose:** Requirements and decisions for the React Native companion app.  
@@ -169,16 +169,96 @@ Meals tab uses segmented control: **Grocery | Recipes**.
 
 ## 5. Implementation phasing
 
-Suggested build order:
+| Phase | Status | Notes |
+|-------|--------|-------|
+| 1. API mobile auth | **Done** | `RefreshToken` model, `/auth/mobile/google`, `/auth/mobile/refresh`, logout revokes refresh |
+| 2. App shell | **Done** | `apps/mobile` Expo app, tabs, sign-in, settings, Apollo Bearer client |
+| 3. Tasks | Pending | — |
+| 4. Finance | Pending | — |
+| 5. Meals | Pending | — |
+| 6. Receipts | Pending | — |
+| 7. Gear | Pending | — |
+| 8. Push notifications | Pending | Settings toggle UI stubbed |
 
-1. **API auth tokens** — mobile OAuth callback, refresh token issuance/storage contract
-2. **App shell** — Expo scaffold, Apollo client, tab nav, settings, sign-in
-3. **Tasks** — highest daily-use value; validates auth + GraphQL + push
-4. **Finance** — inbox drag-sort + shopping list
-5. **Meals** — grocery + recipes + URL import
-6. **Receipts** — camera/scan upload + folder browser
-7. **Gear** — photo add + class-grouped browse
-8. **Push notifications** — task due-date reminders (can parallel with Tasks)
+### Local development
+
+```bash
+# Root env (once) — used by Docker Compose + host Prisma scripts
+cp .env.example .env
+# Fill AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, ALLOWED_EMAILS
+
+# Stack (Postgres + API + Web)
+docker compose up
+
+# Mobile env (once)
+cp apps/mobile/.env.example apps/mobile/.env
+# See §5.1 for Google / API URL values
+
+npm run dev:mobile
+```
+
+### 5.1 Mobile auth setup (Google + env)
+
+Mobile auth uses a **separate path** from web cookies: Expo Google sign-in → `POST /auth/mobile/google` → access + refresh tokens in SecureStore.
+
+#### Google Cloud Console
+
+1. Open [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials) (same project as web).
+2. **Web client** (you already have this for the web app):
+   - Copy the **Client ID** → `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (same value as root `GOOGLE_CLIENT_ID`).
+   - Keep existing authorized redirect URI: `http://localhost:4000/auth/google/callback` (web).
+3. **Create an iOS OAuth client** (Application type: iOS):
+   - Name: e.g. `Life iOS`
+   - Bundle ID: `sh.mattsmith.life` (must match `app.json`)
+   - Copy the **Client ID** → `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
+4. **Do not use Expo Go for Google sign-in.** Google rejects `exp://` redirects. Use a **development build**:
+   ```bash
+   cd apps/mobile
+   npx expo run:ios
+   ```
+   Ensure `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` is set before prebuild/run so the Google URL scheme is embedded in the app.
+5. Ensure your Google account email is in root `.env` `ALLOWED_EMAILS` (same allowlist as web).
+
+#### `apps/mobile/.env`
+
+```bash
+# iOS Simulator → localhost works
+EXPO_PUBLIC_API_URL=http://localhost:4000
+
+# Physical device → use your Mac’s LAN IP (API must be reachable on the network)
+# EXPO_PUBLIC_API_URL=http://192.168.x.x:4000
+
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=<same as GOOGLE_CLIENT_ID>
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=<iOS OAuth client ID>
+```
+
+Restart Expo after changing `.env` (env is baked in at Metro start).
+
+### 5.2 Smoke-test that setup worked
+
+1. **API up:** `curl http://localhost:4000/health` → `{"status":"ok"}`
+2. **Start mobile:** `npm run dev:mobile` → press `i` for iOS Simulator (or scan QR for a device).
+3. **Sign-in screen** shows brand **Life** and **Continue with Google**.
+4. Tap **Continue with Google**, pick an allowlisted account.
+5. **Success:** lands on **Tasks** tab (placeholder), Settings (gear) shows your name/email, Sign out works.
+6. **Optional API check** (after a successful sign-in you can also hit refresh):
+
+```bash
+# Should reject without a token
+curl -s -o /dev/null -w "%{http_code}\n" -X POST http://localhost:4000/auth/mobile/refresh \
+  -H 'Content-Type: application/json' -d '{"refreshToken":"invalid"}'
+# → 401
+```
+
+**Common failures**
+
+| Symptom | Likely cause |
+|---------|----------------|
+| App crash on launch about Google client ID | Missing `EXPO_PUBLIC_GOOGLE_*` in `apps/mobile/.env` |
+| AccessDenied after Google | Email not in `ALLOWED_EMAILS`, or API can’t verify token (`GOOGLE_CLIENT_ID` mismatch) |
+| Network / failed fetch on device | `EXPO_PUBLIC_API_URL` still `localhost` — use Mac LAN IP |
+| Redirect / cancelled sign-in | Wrong iOS bundle ID in Google Console vs `app.json` / Expo Go |
+| **Google “Error 400: invalid_request” / Access blocked** | **Expo Go is not supported for Google OAuth.** Google rejects `exp://…` redirect URIs. Use an iOS Simulator / device **development build** (`npx expo run:ios` or EAS), not Expo Go. See [Expo Google auth](https://docs.expo.dev/guides/google-authentication/). |
 
 ---
 
@@ -237,3 +317,8 @@ All discovery questions resolved 2026-09-02.
 | 2026-09-02 | Module depth: full tasks/recipes/gear; finance inbox+shopping |
 | 2026-09-02 | Cross-cutting: comments, push, no demo, iOS 18+ |
 | 2026-09-02 | **Discovery complete** — all Q&A resolved; budget summary removed; settings/push/details finalized |
+| 2026-09-02 | **Phase 1–2 implemented** — mobile auth API, Expo shell, tabs, sign-in, settings |
+| 2026-09-03 | Fixed Expo monorepo start (`expo-router/_ctx-shared`); Metro config; typedRoutes off for npm workspaces |
+| 2026-09-04 | Pin `expo-modules-jsi@57.0.4` — Xcode 26.2 rejects `SWIFT_RETURNS_RETAINED` on constructors in 57.0.5+ ([expo#49214](https://github.com/expo/expo/issues/49214)) |
+| 2026-09-07 | Replaced pin with `postinstall` patch — `expo-modules-core` nests `expo-modules-jsi@57.0.7`, so root override never reached the file Xcode compiles |
+| 2026-09-07 | Removed Xcode 26.2 `postinstall` workaround after upgrading to Xcode 26.6 |

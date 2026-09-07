@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { OAuth2Client } from "google-auth-library";
-import { prisma } from "@life/db";
-import { isEmailAllowlisted, parseAllowedEmails } from "@life/shared";
 import { signAuthToken } from "./jwt";
+import { upsertUserFromGoogleProfile } from "./google-user";
 import { clearSessionCookie, setSessionCookie } from "./session-cookie";
+import { revokeRefreshToken } from "./refresh-token";
 
 const router = Router();
 
@@ -21,21 +21,6 @@ function getOAuthClient() {
 
 function getWebUrl() {
   return process.env.WEB_URL ?? "http://localhost:3000";
-}
-
-async function linkUserToHousehold(userId: string) {
-  const household = await prisma.household.findFirst({
-    orderBy: { createdAt: "asc" },
-  });
-
-  if (!household) {
-    return;
-  }
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: { householdId: household.id },
-  });
 }
 
 router.get("/google", (_req, res) => {
@@ -72,41 +57,13 @@ router.get("/google/callback", async (req, res) => {
       audience: process.env.GOOGLE_CLIENT_ID,
     });
 
-    const payload = ticket.getPayload();
-    const email = payload?.email;
-    const allowedEmails = parseAllowedEmails(process.env.ALLOWED_EMAILS);
-
-    if (!email || !isEmailAllowlisted(email, allowedEmails)) {
+    const user = await upsertUserFromGoogleProfile(ticket.getPayload() ?? {});
+    if (!user) {
       res.redirect(`${webUrl}/auth/callback?error=AccessDenied`);
       return;
     }
 
-    const user = await prisma.user.upsert({
-      where: { email },
-      update: {
-        name: payload?.name ?? null,
-        image: payload?.picture ?? null,
-        emailVerified: payload?.email_verified ? new Date() : null,
-      },
-      create: {
-        email,
-        name: payload?.name ?? null,
-        image: payload?.picture ?? null,
-        emailVerified: payload?.email_verified ? new Date() : null,
-      },
-    });
-
-    if (!user.householdId) {
-      await linkUserToHousehold(user.id);
-    }
-
-    const token = await signAuthToken({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      image: user.image,
-    });
-
+    const token = await signAuthToken(user);
     setSessionCookie(req, res, token);
     res.redirect(`${webUrl}/auth/callback`);
   } catch (error) {
@@ -115,7 +72,14 @@ router.get("/google/callback", async (req, res) => {
   }
 });
 
-router.post("/logout", (req, res) => {
+router.post("/logout", async (req, res) => {
+  const refreshToken =
+    typeof req.body?.refreshToken === "string" ? req.body.refreshToken.trim() : null;
+
+  if (refreshToken) {
+    await revokeRefreshToken(refreshToken);
+  }
+
   clearSessionCookie(req, res);
   res.status(204).end();
 });

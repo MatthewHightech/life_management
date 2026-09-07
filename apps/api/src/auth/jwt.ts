@@ -1,6 +1,6 @@
 import { createSecretKey } from "crypto";
 import { SignJWT, jwtVerify } from "jose";
-import { AuthUser, sessionMaxAgeSeconds } from "@life/shared";
+import { AuthUser, accessTokenMaxAgeSeconds, sessionMaxAgeSeconds } from "@life/shared";
 
 const JWT_ISSUER = "life-management-api";
 const JWT_AUDIENCE = "life-management-clients";
@@ -15,7 +15,10 @@ function getSecretKey() {
   return createSecretKey(Buffer.from(secret));
 }
 
-export async function signAuthToken(user: AuthUser): Promise<string> {
+export async function signAuthToken(
+  user: AuthUser,
+  maxAgeSeconds: number = sessionMaxAgeSeconds,
+): Promise<string> {
   return new SignJWT({
     email: user.email,
     name: user.name ?? undefined,
@@ -26,8 +29,12 @@ export async function signAuthToken(user: AuthUser): Promise<string> {
     .setIssuer(JWT_ISSUER)
     .setAudience(JWT_AUDIENCE)
     .setIssuedAt()
-    .setExpirationTime(`${sessionMaxAgeSeconds}s`)
+    .setExpirationTime(`${maxAgeSeconds}s`)
     .sign(getSecretKey());
+}
+
+export async function signAccessToken(user: AuthUser): Promise<string> {
+  return signAuthToken(user, accessTokenMaxAgeSeconds);
 }
 
 export async function verifyAuthToken(token: string): Promise<AuthUser | null> {

@@ -43,6 +43,9 @@ Private household app (tasks, finance, calendar). Monorepo: Next.js web + Expres
 ```bash
 docker compose up
 ```
+```bash
+npm run dev:mobile
+```
 
 Code is volume-mounted; API and web hot-reload. Containers run `npm install` on start so new dependencies sync automatically.
 

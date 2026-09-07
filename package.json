@@ -10,6 +10,7 @@
     "dev": "docker compose up",
     "dev:api": "npm run dev -w @life/api",
     "dev:web": "npm run dev -w @life/web",
+    "dev:mobile": "npm run start -w @life/mobile",
     "docker:prod": "docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build",
     "deploy": "./scripts/deploy.sh",
     "backup:db": "./scripts/backup-db.sh",
@@ -18,10 +19,10 @@
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "db:generate": "npm run db:generate -w @life/db",
-    "db:migrate": "npm run db:migrate -w @life/db",
-    "db:migrate:deploy": "npm run db:migrate:deploy -w @life/db",
-    "db:seed": "npm run db:seed -w @life/db",
-    "db:studio": "npm run db:studio -w @life/db",
+    "db:migrate": "dotenv -e .env -- npm run db:migrate -w @life/db",
+    "db:migrate:deploy": "dotenv -e .env -- npm run db:migrate:deploy -w @life/db",
+    "db:seed": "dotenv -e .env -- npm run db:seed -w @life/db",
+    "db:studio": "dotenv -e .env -- npm run db:studio -w @life/db",
     "schema:print": "npm run schema:print -w @life/graphql",
     "codegen": "npm run schema:print && graphql-codegen --config codegen.ts",
     "test": "vitest run",
@@ -34,7 +35,8 @@
     "@graphql-codegen/typescript": "^4.1.6",
     "@graphql-codegen/typescript-operations": "^4.6.1",
     "@playwright/test": "^1.53.0",
-    "typescript": "^5.8.3",
+    "dotenv-cli": "^8.0.0",
+    "typescript": "~6.0.3",
     "vitest": "^3.2.0"
   }
 }

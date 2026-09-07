@@ -32,6 +32,7 @@ services:
       UPLOAD_DIR: /data/uploads
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_IOS_CLIENT_ID: ${GOOGLE_IOS_CLIENT_ID:-}
       ALLOWED_EMAILS: ${ALLOWED_EMAILS:-you@example.com,partner@example.com}
       PLAID_CLIENT_ID: ${PLAID_CLIENT_ID:-}
       PLAID_SECRET: ${PLAID_SECRET:-}
@@ -59,7 +60,8 @@ services:
       - .:/app
       - root_node_modules:/app/node_modules
     depends_on:
-      - api
+      api:
+        condition: service_started
 
 volumes:
   postgres_data:
