@@ -8,6 +8,8 @@
     "ios": "expo run:ios",
     "ios:device": "expo run:ios --device",
     "android": "expo run:android",
+    "codegen": "npm run codegen --prefix ../..",
+    "pretypecheck": "npm run codegen",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
