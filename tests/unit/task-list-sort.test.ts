@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { compareActiveListTasks, partitionListTasks } from "../../apps/web/src/lib/task-list-sort";
+import { compareActiveListTasks, partitionListTasks } from "@life/shared";
+
 
 type BoardTask = {
   id: string;

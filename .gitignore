@@ -46,3 +46,4 @@ yarn-error.log*
 
 # graphql codegen (regenerate with: npm run codegen)
 apps/web/src/graphql/generated/
+apps/mobile/src/graphql/generated/

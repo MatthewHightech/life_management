@@ -48,6 +48,14 @@ export function formatLongDate(value: Date | string): string {
   return format(date, "MMMM d, yyyy");
 }
 
+export function formatDateTime(value: Date | string): string {
+  const date = typeof value === "string" ? parseISO(value) : value;
+  if (!isValid(date)) {
+    throw new Error("Invalid date value");
+  }
+  return format(date, "MMM d, h:mm a");
+}
+
 export function formatCalendarGroupLabel(value: Date | string): string {
   const date = typeof value === "string" ? parseDisplayDate(value) : value;
   return format(date, "EEE, MMM d");

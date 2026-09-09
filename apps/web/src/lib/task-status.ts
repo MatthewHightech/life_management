@@ -1,4 +1,11 @@
-import type { TaskStatus } from "@/graphql";
+import {
+  TASK_PRIORITIES,
+  TASK_PRIORITY_LABELS,
+  TASK_STATUS_LABELS,
+  TASK_STATUSES,
+  type TaskPriority,
+  type TaskStatus,
+} from "@life/shared";
 
 export type KanbanColumn = {
   status: TaskStatus;
@@ -11,51 +18,51 @@ export type KanbanColumn = {
 export const kanbanColumns: KanbanColumn[] = [
   {
     status: "BACKLOG",
-    label: "Backlog",
+    label: TASK_STATUS_LABELS.BACKLOG,
     dotClass: "bg-status-backlog",
     accentClass: "border-t-status-backlog",
     chipClass: "bg-[#e2e6ea] text-[#495057]",
   },
   {
     status: "TODO",
-    label: "Todo",
+    label: TASK_STATUS_LABELS.TODO,
     dotClass: "bg-status-todo",
     accentClass: "border-t-status-todo",
     chipClass: "bg-status-todo text-on-primary",
   },
   {
     status: "IN_PROGRESS",
-    label: "In progress",
+    label: TASK_STATUS_LABELS.IN_PROGRESS,
     dotClass: "bg-status-in-progress",
     accentClass: "border-t-status-in-progress",
     chipClass: "bg-status-in-progress text-on-primary",
   },
   {
     status: "WAITING",
-    label: "Waiting",
+    label: TASK_STATUS_LABELS.WAITING,
     dotClass: "bg-status-waiting",
     accentClass: "border-t-status-waiting",
     chipClass: "bg-status-waiting text-on-primary",
   },
   {
     status: "DONE",
-    label: "Done",
+    label: TASK_STATUS_LABELS.DONE,
     dotClass: "bg-status-done",
     accentClass: "border-t-status-done",
     chipClass: "bg-status-done text-on-primary",
   },
 ];
 
-export const priorityLabels: Record<string, string> = {
-  LOW: "Low",
-  MEDIUM: "Medium",
-  HIGH: "High",
-  URGENT: "Urgent",
-};
+export const priorityLabels: Record<TaskPriority, string> = { ...TASK_PRIORITY_LABELS };
 
-export const taskPriorities = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
+export const taskPriorities = TASK_PRIORITIES;
+
+export const taskStatuses = TASK_STATUSES;
 
 export function statusLabel(status: string) {
+  if (status in TASK_STATUS_LABELS) {
+    return TASK_STATUS_LABELS[status as TaskStatus];
+  }
   return status.replaceAll("_", " ").toLowerCase().replace(/^\w/, (character) => character.toUpperCase());
 }
 

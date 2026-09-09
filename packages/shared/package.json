@@ -11,7 +11,8 @@
     "./allowlist": "./src/allowlist.ts",
     "./auth": "./src/auth.ts",
     "./dates": "./src/dates.ts",
-    "./meal-plan": "./src/meal-plan.ts"
+    "./meal-plan": "./src/meal-plan.ts",
+    "./tasks": "./src/tasks.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

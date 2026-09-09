@@ -1,4 +1,4 @@
-import type { TaskPriority, TaskStatus } from "@/graphql";
+import { toggleAssigneeId, type TaskPriority, type TaskStatus } from "@life/shared";
 import {
   kanbanColumns,
   priorityChipClass,
@@ -7,6 +7,8 @@ import {
   statusLabel,
   taskPriorities,
 } from "@/lib/task-status";
+
+export { toggleAssigneeId };
 
 type TaskPillOption<T extends string> = {
   value: T;
@@ -37,10 +39,4 @@ export function statusTriggerDisplay(status: TaskStatus) {
     label: column?.label ?? statusLabel(status),
     chipClassName: column?.chipClass ?? statusChipClass(status),
   };
-}
-
-export function toggleAssigneeId(selectedIds: string[], userId: string): string[] {
-  return selectedIds.includes(userId)
-    ? selectedIds.filter((id) => id !== userId)
-    : [...selectedIds, userId];
 }

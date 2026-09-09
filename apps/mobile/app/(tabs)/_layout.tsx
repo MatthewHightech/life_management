@@ -1,6 +1,6 @@
 import { SymbolView } from "expo-symbols";
-import { Link, Tabs } from "expo-router";
-import { Pressable, StyleSheet } from "react-native";
+import { Tabs } from "expo-router";
+import { StyleSheet } from "react-native";
 import { theme } from "@/constants/theme";
 
 export default function TabLayout() {
@@ -20,22 +20,9 @@ export default function TabLayout() {
         name="tasks"
         options={{
           title: "Tasks",
+          headerShown: false,
           tabBarIcon: ({ color }) => (
             <SymbolView name={{ ios: "checklist", android: "list", web: "list" }} tintColor={color} size={24} />
-          ),
-          headerRight: () => (
-            <Link href="/settings" asChild>
-              <Pressable style={styles.settingsButton} accessibilityLabel="Settings">
-                {({ pressed }) => (
-                  <SymbolView
-                    name={{ ios: "gearshape", android: "settings", web: "settings" }}
-                    size={22}
-                    tintColor={theme.primary}
-                    style={{ opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
           ),
         }}
       />
@@ -75,6 +62,15 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Settings",
+          tabBarIcon: ({ color }) => (
+            <SymbolView name={{ ios: "gearshape", android: "settings", web: "settings" }} tintColor={color} size={24} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
@@ -89,8 +85,5 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontWeight: "600",
-  },
-  settingsButton: {
-    marginRight: 16,
   },
 });

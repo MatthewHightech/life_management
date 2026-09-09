@@ -66,5 +66,15 @@ export function createApolloClient(getAccessToken: TokenGetter, refreshAccessTok
   return new ApolloClient({
     link: ApolloLink.from([refreshLink, authLink, httpLink]),
     cache: new InMemoryCache(),
+    defaultOptions: {
+      watchQuery: {
+        // Show cache immediately, always hit the network in the background.
+        fetchPolicy: "cache-and-network",
+        nextFetchPolicy: "cache-and-network",
+      },
+      query: {
+        fetchPolicy: "network-only",
+      },
+    },
   });
 }

@@ -1,7 +1,7 @@
 # Life Management — Mobile App
 
-> **Status:** Phase 1 in progress — API auth + app shell complete  
-> **Last updated:** 2026-09-02  
+> **Status:** Phase 3 in progress — Tasks module + mobile GraphQL data layer  
+> **Last updated:** 2026-09-07  
 > **Audience:** Project owner, future contributors, LLM coding agents  
 > **Purpose:** Requirements and decisions for the React Native companion app.  
 > **Related:** [`requirements.md`](requirements.md) · [`design/DESIGN.md`](design/DESIGN.md)
@@ -173,7 +173,7 @@ Meals tab uses segmented control: **Grocery | Recipes**.
 |-------|--------|-------|
 | 1. API mobile auth | **Done** | `RefreshToken` model, `/auth/mobile/google`, `/auth/mobile/refresh`, logout revokes refresh |
 | 2. App shell | **Done** | `apps/mobile` Expo app, tabs, sign-in, settings, Apollo Bearer client |
-| 3. Tasks | Pending | — |
+| 3. Tasks | In progress | List/create/edit/comments + shared task helpers + mobile codegen |
 | 4. Finance | Pending | — |
 | 5. Meals | Pending | — |
 | 6. Receipts | Pending | — |
@@ -322,3 +322,4 @@ All discovery questions resolved 2026-09-02.
 | 2026-09-04 | Pin `expo-modules-jsi@57.0.4` — Xcode 26.2 rejects `SWIFT_RETURNS_RETAINED` on constructors in 57.0.5+ ([expo#49214](https://github.com/expo/expo/issues/49214)) |
 | 2026-09-07 | Replaced pin with `postinstall` patch — `expo-modules-core` nests `expo-modules-jsi@57.0.7`, so root override never reached the file Xcode compiles |
 | 2026-09-07 | Removed Xcode 26.2 `postinstall` workaround after upgrading to Xcode 26.6 |
+| 2026-09-07 | **Phase 3 started** — Tasks list/create/edit/comments; mobile GraphQL codegen; `@life/shared` task sort/labels; cohesive `src/data` layer |
