@@ -3,6 +3,7 @@ import {
   createPlaidClient,
   decryptPlaidAccessToken,
   encryptPlaidAccessToken,
+  formatPlaidErrorMessage,
   isCreditCardAccount,
   PLAID_COUNTRY_CODES,
   syncBankConnection,
@@ -106,12 +107,17 @@ export const bankResolvers = {
         linkTokenRequest.redirect_uri = process.env.PLAID_REDIRECT_URI;
       }
 
-      const response = await client.linkTokenCreate(linkTokenRequest);
-
-      return {
-        linkToken: response.data.link_token,
-        expiration: response.data.expiration,
-      };
+      try {
+        const response = await client.linkTokenCreate(linkTokenRequest);
+        return {
+          linkToken: response.data.link_token,
+          expiration: response.data.expiration,
+        };
+      } catch (error) {
+        const message = formatPlaidErrorMessage(error);
+        console.error("[plaid] linkTokenCreate failed", message);
+        throw new Error(message, { cause: error });
+      }
     },
 
     completePlaidLink: async (
@@ -122,93 +128,102 @@ export const bankResolvers = {
       const { householdId } = await requireHouseholdUser(context);
       const client = createPlaidClient();
 
-      const exchange = await client.itemPublicTokenExchange({
-        public_token: args.publicToken,
-      });
-
-      const accessToken = exchange.data.access_token;
-      const itemId = exchange.data.item_id;
-
-      const existing = await context.prisma.bankConnection.findUnique({
-        where: { plaidItemId: itemId },
-      });
-      if (existing && existing.householdId !== householdId) {
-        throw new ForbiddenError("This bank connection belongs to another household");
-      }
-
-      const itemResponse = await client.itemGet({ access_token: accessToken });
-      const institutionId = itemResponse.data.item.institution_id ?? null;
-      let institutionName = "Connected bank";
-      if (institutionId) {
-        try {
-          const institution = await client.institutionsGetById({
-            institution_id: institutionId,
-            country_codes: [...PLAID_COUNTRY_CODES],
-          });
-          institutionName = institution.data.institution.name;
-        } catch {
-          // Keep fallback name.
-        }
-      }
-
-      const accountsResponse = await client.accountsGet({ access_token: accessToken });
-      const encrypted = encryptPlaidAccessToken(accessToken);
-
-      const connection = await context.prisma.$transaction(async (tx) => {
-        const saved = await tx.bankConnection.upsert({
-          where: { plaidItemId: itemId },
-          create: {
-            householdId,
-            plaidItemId: itemId,
-            accessTokenEncrypted: encrypted,
-            institutionId,
-            institutionName,
-            status: "PENDING_SETUP",
-          },
-          update: {
-            accessTokenEncrypted: encrypted,
-            institutionId,
-            institutionName,
-            status: "PENDING_SETUP",
-            lastError: null,
-          },
+      try {
+        const exchange = await client.itemPublicTokenExchange({
+          public_token: args.publicToken,
         });
 
-        for (const account of accountsResponse.data.accounts) {
-          await tx.bankAccount.upsert({
-            where: {
-              connectionId_plaidAccountId: {
-                connectionId: saved.id,
-                plaidAccountId: account.account_id,
-              },
-            },
+        const accessToken = exchange.data.access_token;
+        const itemId = exchange.data.item_id;
+
+        const existing = await context.prisma.bankConnection.findUnique({
+          where: { plaidItemId: itemId },
+        });
+        if (existing && existing.householdId !== householdId) {
+          throw new ForbiddenError("This bank connection belongs to another household");
+        }
+
+        const itemResponse = await client.itemGet({ access_token: accessToken });
+        const institutionId = itemResponse.data.item.institution_id ?? null;
+        let institutionName = "Connected bank";
+        if (institutionId) {
+          try {
+            const institution = await client.institutionsGetById({
+              institution_id: institutionId,
+              country_codes: [...PLAID_COUNTRY_CODES],
+            });
+            institutionName = institution.data.institution.name;
+          } catch {
+            // Keep fallback name.
+          }
+        }
+
+        const accountsResponse = await client.accountsGet({ access_token: accessToken });
+        const encrypted = encryptPlaidAccessToken(accessToken);
+
+        const connection = await context.prisma.$transaction(async (tx) => {
+          const saved = await tx.bankConnection.upsert({
+            where: { plaidItemId: itemId },
             create: {
-              connectionId: saved.id,
-              plaidAccountId: account.account_id,
-              name: account.name,
-              officialName: account.official_name ?? null,
-              mask: account.mask ?? null,
-              type: account.type,
-              subtype: account.subtype ?? null,
-              syncEnabled: false,
+              householdId,
+              plaidItemId: itemId,
+              accessTokenEncrypted: encrypted,
+              institutionId,
+              institutionName,
+              status: "PENDING_SETUP",
             },
             update: {
-              name: account.name,
-              officialName: account.official_name ?? null,
-              mask: account.mask ?? null,
-              type: account.type,
-              subtype: account.subtype ?? null,
+              accessTokenEncrypted: encrypted,
+              institutionId,
+              institutionName,
+              status: "PENDING_SETUP",
+              lastError: null,
             },
           });
-        }
 
-        return tx.bankConnection.findUniqueOrThrow({
-          where: { id: saved.id },
-          include: { accounts: { orderBy: [{ name: "asc" }] } },
+          for (const account of accountsResponse.data.accounts) {
+            await tx.bankAccount.upsert({
+              where: {
+                connectionId_plaidAccountId: {
+                  connectionId: saved.id,
+                  plaidAccountId: account.account_id,
+                },
+              },
+              create: {
+                connectionId: saved.id,
+                plaidAccountId: account.account_id,
+                name: account.name,
+                officialName: account.official_name ?? null,
+                mask: account.mask ?? null,
+                type: account.type,
+                subtype: account.subtype ?? null,
+                syncEnabled: false,
+              },
+              update: {
+                name: account.name,
+                officialName: account.official_name ?? null,
+                mask: account.mask ?? null,
+                type: account.type,
+                subtype: account.subtype ?? null,
+              },
+            });
+          }
+
+          return tx.bankConnection.findUniqueOrThrow({
+            where: { id: saved.id },
+            include: { accounts: { orderBy: [{ name: "asc" }] } },
+          });
         });
-      });
 
-      return toBankConnectionGraph(connection);
+        return toBankConnectionGraph(connection);
+      } catch (error) {
+        if (error instanceof ForbiddenError) {
+          throw error;
+        }
+        const message = formatPlaidErrorMessage(error);
+        console.error("[plaid] completePlaidLink failed", message);
+        throw new Error(message, { cause: error });
+      }
     },
 
     updateBankAccountSync: async (

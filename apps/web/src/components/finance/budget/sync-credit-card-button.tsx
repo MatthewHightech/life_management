@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "@apollo/client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePlaidLink } from "react-plaid-link";
 import { BankAccountSetupModal } from "@/components/finance/budget/bank-account-setup-modal";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,58 @@ type BankConnection = BankConnectionsQuery["bankConnections"][number];
 type SyncCreditCardButtonProps = {
   className?: string;
 };
+
+type PlaidLinkLauncherProps = {
+  token: string;
+  onSuccess: (publicToken: string) => void;
+  onExit: () => void;
+};
+
+/**
+ * Mount only while a link token exists. Keeping usePlaidLink on the budget page
+ * permanently re-embeds link-initialize.js on remount/navigation and triggers
+ * Plaid's "embedded more than once" warning.
+ */
+function PlaidLinkLauncher({ token, onSuccess, onExit }: PlaidLinkLauncherProps) {
+  const openedTokenRef = useRef<string | null>(null);
+  const { open, ready } = usePlaidLink({
+    token,
+    onSuccess,
+    onExit,
+  });
+
+  useEffect(() => {
+    if (!ready || openedTokenRef.current === token) {
+      return;
+    }
+
+    // Wait for our Radix intro modal to fully unmount — it sets pointer-events:none on
+    // the rest of the document while open, which blocks clicks on the Plaid iframe.
+    const timer = window.setTimeout(() => {
+      openedTokenRef.current = token;
+      open();
+    }, 50);
+
+    return () => window.clearTimeout(timer);
+  }, [ready, open, token]);
+
+  return null;
+}
+
+function apolloErrorMessage(error: unknown, fallback: string) {
+  if (error && typeof error === "object") {
+    const graphQLErrors = (error as { graphQLErrors?: Array<{ message?: string }> }).graphQLErrors;
+    const fromGraphql = graphQLErrors?.find((entry) => typeof entry.message === "string")?.message;
+    if (fromGraphql) {
+      return fromGraphql;
+    }
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.length > 0) {
+      return message.replace(/^GraphQL error:\s*/i, "");
+    }
+  }
+  return fallback;
+}
 
 export function SyncCreditCardButton({ className }: SyncCreditCardButtonProps) {
   const demoMode = useDemoMode();
@@ -44,7 +96,7 @@ export function SyncCreditCardButton({ className }: SyncCreditCardButtonProps) {
     awaitRefetchQueries: true,
   });
 
-  const onSuccess = useCallback(
+  const handleLinkSuccess = useCallback(
     (publicToken: string) => {
       void completeLink({ variables: { publicToken } })
         .then((result) => {
@@ -56,33 +108,16 @@ export function SyncCreditCardButton({ className }: SyncCreditCardButtonProps) {
           setLinkToken(null);
         })
         .catch((err: unknown) => {
-          setError(err instanceof Error ? err.message : "Could not complete bank connection.");
+          setLinkToken(null);
+          setError(apolloErrorMessage(err, "Could not complete bank connection."));
         });
     },
     [completeLink],
   );
 
-  const { open, ready } = usePlaidLink({
-    token: linkToken,
-    onSuccess,
-    onExit: () => {
-      setLinkToken(null);
-    },
-  });
-
-  useEffect(() => {
-    if (!linkToken || !ready) {
-      return;
-    }
-
-    // Wait for our Radix intro modal to fully unmount — it sets pointer-events:none on
-    // the rest of the document while open, which blocks clicks on the Plaid iframe.
-    const timer = window.setTimeout(() => {
-      open();
-    }, 50);
-
-    return () => window.clearTimeout(timer);
-  }, [linkToken, ready, open]);
+  const handleLinkExit = useCallback(() => {
+    setLinkToken(null);
+  }, []);
 
   async function startLink() {
     setError(null);
@@ -97,7 +132,7 @@ export function SyncCreditCardButton({ className }: SyncCreditCardButtonProps) {
       }
       setLinkToken(token);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not start bank connection.");
+      setError(apolloErrorMessage(err, "Could not start bank connection."));
       setIntroOpen(true);
     }
   }
@@ -111,7 +146,7 @@ export function SyncCreditCardButton({ className }: SyncCreditCardButtonProps) {
         ),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not sync credit cards.");
+      setError(apolloErrorMessage(err, "Could not sync credit cards."));
     }
   }
 
@@ -139,6 +174,14 @@ export function SyncCreditCardButton({ className }: SyncCreditCardButtonProps) {
       >
         {syncing ? "Syncing…" : "Sync Credit Card"}
       </Button>
+
+      {linkToken ? (
+        <PlaidLinkLauncher
+          token={linkToken}
+          onSuccess={handleLinkSuccess}
+          onExit={handleLinkExit}
+        />
+      ) : null}
 
       <Modal
         open={introOpen}

@@ -3,6 +3,7 @@ import { BudgetPurchaseSource } from "@prisma/client";
 import { getBudgetCalendarPeriod } from "@life/shared";
 import { createPlaidClient } from "./client";
 import { decryptPlaidAccessToken } from "./crypto";
+import { formatPlaidErrorMessage, getPlaidErrorDetails } from "./errors";
 import {
   isCreditCardAccount,
   isImportableCreditPurchase,
@@ -142,12 +143,18 @@ export async function syncBankConnection(
 
     return { connectionId: connection.id, importedCount, skippedCount };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Bank sync failed";
+    const message = formatPlaidErrorMessage(error);
+    const details = getPlaidErrorDetails(error);
+    console.error("[plaid] transactionsSync failed", {
+      connectionId: connection.id,
+      message,
+      ...details,
+    });
     await prisma.bankConnection.update({
       where: { id: connection.id },
       data: { status: "ERROR", lastError: message },
     });
-    throw error;
+    throw new Error(message, { cause: error });
   }
 }
 

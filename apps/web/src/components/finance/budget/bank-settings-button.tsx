@@ -19,13 +19,29 @@ import { cn } from "@/lib/cn";
 import { useDemoMode } from "@/demo/demo-context";
 import { DEMO_UNAVAILABLE_MESSAGE } from "@/demo/mode";
 
+function apolloErrorMessage(error: unknown, fallback: string) {
+  if (error && typeof error === "object") {
+    const graphQLErrors = (error as { graphQLErrors?: Array<{ message?: string }> }).graphQLErrors;
+    const fromGraphql = graphQLErrors?.find((entry) => typeof entry.message === "string")?.message;
+    if (fromGraphql) {
+      return fromGraphql;
+    }
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.length > 0) {
+      return message.replace(/^GraphQL error:\s*/i, "");
+    }
+  }
+  return fallback;
+}
+
 export function BankSettingsButton() {
   const demoMode = useDemoMode();
   const [open, setOpen] = useState(false);
   const [editConnectionId, setEditConnectionId] = useState<string | null>(null);
   const [disconnectId, setDisconnectId] = useState<string | null>(null);
+  const [syncErrors, setSyncErrors] = useState<Record<string, string>>({});
 
-  const { data, loading } = useQuery<BankConnectionsQuery>(BANK_CONNECTIONS_QUERY);
+  const { data, loading, refetch } = useQuery<BankConnectionsQuery>(BANK_CONNECTIONS_QUERY);
   const connections = data?.bankConnections ?? [];
 
   const [disconnect, { loading: disconnecting }] = useMutation(DISCONNECT_BANK_CONNECTION_MUTATION, {
@@ -62,6 +78,21 @@ export function BankSettingsButton() {
   const disconnectTarget =
     connections.find((connection) => connection.id === disconnectId) ?? null;
 
+  async function handleSyncNow(connectionId: string) {
+    setSyncErrors((current) => {
+      const next = { ...current };
+      delete next[connectionId];
+      return next;
+    });
+    try {
+      await syncNow({ variables: { connectionId } });
+    } catch (error) {
+      const message = apolloErrorMessage(error, "Could not sync this bank connection.");
+      setSyncErrors((current) => ({ ...current, [connectionId]: message }));
+      void refetch();
+    }
+  }
+
   return (
     <>
       <button
@@ -90,6 +121,7 @@ export function BankSettingsButton() {
           <ul className="space-y-3">
             {connections.map((connection) => {
               const enabledCount = connection.accounts.filter((account) => account.syncEnabled).length;
+              const syncError = syncErrors[connection.id] ?? connection.lastError;
               return (
                 <li
                   key={connection.id}
@@ -104,9 +136,10 @@ export function BankSettingsButton() {
                         {connection.lastSyncedAt
                           ? ` · Last sync ${formatShortDate(connection.lastSyncedAt)}`
                           : " · Not synced yet"}
+                        {connection.status === "ERROR" ? " · Needs attention" : ""}
                       </p>
-                      {connection.lastError ? (
-                        <p className="mt-1 text-xs text-error">{connection.lastError}</p>
+                      {syncError ? (
+                        <p className="mt-1 break-words text-xs text-error">{syncError}</p>
                       ) : null}
                       <div className="mt-3 flex flex-wrap gap-2">
                         <Button
@@ -122,9 +155,7 @@ export function BankSettingsButton() {
                           variant="secondary"
                           className="px-3 py-1.5 text-xs"
                           disabled={syncing || enabledCount === 0}
-                          onClick={() =>
-                            void syncNow({ variables: { connectionId: connection.id } })
-                          }
+                          onClick={() => void handleSyncNow(connection.id)}
                         >
                           Sync now
                         </Button>
