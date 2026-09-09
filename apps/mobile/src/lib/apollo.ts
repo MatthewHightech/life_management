@@ -65,7 +65,22 @@ export function createApolloClient(getAccessToken: TokenGetter, refreshAccessTok
 
   return new ApolloClient({
     link: ApolloLink.from([refreshLink, authLink, httpLink]),
-    cache: new InMemoryCache(),
+    cache: new InMemoryCache({
+      typePolicies: {
+        Query: {
+          fields: {
+            // Replace list results wholesale (create/delete/refetch) instead of
+            // Apollo's default merge warning when array length changes.
+            tasks: {
+              keyArgs: ["filter"],
+              merge(_existing, incoming) {
+                return incoming;
+              },
+            },
+          },
+        },
+      },
+    }),
     defaultOptions: {
       watchQuery: {
         // Show cache immediately, always hit the network in the background.

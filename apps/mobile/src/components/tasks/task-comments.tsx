@@ -15,9 +15,15 @@ import { theme } from "@/constants/theme";
 
 type TaskCommentsSectionProps = {
   taskId: string;
+  onComposerFocus?: () => void;
+  onComposerBlur?: () => void;
 };
 
-export function TaskCommentsSection({ taskId }: TaskCommentsSectionProps) {
+export function TaskCommentsSection({
+  taskId,
+  onComposerFocus,
+  onComposerBlur,
+}: TaskCommentsSectionProps) {
   const { comments, loading, posting, addComment, deleteComment, markRead } = useTaskComments(taskId);
   const [draft, setDraft] = useState("");
   const markedRef = useRef<string | null>(null);
@@ -84,6 +90,8 @@ export function TaskCommentsSection({ taskId }: TaskCommentsSectionProps) {
           placeholderTextColor={theme.textMuted}
           value={draft}
           onChangeText={setDraft}
+          onFocus={onComposerFocus}
+          onBlur={onComposerBlur}
           multiline
         />
         <Pressable

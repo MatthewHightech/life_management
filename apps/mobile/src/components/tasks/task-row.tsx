@@ -70,10 +70,24 @@ export function TaskRow({ task, onPress, onToggleComplete, busy }: TaskRowProps)
             </Text>
           ) : null}
           {task.commentCount > 0 ? (
-            <Text style={styles.comments}>
-              {task.unreadCommentCount > 0 ? `${task.unreadCommentCount} new · ` : ""}
-              {task.commentCount}
-            </Text>
+            <View
+              style={styles.comments}
+              accessibilityLabel={`${task.commentCount} comments${
+                task.unreadCommentCount > 0 ? `, ${task.unreadCommentCount} unread` : ""
+              }`}
+            >
+              <SymbolView
+                name={{
+                  ios: task.unreadCommentCount > 0 ? "bubble.left.fill" : "bubble.left",
+                  android: "chat_bubble",
+                  web: "chat_bubble",
+                }}
+                size={13}
+                tintColor={theme.secondary}
+              />
+              <Text style={styles.commentsCount}>{task.commentCount}</Text>
+              {task.unreadCommentCount > 0 ? <View style={styles.unreadDot} /> : null}
+            </View>
           ) : null}
         </View>
       </View>
@@ -138,8 +152,20 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   comments: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  commentsCount: {
     fontSize: 12,
     color: theme.secondary,
     fontWeight: "600",
+  },
+  unreadDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: theme.secondary,
+    marginLeft: 1,
   },
 });

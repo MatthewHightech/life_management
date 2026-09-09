@@ -40,6 +40,12 @@ export function removeTaskFromBoardCache(cache: ApolloCache<object>, taskId: str
       tasks: existing.tasks.filter((task) => task.id !== taskId),
     };
   });
+
+  const cacheId = cache.identify({ __typename: "Task", id: taskId });
+  if (cacheId) {
+    cache.evict({ id: cacheId });
+    cache.gc();
+  }
 }
 
 export function prependTaskInBoardCache(cache: ApolloCache<object>, createdTask: BoardTask) {

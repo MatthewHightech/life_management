@@ -52,21 +52,14 @@ export default function NewTaskScreen() {
 
     setError(null);
     try {
-      const result = await createTask({
+      await createTask({
         title: trimmed,
         status,
         priority,
         assigneeIds,
         dueDate,
       });
-      const createdId = result.data?.createTask.id;
       router.back();
-      if (createdId) {
-        // Allow modal dismiss, then open detail.
-        setTimeout(() => {
-          router.push(`/(tabs)/tasks/${createdId}`);
-        }, 50);
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create task.");
     }
@@ -125,7 +118,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 18,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.borderSubtle,
     backgroundColor: theme.surface,

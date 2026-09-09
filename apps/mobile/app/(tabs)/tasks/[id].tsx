@@ -1,8 +1,11 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,6 +27,8 @@ import { theme } from "@/constants/theme";
 export default function TaskDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const scrollRef = useRef<ScrollView>(null);
+  const composerFocusedRef = useRef(false);
   const { tasks, users, loading } = useTasksBoard();
   const { updateTask, deleteTask, deleting, updating } = useTaskMutations();
 
@@ -35,6 +40,7 @@ export default function TaskDetailScreen() {
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [composerFocused, setComposerFocused] = useState(false);
 
   useEffect(() => {
     if (!task) {
@@ -46,6 +52,28 @@ export default function TaskDetailScreen() {
     setAssigneeIds(task.assignees.map((user) => user.id));
     setDueDate(task.dueDate ?? null);
   }, [task]);
+
+  function scrollComposerIntoView() {
+    // Extra inset so the Post button clears the keyboard, not just the text field.
+    setTimeout(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    }, 50);
+  }
+
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", () => {
+      if (composerFocusedRef.current) {
+        scrollComposerIntoView();
+      }
+    });
+    return () => show.remove();
+  }, []);
+
+  useEffect(() => {
+    if (composerFocused) {
+      scrollComposerIntoView();
+    }
+  }, [composerFocused]);
 
   async function save(patch?: {
     title?: string;
@@ -118,66 +146,95 @@ export default function TaskDetailScreen() {
             saving || updating ? <ActivityIndicator color={theme.primary} /> : null,
         }}
       />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <TextField
-          label="Title"
-          value={title}
-          onChangeText={setTitle}
-          onEndEditing={() => {
-            if (title.trim() && title.trim() !== task.title) {
-              void save({ title: title.trim() });
-            }
-          }}
-          returnKeyType="done"
-        />
-
-        <StatusPicker
-          value={status}
-          onChange={(next) => {
-            setStatus(next);
-            void save({ status: next });
-          }}
-        />
-
-        <PriorityPicker
-          value={priority}
-          onChange={(next) => {
-            setPriority(next);
-            void save({ priority: next });
-          }}
-        />
-
-        <AssigneePicker
-          users={users}
-          selectedIds={assigneeIds}
-          onChange={(next) => {
-            setAssigneeIds(next);
-            void save({ assigneeIds: next });
-          }}
-        />
-
-        <DueDateField
-          value={dueDate}
-          onChange={(next) => {
-            setDueDate(next);
-            void save({ dueDate: next });
-          }}
-        />
-
-        <TaskCommentsSection taskId={task.id} />
-
-        <Pressable
-          style={[styles.deleteButton, deleting && styles.deleteDisabled]}
-          onPress={confirmDelete}
-          disabled={deleting}
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0}
+      >
+        <ScrollView
+          ref={scrollRef}
+          style={styles.container}
+          contentContainerStyle={[
+            styles.content,
+            composerFocused && styles.contentComposerFocused,
+          ]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
         >
-          {deleting ? (
-            <ActivityIndicator color={theme.error} />
-          ) : (
-            <Text style={styles.deleteText}>Delete task</Text>
-          )}
-        </Pressable>
-      </ScrollView>
+          <TextField
+            label="Title"
+            value={title}
+            onChangeText={setTitle}
+            onEndEditing={() => {
+              if (title.trim() && title.trim() !== task.title) {
+                void save({ title: title.trim() });
+              }
+            }}
+            returnKeyType="done"
+          />
+
+          <StatusPicker
+            value={status}
+            onChange={(next) => {
+              setStatus(next);
+              void save({ status: next });
+            }}
+          />
+
+          <PriorityPicker
+            value={priority}
+            onChange={(next) => {
+              setPriority(next);
+              void save({ priority: next });
+            }}
+          />
+
+          <AssigneePicker
+            users={users}
+            selectedIds={assigneeIds}
+            onChange={(next) => {
+              setAssigneeIds(next);
+              void save({ assigneeIds: next });
+            }}
+          />
+
+          <DueDateField
+            value={dueDate}
+            onChange={(next) => {
+              setDueDate(next);
+              void save({ dueDate: next });
+            }}
+          />
+
+          <TaskCommentsSection
+            taskId={task.id}
+            onComposerFocus={() => {
+              composerFocusedRef.current = true;
+              setComposerFocused(true);
+              scrollComposerIntoView();
+            }}
+            onComposerBlur={() => {
+              composerFocusedRef.current = false;
+              setComposerFocused(false);
+            }}
+          />
+
+          <Pressable
+            style={[styles.deleteButton, deleting && styles.deleteDisabled]}
+            onPress={confirmDelete}
+            disabled={deleting}
+          >
+            {deleting ? (
+              <ActivityIndicator color={theme.error} />
+            ) : (
+              <Text style={styles.deleteText}>Delete task</Text>
+            )}
+          </Pressable>
+
+          {/* Spacer so scrollToEnd keeps the Post button above the keyboard */}
+          {composerFocused ? <View style={styles.composerKeyboardSpacer} /> : null}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </>
   );
 }
@@ -191,6 +248,12 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 20,
     paddingBottom: 48,
+  },
+  contentComposerFocused: {
+    paddingBottom: 24,
+  },
+  composerKeyboardSpacer: {
+    height: 0,
   },
   centered: {
     flex: 1,
