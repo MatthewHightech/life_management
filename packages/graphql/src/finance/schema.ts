@@ -182,7 +182,9 @@ export const financeTypeDefs = /* GraphQL */ `
     allocateBudgetPurchase(purchaseId: ID!, lineItemId: ID!): BudgetPurchaseAllocation!
     deleteBudgetPurchaseAllocation(id: ID!): Boolean!
     createPlaidLinkToken: PlaidLinkToken!
+    createPlaidUpdateLinkToken(connectionId: ID!): PlaidLinkToken!
     completePlaidLink(publicToken: String!): BankConnection!
+    completePlaidUpdate(connectionId: ID!): BankConnection!
     updateBankAccountSync(connectionId: ID!, enabledAccountIds: [ID!]!): BankConnection!
     disconnectBankConnection(connectionId: ID!): Boolean!
     syncBankConnectionNow(connectionId: ID!): BankConnection!

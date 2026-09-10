@@ -758,7 +758,9 @@ class DemoStore {
 
     BankConnections: () => ({ bankConnections: [] }),
     CreatePlaidLinkToken: () => this.bankUnavailable(),
+    CreatePlaidUpdateLinkToken: () => this.bankUnavailable(),
     CompletePlaidLink: () => this.bankUnavailable(),
+    CompletePlaidUpdate: () => this.bankUnavailable(),
     UpdateBankAccountSync: () => this.bankUnavailable(),
     DisconnectBankConnection: () => this.bankUnavailable(),
     SyncBankConnectionNow: () => this.bankUnavailable(),

@@ -12,6 +12,8 @@ COPY packages/db/package.json ./packages/db/
 COPY packages/db/prisma ./packages/db/prisma/
 COPY packages/graphql/package.json ./packages/graphql/
 COPY packages/shared/package.json ./packages/shared/
+COPY packages/plaid/package.json ./packages/plaid/
+COPY packages/recipe-import/package.json ./packages/recipe-import/
 
 RUN npm install
 
@@ -19,4 +21,6 @@ COPY . .
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npm run codegen && npm run dev -w @life/web -- --hostname 0.0.0.0"]
+# Named volume root_node_modules persists across rebuilds; reinstall on start so
+# Linux native deps (e.g. @next/swc-*) stay in sync after lockfile changes.
+CMD ["sh", "-c", "npm install && npm run codegen && npm run dev -w @life/web -- --hostname 0.0.0.0"]

@@ -279,10 +279,28 @@ export const CREATE_PLAID_LINK_TOKEN_MUTATION = gql`
   }
 `;
 
+export const CREATE_PLAID_UPDATE_LINK_TOKEN_MUTATION = gql`
+  mutation CreatePlaidUpdateLinkToken($connectionId: ID!) {
+    createPlaidUpdateLinkToken(connectionId: $connectionId) {
+      linkToken
+      expiration
+    }
+  }
+`;
+
 export const COMPLETE_PLAID_LINK_MUTATION = gql`
   ${BANK_CONNECTION_FIELDS}
   mutation CompletePlaidLink($publicToken: String!) {
     completePlaidLink(publicToken: $publicToken) {
+      ...BankConnectionFields
+    }
+  }
+`;
+
+export const COMPLETE_PLAID_UPDATE_MUTATION = gql`
+  ${BANK_CONNECTION_FIELDS}
+  mutation CompletePlaidUpdate($connectionId: ID!) {
+    completePlaidUpdate(connectionId: $connectionId) {
       ...BankConnectionFields
     }
   }

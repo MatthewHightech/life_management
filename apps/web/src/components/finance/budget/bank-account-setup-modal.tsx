@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { UPDATE_BANK_ACCOUNT_SYNC_MUTATION } from "@/graphql";
 import type { BankConnectionsQuery } from "@/graphql";
+import { apolloErrorMessage } from "@/lib/apollo-error";
 import { BANK_CONNECTIONS_REFETCH } from "@/lib/budget-queries";
 import { cn } from "@/lib/cn";
 
@@ -59,7 +60,7 @@ export function BankAccountSetupModal({
       });
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save account selection.");
+      setError(apolloErrorMessage(err, "Could not save account selection."));
     }
   }
 

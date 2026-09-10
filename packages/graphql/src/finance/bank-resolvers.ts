@@ -120,6 +120,42 @@ export const bankResolvers = {
       }
     },
 
+    createPlaidUpdateLinkToken: async (
+      _parent: unknown,
+      args: { connectionId: string },
+      context: GraphQLContext,
+    ) => {
+      const { householdId, userId } = await requireHouseholdUser(context);
+      const connection = await assertConnectionInHousehold(context, args.connectionId, householdId);
+      const client = createPlaidClient();
+      const accessToken = decryptPlaidAccessToken(connection.accessTokenEncrypted);
+
+      // Update mode: pass access_token and omit products so the user can repair ITEM_LOGIN_REQUIRED.
+      const linkTokenRequest: Parameters<typeof client.linkTokenCreate>[0] = {
+        user: { client_user_id: `${householdId}:${userId}` },
+        client_name: "Life Management",
+        country_codes: [...PLAID_COUNTRY_CODES],
+        language: "en",
+        access_token: accessToken,
+      };
+
+      if (process.env.PLAID_REDIRECT_URI) {
+        linkTokenRequest.redirect_uri = process.env.PLAID_REDIRECT_URI;
+      }
+
+      try {
+        const response = await client.linkTokenCreate(linkTokenRequest);
+        return {
+          linkToken: response.data.link_token,
+          expiration: response.data.expiration,
+        };
+      } catch (error) {
+        const message = formatPlaidErrorMessage(error);
+        console.error("[plaid] update linkTokenCreate failed", message);
+        throw new Error(message, { cause: error });
+      }
+    },
+
     completePlaidLink: async (
       _parent: unknown,
       args: { publicToken: string },
@@ -304,6 +340,41 @@ export const bankResolvers = {
       const { householdId } = await requireHouseholdUser(context);
       const connection = await assertConnectionInHousehold(context, args.connectionId, householdId);
       await syncBankConnection(context.prisma, connection);
+      const refreshed = await context.prisma.bankConnection.findUniqueOrThrow({
+        where: { id: connection.id },
+        include: { accounts: { orderBy: [{ name: "asc" }] } },
+      });
+      return toBankConnectionGraph(refreshed);
+    },
+
+    completePlaidUpdate: async (
+      _parent: unknown,
+      args: { connectionId: string },
+      context: GraphQLContext,
+    ) => {
+      const { householdId } = await requireHouseholdUser(context);
+      const connection = await assertConnectionInHousehold(context, args.connectionId, householdId);
+
+      const hasEnabledSync = connection.accounts.some(
+        (account) => account.syncEnabled && isCreditCardAccount(account),
+      );
+
+      await context.prisma.bankConnection.update({
+        where: { id: connection.id },
+        data: {
+          lastError: null,
+          status: hasEnabledSync ? "ACTIVE" : "PENDING_SETUP",
+        },
+      });
+
+      if (hasEnabledSync) {
+        const forSync = await context.prisma.bankConnection.findUniqueOrThrow({
+          where: { id: connection.id },
+          include: { accounts: { orderBy: [{ name: "asc" }] } },
+        });
+        await syncBankConnection(context.prisma, forSync);
+      }
+
       const refreshed = await context.prisma.bankConnection.findUniqueOrThrow({
         where: { id: connection.id },
         include: { accounts: { orderBy: [{ name: "asc" }] } },
