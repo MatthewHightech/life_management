@@ -18,6 +18,7 @@ type BudgetLineDraftRowProps = {
 export function BudgetLineDraftRow({ sectionId, onCreated, onCancel }: BudgetLineDraftRowProps) {
   const rowRef = useRef<HTMLTableRowElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
+  const committingRef = useRef(false);
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
 
@@ -31,6 +32,8 @@ export function BudgetLineDraftRow({ sectionId, onCreated, onCancel }: BudgetLin
   }, []);
 
   async function commitCreate() {
+    if (committingRef.current) return;
+
     const trimmedName = name.trim();
     const amountCents = parseCadInputToCents(amount);
     if (!trimmedName || amountCents === null) {
@@ -38,16 +41,21 @@ export function BudgetLineDraftRow({ sectionId, onCreated, onCancel }: BudgetLin
       return;
     }
 
-    await createLineItem({
-      variables: {
-        input: {
-          sectionId,
-          name: trimmedName,
-          amountCents,
+    committingRef.current = true;
+    try {
+      await createLineItem({
+        variables: {
+          input: {
+            sectionId,
+            name: trimmedName,
+            amountCents,
+          },
         },
-      },
-    });
-    onCreated();
+      });
+      onCreated();
+    } catch {
+      committingRef.current = false;
+    }
   }
 
   const draftInputClass = cn(inlineFieldInputClass, "max-w-full min-w-0");

@@ -50,9 +50,9 @@ export function DemoChrome() {
           <div className="flex gap-3 rounded-lg border border-border-subtle bg-background p-4">
             <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
             <div>
-              <p className="font-medium">Try it freely</p>
+              <p className="font-medium">Try it for free</p>
               <p className="mt-1 text-text-muted">
-                Create, edit, move, and delete the fictional household data throughout the app.
+                Create, edit, move, and delete the pre-set household data throughout the app.
               </p>
             </div>
           </div>
