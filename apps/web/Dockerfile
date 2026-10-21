@@ -21,6 +21,6 @@ COPY . .
 
 EXPOSE 3000
 
-# Named volume root_node_modules persists across rebuilds; reinstall on start so
+# Named volume web_node_modules persists across rebuilds; reinstall on start so
 # Linux native deps (e.g. @next/swc-*) stay in sync after lockfile changes.
 CMD ["sh", "-c", "npm install && npm run codegen && npm run dev -w @life/web -- --hostname 0.0.0.0"]
