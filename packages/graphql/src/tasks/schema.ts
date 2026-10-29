@@ -31,6 +31,7 @@ export const taskTypeDefs = `#graphql
   type TaskProject {
     id: ID!
     name: String!
+    sortOrder: Int!
     taskCount: Int!
     createdAt: String!
     updatedAt: String!
@@ -133,14 +134,17 @@ export const taskTypeDefs = `#graphql
   extend type Mutation {
     createTask(input: CreateTaskInput!): Task!
     updateTask(id: ID!, input: UpdateTaskInput!): Task!
-    moveTask(id: ID!, status: TaskStatus!): Task!
+    moveTask(id: ID!, status: TaskStatus!, projectId: ID): Task!
     deleteTask(id: ID!): Boolean!
-    clearDoneTasks: Int!
+    clearDoneTasks(projectId: ID): Int!
     completeTask(id: ID!, completed: Boolean!): Task!
     addTaskComment(taskId: ID!, body: String!): TaskComment!
     deleteTaskComment(id: ID!): Boolean!
     markTaskCommentsRead(taskId: ID!): Boolean!
     createTaskProject(name: String!): TaskProject!
+    renameTaskProject(id: ID!, name: String!): TaskProject!
+    reorderTaskProjects(ids: [ID!]!): [TaskProject!]!
+    deleteTaskProject(id: ID!, moveTasksToProjectId: ID): Boolean!
     addTaskDependency(taskId: ID!, dependsOnTaskId: ID!): Task!
     removeTaskDependency(taskId: ID!, dependsOnTaskId: ID!): Task!
   }

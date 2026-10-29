@@ -2,6 +2,17 @@ import { Prisma, TaskPriority, TaskStatus } from "@prisma/client";
 import { dayBounds, parseOptionalDate, toIsoString } from "@life/shared";
 import { GraphQLContext } from "../context";
 import { assertTaskInHousehold, requireHouseholdUser } from "../auth";
+import {
+  assignTaskTreeToBoard,
+  countRootTasksByBoard,
+  createTaskBoard,
+  deleteTaskBoard,
+  ensureHouseholdBoards,
+  moveTaskOntoBoard,
+  renameTaskBoard,
+  reorderTaskBoards,
+  resolveTaskBoardId,
+} from "./boards";
 
 const taskInclude = {
   project: true,
@@ -176,16 +187,12 @@ export const taskResolvers = {
 
     taskProjects: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
-
-      const projects = await context.prisma.taskProject.findMany({
-        where: { householdId },
-        include: { _count: { select: { tasks: true } } },
-        orderBy: { name: "asc" },
-      });
+      const projects = await ensureHouseholdBoards(context.prisma, householdId);
+      const counts = await countRootTasksByBoard(context.prisma, householdId);
 
       return projects.map((project) => ({
         ...project,
-        taskCount: project._count.tasks,
+        taskCount: counts.get(project.id) ?? 0,
       }));
     },
 
@@ -233,14 +240,10 @@ export const taskResolvers = {
         await assertTaskInHousehold(context, input.parentId, householdId);
       }
 
-      if (input.projectId) {
-        const project = await context.prisma.taskProject.findFirst({
-          where: { id: input.projectId, householdId },
-        });
-        if (!project) {
-          throw new Error("Project not found");
-        }
-      }
+      const projectId = await resolveTaskBoardId(context.prisma, householdId, {
+        projectId: input.projectId,
+        parentId: input.parentId,
+      });
 
       const assigneeIds = input.assigneeIds?.length ? input.assigneeIds : [userId];
       await assertUsersInHousehold(context, assigneeIds, householdId);
@@ -256,7 +259,7 @@ export const taskResolvers = {
           isShared: input.isShared ?? true,
           dueDate: parseOptionalDate(input.dueDate),
           remindAt: parseOptionalDate(input.remindAt),
-          projectId: input.projectId ?? null,
+          projectId,
           parentId: input.parentId ?? null,
           completedAt: status === TaskStatus.DONE ? new Date() : null,
           isRecurringTemplate: input.isRecurringTemplate ?? false,
@@ -310,9 +313,10 @@ export const taskResolvers = {
       if (args.input.dueDate !== undefined) data.dueDate = parseOptionalDate(args.input.dueDate);
       if (args.input.remindAt !== undefined) data.remindAt = parseOptionalDate(args.input.remindAt);
       if (args.input.projectId !== undefined) {
-        data.project = args.input.projectId
-          ? { connect: { id: args.input.projectId } }
-          : { disconnect: true };
+        if (!args.input.projectId) {
+          throw new Error("Task must belong to a board");
+        }
+        await assignTaskTreeToBoard(context.prisma, householdId, args.id, args.input.projectId);
       }
       if (args.input.parentId !== undefined) {
         data.parent = args.input.parentId ? { connect: { id: args.input.parentId } } : { disconnect: true };
@@ -343,20 +347,23 @@ export const taskResolvers = {
 
     moveTask: async (
       _parent: unknown,
-      args: { id: string; status: TaskStatus },
+      args: { id: string; status: TaskStatus; projectId?: string | null },
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
       await assertTaskInHousehold(context, args.id, householdId);
-
-      return context.prisma.task.update({
-        where: { id: args.id },
-        data: {
-          status: args.status,
-          completedAt: args.status === TaskStatus.DONE ? new Date() : null,
-        },
-        include: taskInclude,
+      await moveTaskOntoBoard(context.prisma, {
+        householdId,
+        taskId: args.id,
+        status: args.status,
+        projectId: args.projectId,
       });
+
+      const task = await getTaskById(context, args.id, householdId);
+      if (!task) {
+        throw new Error("Task not found");
+      }
+      return task;
     },
 
     deleteTask: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
@@ -366,13 +373,28 @@ export const taskResolvers = {
       return true;
     },
 
-    clearDoneTasks: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
+    clearDoneTasks: async (
+      _parent: unknown,
+      args: { projectId?: string | null },
+      context: GraphQLContext,
+    ) => {
       const { householdId, userId } = await requireHouseholdUser(context);
+
+      if (args.projectId) {
+        const project = await context.prisma.taskProject.findFirst({
+          where: { id: args.projectId, householdId },
+          select: { id: true },
+        });
+        if (!project) {
+          throw new Error("Board not found");
+        }
+      }
 
       const result = await context.prisma.task.deleteMany({
         where: {
           ...visibleTaskWhere(householdId, userId),
           status: TaskStatus.DONE,
+          ...(args.projectId ? { projectId: args.projectId } : {}),
         },
       });
 
@@ -404,16 +426,40 @@ export const taskResolvers = {
 
     createTaskProject: async (_parent: unknown, args: { name: string }, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
+      const project = await createTaskBoard(context.prisma, householdId, args.name);
+      return { ...project, taskCount: 0 };
+    },
 
-      const project = await context.prisma.taskProject.create({
-        data: {
-          householdId,
-          name: args.name.trim(),
-        },
-        include: { _count: { select: { tasks: true } } },
-      });
+    renameTaskProject: async (
+      _parent: unknown,
+      args: { id: string; name: string },
+      context: GraphQLContext,
+    ) => {
+      const { householdId } = await requireHouseholdUser(context);
+      const project = await renameTaskBoard(context.prisma, householdId, args.id, args.name);
+      const counts = await countRootTasksByBoard(context.prisma, householdId);
+      return { ...project, taskCount: counts.get(project.id) ?? 0 };
+    },
 
-      return { ...project, taskCount: project._count.tasks };
+    reorderTaskProjects: async (_parent: unknown, args: { ids: string[] }, context: GraphQLContext) => {
+      const { householdId } = await requireHouseholdUser(context);
+      await reorderTaskBoards(context.prisma, householdId, args.ids);
+      const projects = await ensureHouseholdBoards(context.prisma, householdId);
+      const counts = await countRootTasksByBoard(context.prisma, householdId);
+      return projects.map((project) => ({
+        ...project,
+        taskCount: counts.get(project.id) ?? 0,
+      }));
+    },
+
+    deleteTaskProject: async (
+      _parent: unknown,
+      args: { id: string; moveTasksToProjectId?: string | null },
+      context: GraphQLContext,
+    ) => {
+      const { householdId } = await requireHouseholdUser(context);
+      await deleteTaskBoard(context.prisma, householdId, args.id, args.moveTasksToProjectId);
+      return true;
     },
 
     addTaskDependency: async (

@@ -35,7 +35,7 @@ export function KanbanCard({
 }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
-    data: { status: task.status },
+    data: { type: "task", status: task.status },
     disabled: overlay,
   });
 

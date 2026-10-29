@@ -12,6 +12,7 @@ export type DemoRecord = Record<string, unknown> & { id: string };
 export type DemoState = {
   user: DemoRecord;
   household: DemoRecord;
+  taskProjects: DemoRecord[];
   tasks: DemoRecord[];
   taskComments: Record<string, DemoRecord[]>;
   shoppingItems: DemoRecord[];
@@ -152,6 +153,31 @@ export function createDemoSeed(): DemoState {
     },
   ];
 
+  const familyProject = {
+    __typename: "TaskProject" as const,
+    id: "project-family",
+    name: "Family Tasks",
+    sortOrder: 0,
+    createdAt: lastWeek,
+    updatedAt: lastWeek,
+  };
+  const homesteadProject = {
+    __typename: "TaskProject" as const,
+    id: "project-homestead",
+    name: "Homestead upkeep",
+    sortOrder: 1,
+    createdAt: lastWeek,
+    updatedAt: lastWeek,
+  };
+  const travelProject = {
+    __typename: "TaskProject" as const,
+    id: "project-travel",
+    name: "Family travel",
+    sortOrder: 2,
+    createdAt: lastWeek,
+    updatedAt: lastWeek,
+  };
+
   return {
     user: demoUser,
     household: {
@@ -160,6 +186,7 @@ export function createDemoSeed(): DemoState {
       name: "Skywalker Family",
       users: [demoUser, demoPartner],
     },
+    taskProjects: [familyProject, homesteadProject, travelProject],
     tasks: [
       {
         __typename: "Task",
@@ -181,7 +208,7 @@ export function createDemoSeed(): DemoState {
           percent: 0,
         },
         assignees: [demoUser],
-        project: null,
+        project: familyProject,
         createdAt: lastWeek,
         updatedAt: today,
       },
@@ -205,7 +232,7 @@ export function createDemoSeed(): DemoState {
           percent: 0,
         },
         assignees: [demoUser],
-        project: { __typename: "TaskProject", id: "project-homestead", name: "Homestead upkeep" },
+        project: homesteadProject,
         createdAt: lastWeek,
         updatedAt: today,
       },
@@ -229,7 +256,7 @@ export function createDemoSeed(): DemoState {
           percent: 0,
         },
         assignees: [demoUser, demoPartner],
-        project: { __typename: "TaskProject", id: "project-travel", name: "Family travel" },
+        project: travelProject,
         createdAt: lastWeek,
         updatedAt: lastWeek,
       },
@@ -253,7 +280,7 @@ export function createDemoSeed(): DemoState {
           percent: 0,
         },
         assignees: [demoUser],
-        project: { __typename: "TaskProject", id: "project-homestead", name: "Homestead upkeep" },
+        project: homesteadProject,
         createdAt: lastWeek,
         updatedAt: today,
       },
@@ -277,7 +304,7 @@ export function createDemoSeed(): DemoState {
           percent: 0,
         },
         assignees: [demoPartner],
-        project: null,
+        project: familyProject,
         createdAt: lastWeek,
         updatedAt: today,
       },
@@ -301,7 +328,7 @@ export function createDemoSeed(): DemoState {
           percent: 0,
         },
         assignees: [demoPartner],
-        project: null,
+        project: familyProject,
         createdAt: lastWeek,
         updatedAt: today,
       },

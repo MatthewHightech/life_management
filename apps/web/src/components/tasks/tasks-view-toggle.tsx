@@ -3,16 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutGrid, List } from "lucide-react";
+import { useTaskBoards } from "@/components/tasks/task-boards-context";
 import { cn } from "@/lib/cn";
 
 export function TasksViewToggle() {
   const pathname = usePathname();
+  const { activeBoardId } = useTaskBoards();
   const isList = pathname === "/tasks/list";
+  const query = activeBoardId ? `?board=${encodeURIComponent(activeBoardId)}` : "";
 
   return (
     <div className="flex rounded-lg border border-border-subtle bg-background p-1">
       <Link
-        href="/tasks"
+        href={`/tasks${query}`}
         className={cn(
           "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm",
           !isList ? "bg-surface text-primary shadow-sm" : "text-text-muted",
@@ -22,7 +25,7 @@ export function TasksViewToggle() {
         Kanban
       </Link>
       <Link
-        href="/tasks/list"
+        href={`/tasks/list${query}`}
         className={cn(
           "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm",
           isList ? "bg-surface text-primary shadow-sm" : "text-text-muted",

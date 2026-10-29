@@ -13,9 +13,11 @@ import { cn } from "@/lib/cn";
 
 type KanbanColumnProps = {
   column: KanbanColumn;
+  boardId: string;
   tasks: BoardTask[];
   users: HouseholdUser[];
   collapsed?: boolean;
+  dropDisabled?: boolean;
   onToggleCollapsed?: () => void;
   onAddTask: (status: TaskStatus) => void;
   onUpdateTask: (id: string, input: TaskUpdateInput) => Promise<void>;
@@ -26,9 +28,11 @@ type KanbanColumnProps = {
 
 export function KanbanColumnView({
   column,
+  boardId,
   tasks,
   users,
   collapsed,
+  dropDisabled = false,
   onToggleCollapsed,
   onAddTask,
   onUpdateTask,
@@ -37,7 +41,11 @@ export function KanbanColumnView({
   clearingTasks = false,
 }: KanbanColumnProps) {
   const [clearOpen, setClearOpen] = useState(false);
-  const { setNodeRef, isOver } = useDroppable({ id: column.status });
+  const { setNodeRef, isOver } = useDroppable({
+    id: `column:${boardId}:${column.status}`,
+    data: { type: "column", status: column.status, boardId },
+    disabled: dropDisabled,
+  });
 
   if (collapsed) {
     return (

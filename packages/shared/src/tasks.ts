@@ -1,5 +1,8 @@
 /** Domain types and list helpers shared by web + mobile task UIs. */
 
+/** Name of the board created for a household's existing unassigned tasks. */
+export const DEFAULT_TASK_BOARD_NAME = "Family Tasks";
+
 export const TASK_STATUSES = ["BACKLOG", "TODO", "IN_PROGRESS", "WAITING", "DONE"] as const;
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 

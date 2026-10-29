@@ -1,5 +1,7 @@
 "use client";
 
+import { TaskBoardBar } from "@/components/tasks/task-board-bar";
+import { TaskBoardDnd } from "@/components/tasks/task-board-dnd";
 import { TaskCommentsProvider } from "@/components/tasks/task-comments-context";
 import { TaskCommentsSidebar } from "@/components/tasks/task-comments-sidebar";
 import { TasksViewToggle } from "@/components/tasks/tasks-view-toggle";
@@ -19,7 +21,12 @@ export function TasksPageLayout({ children }: TasksPageLayoutProps) {
         headerExtra={<TasksViewToggle />}
         contentInsetClassName={TASKS_CONTENT_INSET}
       >
-        {children}
+        <TaskBoardDnd>
+          <div className="-mt-2 mb-4 border-b border-border-subtle pb-2">
+            <TaskBoardBar />
+          </div>
+          {children}
+        </TaskBoardDnd>
       </ModulePageLayout>
       <TaskCommentsSidebar />
     </TaskCommentsProvider>

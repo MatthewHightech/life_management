@@ -21,6 +21,7 @@ import {
   toggleAssigneeId,
 } from "@/lib/task-pills";
 import { cn } from "@/lib/cn";
+import { useTaskBoards } from "@/components/tasks/task-boards-context";
 import { tasksBoardRefetchQueries } from "@/lib/task-board-queries";
 import { TASK_LIST_COLUMN_GRID } from "@/components/tasks/task-table/column-layout";
 import type { HouseholdUser } from "./types";
@@ -123,6 +124,7 @@ function DraftDueDatePicker({
 }
 
 export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) {
+  const { activeBoardId } = useTaskBoards();
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState<TaskStatus>(DEFAULT_STATUS);
   const [priority, setPriority] = useState<TaskPriority>(DEFAULT_PRIORITY);
@@ -166,6 +168,7 @@ export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) 
           dueDate,
           assigneeIds: assigneeIds.length > 0 ? assigneeIds : undefined,
           isShared: true,
+          projectId: activeBoardId ?? undefined,
         },
       },
     });

@@ -141,11 +141,13 @@ model TaskProject {
   householdId String
   household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
   name        String
+  sortOrder   Int       @default(0)
   tasks       Task[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   @@index([householdId])
+  @@index([householdId, sortOrder])
 }
 
 model Task {
@@ -187,6 +189,7 @@ model Task {
   @@index([householdId, dueDate])
   @@index([householdId, status])
   @@index([parentId])
+  @@index([projectId])
 }
 
 model TaskAssignment {

@@ -153,7 +153,17 @@ class DemoStore {
 
   private taskWithCounts(task: DemoRecord) {
     const comments = this.state.taskComments[task.id] ?? [];
-    return { ...task, commentCount: comments.length };
+    const projectId = (task.project as DemoRecord | null)?.id;
+    const project =
+      this.state.taskProjects.find((item) => item.id === projectId) ??
+      this.state.taskProjects[0] ??
+      null;
+    return { ...task, project, commentCount: comments.length };
+  }
+
+  private projectView(project: DemoRecord) {
+    const taskCount = this.state.tasks.filter((task) => (task.project as DemoRecord | null)?.id === project.id).length;
+    return { ...project, taskCount };
   }
 
   private shoppingItemWithCounts(item: DemoRecord) {
@@ -446,7 +456,10 @@ class DemoStore {
             percent: 0,
           },
           assignees: assigneeIds.map((id) => this.userById(id)),
-          project: null,
+          project:
+            this.state.taskProjects.find((item) => item.id === taskInput.projectId) ??
+            this.state.taskProjects[0] ??
+            null,
         },
         this.id("task"),
         "Task",
@@ -473,10 +486,17 @@ class DemoStore {
     },
 
     MoveTask: (variables) => {
-      const task = this.update(this.state.tasks, stringVariable(variables, "id"), {
+      const changes: Record<string, unknown> = {
         status: variables.status,
         completedAt: variables.status === "DONE" ? new Date().toISOString() : null,
-      });
+      };
+      if (variables.projectId) {
+        const project = this.state.taskProjects.find((item) => item.id === variables.projectId);
+        if (project) {
+          changes.project = project;
+        }
+      }
+      const task = this.update(this.state.tasks, stringVariable(variables, "id"), changes);
       return { moveTask: this.taskWithCounts(task) };
     },
 
@@ -486,10 +506,86 @@ class DemoStore {
       return { deleteTask: this.remove(this.state.tasks, id) };
     },
 
-    ClearDoneTasks: () => {
+    ClearDoneTasks: (variables) => {
+      const projectId = variables.projectId ? String(variables.projectId) : null;
       const before = this.state.tasks.length;
-      this.state.tasks = this.state.tasks.filter((task) => task.status !== "DONE");
+      this.state.tasks = this.state.tasks.filter((task) => {
+        if (task.status !== "DONE") {
+          return true;
+        }
+        if (projectId && (task.project as DemoRecord | null)?.id !== projectId) {
+          return true;
+        }
+        return false;
+      });
       return { clearDoneTasks: before - this.state.tasks.length };
+    },
+
+    TaskProjects: () => ({
+      taskProjects: [...this.state.taskProjects]
+        .sort((left, right) => Number(left.sortOrder ?? 0) - Number(right.sortOrder ?? 0))
+        .map((project) => this.projectView(project)),
+    }),
+
+    CreateTaskProject: (variables) => {
+      const name = String(variables.name ?? "").trim();
+      if (!name) {
+        throw new Error("Board name cannot be empty");
+      }
+      const sortOrder =
+        this.state.taskProjects.reduce((max, project) => Math.max(max, Number(project.sortOrder ?? 0)), -1) + 1;
+      const project = withTimestamp({ name, sortOrder, taskCount: 0 }, this.id("project"), "TaskProject");
+      this.state.taskProjects.push(project);
+      return { createTaskProject: this.projectView(project) };
+    },
+
+    RenameTaskProject: (variables) => {
+      const name = String(variables.name ?? "").trim();
+      if (!name) {
+        throw new Error("Board name cannot be empty");
+      }
+      const project = this.update(this.state.taskProjects, stringVariable(variables, "id"), { name });
+      return { renameTaskProject: this.projectView(project) };
+    },
+
+    ReorderTaskProjects: (variables) => {
+      const ids = (variables.ids ?? []) as string[];
+      const byId = new Map(this.state.taskProjects.map((project) => [project.id, project]));
+      this.state.taskProjects = ids.map((id, index) => {
+        const project = byId.get(id);
+        if (!project) {
+          throw new Error("Board not found");
+        }
+        project.sortOrder = index;
+        return project;
+      });
+      return {
+        reorderTaskProjects: this.state.taskProjects.map((project) => this.projectView(project)),
+      };
+    },
+
+    DeleteTaskProject: (variables) => {
+      const id = stringVariable(variables, "id");
+      if (this.state.taskProjects.length <= 1) {
+        throw new Error("Keep at least one board");
+      }
+      const destinationId = variables.moveTasksToProjectId ? String(variables.moveTasksToProjectId) : "";
+      if (destinationId) {
+        const destination = this.find(this.state.taskProjects, destinationId);
+        for (const task of this.state.tasks) {
+          if ((task.project as DemoRecord | null)?.id === id) {
+            task.project = destination;
+          }
+        }
+      } else {
+        const removed = this.state.tasks.filter((task) => (task.project as DemoRecord | null)?.id === id);
+        this.state.tasks = this.state.tasks.filter((task) => (task.project as DemoRecord | null)?.id !== id);
+        for (const task of removed) {
+          delete this.state.taskComments[task.id];
+        }
+      }
+      this.remove(this.state.taskProjects, id);
+      return { deleteTaskProject: true };
     },
 
     TaskComments: (variables) => ({

@@ -102,8 +102,8 @@ export const CREATE_TASK_MUTATION = gql`
 
 export const MOVE_TASK_MUTATION = gql`
   ${TASK_FIELDS}
-  mutation MoveTask($id: ID!, $status: TaskStatus!) {
-    moveTask(id: $id, status: $status) {
+  mutation MoveTask($id: ID!, $status: TaskStatus!, $projectId: ID) {
+    moveTask(id: $id, status: $status, projectId: $projectId) {
       ...TaskFields
     }
   }
@@ -116,8 +116,8 @@ export const DELETE_TASK_MUTATION = gql`
 `;
 
 export const CLEAR_DONE_TASKS_MUTATION = gql`
-  mutation ClearDoneTasks {
-    clearDoneTasks
+  mutation ClearDoneTasks($projectId: ID) {
+    clearDoneTasks(projectId: $projectId)
   }
 `;
 
@@ -157,5 +157,55 @@ export const DELETE_TASK_COMMENT_MUTATION = gql`
 export const MARK_TASK_COMMENTS_READ_MUTATION = gql`
   mutation MarkTaskCommentsRead($taskId: ID!) {
     markTaskCommentsRead(taskId: $taskId)
+  }
+`;
+
+export const TASK_PROJECTS_QUERY = gql`
+  query TaskProjects {
+    taskProjects {
+      id
+      name
+      sortOrder
+      taskCount
+    }
+  }
+`;
+
+export const CREATE_TASK_PROJECT_MUTATION = gql`
+  mutation CreateTaskProject($name: String!) {
+    createTaskProject(name: $name) {
+      id
+      name
+      sortOrder
+      taskCount
+    }
+  }
+`;
+
+export const RENAME_TASK_PROJECT_MUTATION = gql`
+  mutation RenameTaskProject($id: ID!, $name: String!) {
+    renameTaskProject(id: $id, name: $name) {
+      id
+      name
+      sortOrder
+      taskCount
+    }
+  }
+`;
+
+export const REORDER_TASK_PROJECTS_MUTATION = gql`
+  mutation ReorderTaskProjects($ids: [ID!]!) {
+    reorderTaskProjects(ids: $ids) {
+      id
+      name
+      sortOrder
+      taskCount
+    }
+  }
+`;
+
+export const DELETE_TASK_PROJECT_MUTATION = gql`
+  mutation DeleteTaskProject($id: ID!, $moveTasksToProjectId: ID) {
+    deleteTaskProject(id: $id, moveTasksToProjectId: $moveTasksToProjectId)
   }
 `;
