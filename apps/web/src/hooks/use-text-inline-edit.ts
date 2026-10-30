@@ -7,14 +7,16 @@ type UseTextInlineEditOptions<TCommit> = {
   value: string;
   onSave: (value: TCommit) => Promise<void>;
   resolveCommit: (draft: string) => TCommit | null;
+  initialEditing?: boolean;
 };
 
 export function useTextInlineEdit<TCommit>({
   value,
   onSave,
   resolveCommit,
+  initialEditing = false,
 }: UseTextInlineEditOptions<TCommit>) {
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(initialEditing);
   const [draft, setDraft] = useState(value);
   const { pending, run } = useAsyncAction(onSave);
 

@@ -68,6 +68,7 @@ export function KanbanBoard() {
   });
   const [activeTask, setActiveTask] = useState<BoardTask | null>(null);
   const [activeWidth, setActiveWidth] = useState<number | null>(null);
+  const [focusTitleTaskId, setFocusTitleTaskId] = useState<string | null>(null);
 
   const { data, loading, error } = useQuery<TasksBoardQuery, TasksBoardQueryVariables>(TASKS_BOARD_QUERY, {
     variables: kanbanQuery.variables,
@@ -139,7 +140,7 @@ export function KanbanBoard() {
 
   const handleAddTask = useCallback(
     async (status: TaskStatus, boardId: string) => {
-      await createTask({
+      const result = await createTask({
         variables: {
           input: {
             title: "Untitled",
@@ -151,6 +152,13 @@ export function KanbanBoard() {
           },
         },
       });
+      const createdId = result.data?.createTask?.id;
+      if (createdId) {
+        setFocusTitleTaskId(createdId);
+        setCollapsedByStatus((current) =>
+          current[status] ? { ...current, [status]: false } : current,
+        );
+      }
     },
     [createTask, currentUserId],
   );
@@ -238,6 +246,7 @@ export function KanbanBoard() {
         onAddTask={(status) => void handleAddTask(status, boardId)}
         onUpdateTask={handleUpdate}
         onDeleteTask={handleDelete}
+        focusTitleTaskId={focusTitleTaskId}
         onClearTasks={column.status === "DONE" ? () => handleClearDone(boardId) : undefined}
         clearingTasks={column.status === "DONE" ? clearingDone : false}
       />

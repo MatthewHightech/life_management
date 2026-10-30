@@ -23,6 +23,7 @@ type KanbanCardProps = {
   onUpdate?: (input: TaskUpdateInput) => Promise<void>;
   onDelete?: () => void;
   overlay?: boolean;
+  autoEditTitle?: boolean;
 };
 
 export function KanbanCard({
@@ -32,6 +33,7 @@ export function KanbanCard({
   onUpdate,
   onDelete,
   overlay = false,
+  autoEditTitle = false,
 }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
@@ -91,6 +93,7 @@ export function KanbanCard({
               value={task.title}
               onSave={(title) => onUpdate!({ title })}
               wrap
+              startInEditMode={autoEditTitle}
               className={cn("text-sm font-medium text-text-main", overdue && "text-error")}
               inputClassName="font-medium"
             />

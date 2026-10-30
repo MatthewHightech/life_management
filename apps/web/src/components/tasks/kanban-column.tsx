@@ -22,6 +22,7 @@ type KanbanColumnProps = {
   onAddTask: (status: TaskStatus) => void;
   onUpdateTask: (id: string, input: TaskUpdateInput) => Promise<void>;
   onDeleteTask: (id: string) => void;
+  focusTitleTaskId?: string | null;
   onClearTasks?: () => void | Promise<void>;
   clearingTasks?: boolean;
 };
@@ -37,6 +38,7 @@ export function KanbanColumnView({
   onAddTask,
   onUpdateTask,
   onDeleteTask,
+  focusTitleTaskId = null,
   onClearTasks,
   clearingTasks = false,
 }: KanbanColumnProps) {
@@ -124,6 +126,7 @@ export function KanbanColumnView({
             users={users}
             onUpdate={(input) => onUpdateTask(task.id, input)}
             onDelete={() => onDeleteTask(task.id)}
+            autoEditTitle={task.id === focusTitleTaskId}
           />
         ))}
       </div>

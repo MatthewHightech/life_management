@@ -12,7 +12,10 @@ type EditableTextCellProps = {
   inputClassName?: string;
   placeholder?: string;
   displayPlaceholder?: string;
+  /** Enter edit mode on mount / when this becomes true (e.g. newly created row). */
   startInEditMode?: boolean;
+  /** Select the full value when focusing (defaults to true when startInEditMode). */
+  selectAllOnFocus?: boolean;
   allowClear?: boolean;
   disabled?: boolean;
   wrap?: boolean;
@@ -26,6 +29,7 @@ export function EditableTextCell({
   placeholder,
   displayPlaceholder,
   startInEditMode = false,
+  selectAllOnFocus = false,
   allowClear = false,
   disabled = false,
   wrap = false,
@@ -33,6 +37,7 @@ export function EditableTextCell({
   const { editing, setEditing, draft, setDraft, pending, commit, cancel } = useTextInlineEdit({
     value,
     onSave,
+    initialEditing: startInEditMode,
     resolveCommit: (draftValue) => {
       const trimmed = draftValue.trim();
       if (allowClear) {
@@ -48,8 +53,17 @@ export function EditableTextCell({
     },
   });
 
-  const isEditing = !disabled && (editing || startInEditMode);
+  const isEditing = !disabled && editing;
   const inputRef = useRef<HTMLInputElement>(null);
+  const selectAllPendingRef = useRef(startInEditMode || selectAllOnFocus);
+
+  useEffect(() => {
+    if (!startInEditMode) {
+      return;
+    }
+    selectAllPendingRef.current = true;
+    setEditing(true);
+  }, [startInEditMode, setEditing]);
 
   useEffect(() => {
     if (!isEditing) {
@@ -60,9 +74,14 @@ export function EditableTextCell({
       return;
     }
     input.focus();
-    const end = input.value.length;
-    input.setSelectionRange(end, end);
-  }, [isEditing]);
+    if (selectAllPendingRef.current || selectAllOnFocus) {
+      selectAllPendingRef.current = false;
+      input.select();
+    } else {
+      const end = input.value.length;
+      input.setSelectionRange(end, end);
+    }
+  }, [isEditing, selectAllOnFocus]);
 
   const fieldShellClass = cn("w-full min-w-0", !wrap && "overflow-hidden");
   const displayTextClass = wrap ? "whitespace-normal break-words" : "truncate";
