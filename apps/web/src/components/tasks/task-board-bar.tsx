@@ -57,7 +57,7 @@ export function TaskBoardBar() {
     <>
       <div className="flex items-center gap-1 overflow-x-auto">
         {boardsLoading && boards.length === 0 ? (
-          <span className="px-2 py-1.5 text-sm text-text-muted">Loading boards…</span>
+          <span className="px-2 py-1.5 text-sm text-text-muted">Loading projects…</span>
         ) : null}
         {boards.map((board) => (
           <BoardTab
@@ -78,13 +78,13 @@ export function TaskBoardBar() {
           onClick={() => void createBoard()}
           disabled={creatingBoard || boardsLoading}
           className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-text-muted hover:bg-background disabled:opacity-50"
-          aria-label="Add board"
-          title="Add board"
+          aria-label="Add project"
+          title="Add project"
         >
           <Plus className="h-4 w-4" />
         </button>
       </div>
-      {boardsError ? <p className="mt-1 text-sm text-error">Could not load boards: {boardsError}</p> : null}
+      {boardsError ? <p className="mt-1 text-sm text-error">Could not load projects: {boardsError}</p> : null}
 
       <Modal
         open={pendingDelete !== null}
@@ -93,13 +93,13 @@ export function TaskBoardBar() {
             setPendingDelete(null);
           }
         }}
-        title={pendingDelete ? `Delete “${pendingDelete.name}”?` : "Delete board?"}
+        title={pendingDelete ? `Delete “${pendingDelete.name}”?` : "Delete project?"}
         description={
           pendingDelete && pendingDelete.taskCount > 0
             ? pendingDelete.taskCount === 1
-              ? "This board has 1 task."
-              : `This board has ${pendingDelete.taskCount} tasks.`
-            : "This board has no tasks."
+              ? "This project has 1 task."
+              : `This project has ${pendingDelete.taskCount} tasks.`
+            : "This project has no tasks."
         }
       >
         {pendingDelete && pendingDelete.taskCount > 0 && others.length > 0 ? (
@@ -152,7 +152,7 @@ export function TaskBoardBar() {
               );
             }}
           >
-            {deletingBoard ? "Deleting…" : pendingDelete && pendingDelete.taskCount > 0 ? "Delete tasks" : "Delete board"}
+            {deletingBoard ? "Deleting…" : pendingDelete && pendingDelete.taskCount > 0 ? "Delete tasks" : "Delete project"}
           </Button>
         </div>
       </Modal>
@@ -253,7 +253,7 @@ function BoardTab({
         <button
           type="button"
           disabled={!canDelete}
-          title={canDelete ? undefined : "At least one board is required"}
+          title={canDelete ? undefined : "At least one project is required"}
           className="block w-full rounded-md px-3 py-2 text-left text-sm text-error hover:bg-background disabled:cursor-not-allowed disabled:text-text-muted disabled:hover:bg-transparent"
           onClick={() => {
             setMenuOpen(false);

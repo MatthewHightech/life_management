@@ -14,7 +14,7 @@ import {
 } from "@life/shared";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useState } from "react";
-import { ActionSheetIOS, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActionSheetIOS, Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Avatar } from "@/src/components/avatar";
 import { Chip } from "@/src/components/chip";
 import { Field } from "@/src/components/field";
@@ -100,6 +100,69 @@ export function AssigneePicker({ users, selectedIds, onChange }: AssigneePickerP
         })}
         {users.length === 0 ? <Text style={styles.hint}>No household members loaded.</Text> : null}
       </View>
+    </Field>
+  );
+}
+
+type ProjectOption = {
+  id: string;
+  name: string;
+};
+
+type ProjectPickerProps = {
+  projects: ProjectOption[];
+  value: string | null;
+  onChange: (projectId: string) => void;
+};
+
+export function ProjectPicker({ projects, value, onChange }: ProjectPickerProps) {
+  function openPicker() {
+    if (projects.length === 0) {
+      return;
+    }
+
+    if (Platform.OS === "ios") {
+      const labels = projects.map((project) => project.name);
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ["Cancel", ...labels],
+          cancelButtonIndex: 0,
+        },
+        (index) => {
+          if (index > 0) {
+            const project = projects[index - 1];
+            if (project) {
+              onChange(project.id);
+            }
+          }
+        },
+      );
+      return;
+    }
+
+    const current = projects.find((project) => project.id === value);
+    Alert.alert(
+      "Project",
+      current ? `Current: ${current.name}` : "Choose a project",
+      [
+        ...projects.map((project) => ({
+          text: project.name,
+          onPress: () => onChange(project.id),
+        })),
+        { text: "Cancel", style: "cancel" as const },
+      ],
+    );
+  }
+
+  const selected = projects.find((project) => project.id === value);
+
+  return (
+    <Field label="Project">
+      <Pressable style={styles.dateButton} onPress={openPicker} disabled={projects.length === 0}>
+        <Text style={selected ? styles.dateValue : styles.hint}>
+          {selected?.name ?? (projects.length === 0 ? "No projects" : "Select project")}
+        </Text>
+      </Pressable>
     </Field>
   );
 }

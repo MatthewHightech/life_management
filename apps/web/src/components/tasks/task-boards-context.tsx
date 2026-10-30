@@ -53,7 +53,7 @@ export function TaskBoardsProvider({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const requestedId = searchParams.get("board");
+  const requestedId = searchParams.get("project");
 
   const { data, loading, error } = useQuery<TaskProjectsQuery>(TASK_PROJECTS_QUERY);
   const [boards, setBoards] = useState<TaskBoard[]>([]);
@@ -106,14 +106,14 @@ export function TaskBoardsProvider({ children }: { children: React.ReactNode }) 
       return;
     }
     const params = new URLSearchParams(searchParams.toString());
-    params.set("board", activeBoardId);
+    params.set("project", activeBoardId);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }, [activeBoardId, pathname, requestedId, router, searchParams]);
 
   function setActiveBoardId(id: string) {
     setSelectedId(id);
     const params = new URLSearchParams(searchParams.toString());
-    params.set("board", id);
+    params.set("project", id);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }
 
@@ -122,7 +122,7 @@ export function TaskBoardsProvider({ children }: { children: React.ReactNode }) 
   }
 
   async function createBoard() {
-    const result = await createTaskProject({ variables: { name: "New Board" } });
+    const result = await createTaskProject({ variables: { name: "New Project" } });
     const created = result.data?.createTaskProject;
     if (!created) {
       return;

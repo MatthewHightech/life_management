@@ -19,9 +19,10 @@ import {
   AssigneePicker,
   DueDateField,
   PriorityPicker,
+  ProjectPicker,
   StatusPicker,
 } from "@/src/components/tasks/task-fields";
-import { useTaskMutations, useTasksBoard } from "@/src/data";
+import { useTaskMutations, useTaskProjects, useTasksBoard } from "@/src/data";
 import { theme } from "@/constants/theme";
 
 export default function TaskDetailScreen() {
@@ -30,6 +31,7 @@ export default function TaskDetailScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const composerFocusedRef = useRef(false);
   const { tasks, users, loading } = useTasksBoard();
+  const { projects } = useTaskProjects();
   const { updateTask, deleteTask, deleting, updating } = useTaskMutations();
 
   const task = useMemo(() => tasks.find((item) => item.id === id), [tasks, id]);
@@ -39,6 +41,7 @@ export default function TaskDetailScreen() {
   const [priority, setPriority] = useState<TaskPriority>("MEDIUM");
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState<string | null>(null);
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [composerFocused, setComposerFocused] = useState(false);
 
@@ -51,7 +54,8 @@ export default function TaskDetailScreen() {
     setPriority(task.priority as TaskPriority);
     setAssigneeIds(task.assignees.map((user) => user.id));
     setDueDate(task.dueDate ?? null);
-  }, [task]);
+    setProjectId(task.project?.id ?? projects[0]?.id ?? null);
+  }, [projects, task]);
 
   function scrollComposerIntoView() {
     // Extra inset so the Post button clears the keyboard, not just the text field.
@@ -81,6 +85,7 @@ export default function TaskDetailScreen() {
     priority?: TaskPriority;
     assigneeIds?: string[];
     dueDate?: string | null;
+    projectId?: string | null;
   }) {
     if (!task) {
       return;
@@ -93,6 +98,7 @@ export default function TaskDetailScreen() {
         priority: patch?.priority ?? priority,
         assigneeIds: patch?.assigneeIds ?? assigneeIds,
         dueDate: patch?.dueDate === undefined ? dueDate : patch.dueDate,
+        projectId: patch?.projectId === undefined ? projectId : patch.projectId,
       });
     } finally {
       setSaving(false);
@@ -203,6 +209,15 @@ export default function TaskDetailScreen() {
             onChange={(next) => {
               setDueDate(next);
               void save({ dueDate: next });
+            }}
+          />
+
+          <ProjectPicker
+            projects={projects}
+            value={projectId}
+            onChange={(next) => {
+              setProjectId(next);
+              void save({ projectId: next });
             }}
           />
 

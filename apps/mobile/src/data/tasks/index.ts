@@ -4,11 +4,13 @@ import { useCallback, useMemo } from "react";
 import {
   ADD_TASK_COMMENT_MUTATION,
   CREATE_TASK_MUTATION,
+  CREATE_TASK_PROJECT_MUTATION,
   DELETE_TASK_COMMENT_MUTATION,
   DELETE_TASK_MUTATION,
   MARK_TASK_COMMENTS_READ_MUTATION,
   MOVE_TASK_MUTATION,
   TASK_COMMENTS_QUERY,
+  TASK_PROJECTS_QUERY,
   UPDATE_TASK_MUTATION,
   type CreateTaskInput,
   type TaskStatus,
@@ -22,6 +24,18 @@ import {
   updateTaskInBoardCache,
 } from "./cache";
 import { useRefetchOnFocus } from "../use-refetch-on-focus";
+
+export function tasksOnProject<T extends { project?: { id: string } | null }>(
+  tasks: T[],
+  projectId: string | null,
+  fallbackProjectId: string | null,
+): T[] {
+  if (!projectId) {
+    return [];
+  }
+
+  return tasks.filter((task) => (task.project?.id ?? fallbackProjectId) === projectId);
+}
 
 export function useTasksBoard() {
   const query = useQuery(tasksBoardListQuery.query, {
@@ -46,6 +60,41 @@ export function useTasksBoard() {
     users: query.data?.household?.users ?? [],
     me: query.data?.me ?? null,
     refresh,
+  };
+}
+
+export function useTaskProjects() {
+  const query = useQuery(TASK_PROJECTS_QUERY, {
+    notifyOnNetworkStatusChange: true,
+  });
+
+  const [createTaskProject, createState] = useMutation(CREATE_TASK_PROJECT_MUTATION, {
+    refetchQueries: [{ query: TASK_PROJECTS_QUERY }, tasksBoardListQuery],
+    awaitRefetchQueries: true,
+  });
+
+  const refresh = useCallback(() => query.refetch(), [query]);
+  useRefetchOnFocus(refresh);
+
+  const createProject = useCallback(
+    async (name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed) {
+        return null;
+      }
+      const result = await createTaskProject({ variables: { name: trimmed } });
+      return result.data?.createTaskProject ?? null;
+    },
+    [createTaskProject],
+  );
+
+  return {
+    projects: query.data?.taskProjects ?? [],
+    loading: query.loading,
+    error: query.error,
+    refresh,
+    createProject,
+    creating: createState.loading,
   };
 }
 

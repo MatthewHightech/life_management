@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -24,6 +24,8 @@ const DEFAULT_PRIORITY: TaskPriority = "LOW";
 
 export default function NewTaskScreen() {
   const router = useRouter();
+  const { projectId: projectIdParam } = useLocalSearchParams<{ projectId?: string }>();
+  const projectId = typeof projectIdParam === "string" ? projectIdParam : projectIdParam?.[0];
   const { users, me } = useTasksBoard();
   const { createTask, creating } = useTaskMutations();
 
@@ -58,6 +60,7 @@ export default function NewTaskScreen() {
         priority,
         assigneeIds,
         dueDate,
+        projectId: projectId || undefined,
       });
       router.back();
     } catch (err) {

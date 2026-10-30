@@ -10,7 +10,7 @@ export function TasksViewToggle() {
   const pathname = usePathname();
   const { activeBoardId } = useTaskBoards();
   const isList = pathname === "/tasks/list";
-  const query = activeBoardId ? `?board=${encodeURIComponent(activeBoardId)}` : "";
+  const query = activeBoardId ? `?project=${encodeURIComponent(activeBoardId)}` : "";
 
   return (
     <div className="flex rounded-lg border border-border-subtle bg-background p-1">

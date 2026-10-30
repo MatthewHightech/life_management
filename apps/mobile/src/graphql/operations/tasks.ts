@@ -127,3 +127,25 @@ export const MARK_TASK_COMMENTS_READ_MUTATION = gql`
     markTaskCommentsRead(taskId: $taskId)
   }
 `;
+
+export const TASK_PROJECTS_QUERY = gql`
+  query TaskProjects {
+    taskProjects {
+      id
+      name
+      sortOrder
+      taskCount
+    }
+  }
+`;
+
+export const CREATE_TASK_PROJECT_MUTATION = gql`
+  mutation CreateTaskProject($name: String!) {
+    createTaskProject(name: $name) {
+      id
+      name
+      sortOrder
+      taskCount
+    }
+  }
+`;

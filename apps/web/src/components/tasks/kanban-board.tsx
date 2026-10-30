@@ -257,7 +257,7 @@ export function KanbanBoard() {
 
   return (
     <TasksPageLayout>
-      {waiting && <p className="text-sm text-text-muted">Loading board…</p>}
+      {waiting && <p className="text-sm text-text-muted">Loading project…</p>}
       {error && <p className="text-sm text-error">Could not load tasks: {error.message}</p>}
 
       {!waiting && !error && activeBoardId && (
