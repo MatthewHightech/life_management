@@ -7,5 +7,6 @@ export * from "./mobile-auth";
 export * from "./dates";
 export * from "./folders";
 export * from "./gear";
+export * from "./goals";
 export * from "./meal-plan";
 export * from "./tasks";

@@ -6,6 +6,7 @@ import { financeResolvers } from "./finance/resolvers";
 import { receiptResolvers } from "./receipts/resolvers";
 import { taskResolvers } from "./tasks/resolvers";
 import { shoppingResolvers } from "./shopping/resolvers";
+import { goalResolvers } from "./goals/resolvers";
 
 export const resolvers = {
   Query: {
@@ -45,6 +46,7 @@ export const resolvers = {
     ...gearResolvers.Query,
     ...financeResolvers.Query,
     ...shoppingResolvers.Query,
+    ...goalResolvers.Query,
   },
   Mutation: {
     ping: () => "pong",
@@ -55,6 +57,7 @@ export const resolvers = {
     ...gearResolvers.Mutation,
     ...financeResolvers.Mutation,
     ...shoppingResolvers.Mutation,
+    ...goalResolvers.Mutation,
   },
   User: {
     household: (
@@ -99,4 +102,5 @@ export const resolvers = {
   GearItemClass: gearResolvers.GearItemClass,
   GearLoan: gearResolvers.GearLoan,
   GearLoanItem: gearResolvers.GearLoanItem,
+  GoalSet: goalResolvers.GoalSet,
 };

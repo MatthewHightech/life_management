@@ -63,6 +63,7 @@ model Household {
   budgetPurchases BudgetPurchase[]
   bankConnections BankConnection[]
   shoppingItems   ShoppingItem[]
+  goalSets        GoalSet[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 }
@@ -84,9 +85,46 @@ model User {
   createdShoppingItems ShoppingItem[]        @relation("CreatedShoppingItems")
   shoppingItemComments ShoppingItemComment[]
   shoppingItemCommentReads ShoppingItemCommentRead[]
+  goalSets      GoalSet[]
   refreshTokens RefreshToken[]
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
+}
+
+enum GoalCadence {
+  DAILY
+  WEEKLY
+  TERM
+}
+
+model GoalSet {
+  id          String      @id @default(cuid())
+  householdId String
+  household   Household   @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cadence     GoalCadence
+  label       String
+  archivedAt  DateTime?
+  goals       Goal[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([householdId, archivedAt])
+  @@index([householdId, userId, cadence, archivedAt])
+}
+
+model Goal {
+  id          String    @id @default(cuid())
+  setId       String
+  set         GoalSet   @relation(fields: [setId], references: [id], onDelete: Cascade)
+  title       String
+  completedAt DateTime?
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([setId, sortOrder])
 }
 
 model RefreshToken {

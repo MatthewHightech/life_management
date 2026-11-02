@@ -11,6 +11,7 @@
     "./allowlist": "./src/allowlist.ts",
     "./auth": "./src/auth.ts",
     "./dates": "./src/dates.ts",
+    "./goals": "./src/goals.ts",
     "./meal-plan": "./src/meal-plan.ts",
     "./tasks": "./src/tasks.ts"
   },

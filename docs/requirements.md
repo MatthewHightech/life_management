@@ -86,7 +86,7 @@ Both adults use task + budget views, have calendar integrated.
 
 **REQ-DEMO-02 (P1):** Demo mode uses the production UI and GraphQL operations against an isolated, browser-memory data store. It must not call the GraphQL API, Postgres, or authenticated file endpoints.
 
-**REQ-DEMO-03 (P1):** The demo starts with a small fictional dataset spanning Tasks, Finance, Shopping List, Meals, Receipts, and Gear. Changes are usable within the tab and reset to the seed on refresh.
+**REQ-DEMO-03 (P1):** The demo starts with a small fictional dataset spanning Tasks, Goals, Finance, Shopping List, Meals, Receipts, and Gear. Changes are usable within the tab and reset to the seed on refresh.
 
 **REQ-DEMO-04 (P1):** Bank connection, setup, and synchronization controls remain visible but disabled with an explanatory tooltip. No Plaid flow may start in demo mode.
 
@@ -157,7 +157,7 @@ See §5 Phased Roadmap for priorities.
 
 **REQ-SHELL-02 (P1):** Responsive web UI usable on phone, tablet, and desktop with equal priority.
 
-**REQ-SHELL-03 (P0):** Primary navigation is **module-based** in a collapsible sidebar: Tasks · Finance · Calendar · Meal Planning · **Receipts** · **Gear**. Finance and Calendar may be disabled placeholders until their modules ship. Receipts and Gear are **standalone modules** (not nested under Finance). Task-specific views (Kanban, List, etc.) live **inside** the Tasks module, not as top-level sidebar items.
+**REQ-SHELL-03 (P0):** Primary navigation is **module-based** in a collapsible sidebar: Tasks · **Goals** · Finance · Calendar · Meal Planning · **Receipts** · **Gear**. Finance and Calendar may be disabled placeholders until their modules ship. Goals, Receipts, and Gear are **standalone modules** (not nested under Finance). Task-specific views (Kanban, List, etc.) live **inside** the Tasks module, not as top-level sidebar items.
 
 > **Rollout note:** REQ-TASK-10 (Today), REQ-TASK-11 (task calendar), and REQ-TASK-13 (by person) remain P0 for Phase 1 but ship **after** the initial Kanban + List UI pass. See [`docs/design/DESIGN.md`](design/DESIGN.md) §9.
 
@@ -511,6 +511,40 @@ Household **equipment and gear** tracking — organize owned items, group simila
 - Automated email delivery (schema-ready only).
 - Full-text search.
 
+### 4.11 Goals (Phase 1h)
+
+Household members set short, personal goals with fixed caps per cadence. Goals are visible to the whole household; only the creator may complete, edit, delete, or reset their own.
+
+**REQ-GOAL-01 (P1):** Standalone **Goals** module at `/goals` with top-level sidebar nav **“Goals”** placed **directly below Tasks**. Web-only for v1 — **no mobile app** surface yet (REQ-GEAR-19 style desktop-first).
+
+**REQ-GOAL-02 (P1):** Cadences: **Daily** · **Weekly** · **Term**. Caps per person for the *current* (non-archived) set: Daily **3**, Weekly **5**, Term **10**. Creating beyond the cap is rejected.
+
+**REQ-GOAL-03 (P1):** **Term** windows are fixed calendar quarters of months: **Jan–Apr**, **May–Aug**, **Sep–Dec** (not academic terms with custom dates).
+
+**REQ-GOAL-04 (P1):** Goals are **one-off**. Users add them at the start of a day/week/term. Completing a goal marks it done **in place** (stays on Current until reset). There is **no automatic period rollover** — archiving happens only via **Reset**.
+
+**REQ-GOAL-05 (P1):** Goals are **personal** (owned by creator) and **visible to all household members**. Only the **creator** may toggle completion, edit the title, delete, or reset.
+
+**REQ-GOAL-06 (P1):** **Reset goals** (per cadence, current user) archives the current set for that cadence into Past Goals and clears Current for that cadence. Archived goals are **not deleted**. After reset, the user must **re-add** goals for the new period (no carry-forward).
+
+**REQ-GOAL-07 (P1):** In-module sub-navigation (Finance segmented-control pattern): **Current Goals** (default) · **Past Goals**. Routes: `/goals` → `/goals/current`; `/goals/past`.
+
+**REQ-GOAL-08 (P1):** **Current Goals** layout: **columns per household member**; within each column three stacked sections — Daily, Weekly, Term. Each goal row is **checkbox + title** only (no priority, notes, assignees, drag/reorder, or pinning). Creator may inline-edit title and add until the cadence cap; others see read-only rows.
+
+**REQ-GOAL-09 (P1):** **Past Goals** layout: **streak / hit-rate analysis** at the top (per member, per cadence), then an archive of past sets. Initially show the **past 4 sets per cadence** with a **Load more…** control. Sets show goal titles and completion state for historical review.
+
+**REQ-GOAL-10 (P1):** Hit-rate = completed goals ÷ total goals across archived sets for that member+cadence. Streak = count of consecutive fully-complete archived sets from the most recent backward (empty sets ignored).
+
+**REQ-GOAL-11 (P1):** Mid-period **title edit** is allowed on current goals. Deleting a current goal frees a slot under the cadence cap.
+
+#### 4.11.1 Explicitly not in v1 goals scope
+
+- Automatic day/week/term rollover or cron.
+- Recurring / standing goal templates.
+- Mobile app Goals screen.
+- Notes, priority, due dates, assignees, comments, drag-and-drop.
+- Cross-linking goals to tasks or calendar.
+
 ---
 
 ## 5. Phased roadmap
@@ -555,6 +589,13 @@ Household **equipment and gear** tracking — organize owned items, group simila
 | **Gear library** | Standalone items + item classes with variant tables · photos · condition incl. `RETIRED` · activity folders |
 | **Lending** | Staging drop zone · external borrower form · active loans table · overdue styling · whole-loan return · collapsed loan history + clear |
 | **Web `/gear`** | `ModulePageLayout` · zone-aware DnD (library + lend zone) · desktop-first |
+
+### Phase 1h — Goals
+
+| Module | Deliverables |
+|--------|--------------|
+| **Goals** | `/goals` nav below Tasks · Daily (3) / Weekly (5) / Term (10) caps · member columns · Current / Past tabs · manual Reset → archive · streak & hit-rate · load-more archive |
+| **Web only** | No mobile Goals surface in 1h |
 
 ### Phase 2 — Hardening & ops
 
@@ -829,6 +870,7 @@ All open questions are resolved. Reference for agents and future you:
 
 | Date | Change |
 |------|--------|
+| 2026-11-02 | **Goals (Phase 1h):** REQ-GOAL-01 … REQ-GOAL-11 — `/goals` below Tasks; Daily/Weekly/Term caps 3/5/10; personal+household-visible; creator-only complete/edit/reset; manual Reset archives; Current/Past tabs; streak & hit-rate + load-more archive. See `docs/design/DESIGN.md` §8.16. |
 | 2026-07-16 | **Household Shopping List (REQ-FIN-33 … REQ-FIN-38):** Renamed Purchase List; inline name/budget/urgency table, creator avatar, purchased lifecycle, and shared Tasks-style comments. |
 | 2026-07-15 | **Monthly Reports (REQ-FIN-27 … REQ-FIN-32):** Read-only `/finance/reports` with month nav, overview + section accordions, stacked bar chart, PDF export; recomputed from allocations. Updated REQ-FIN-16 (Purchase List placeholder only). |
 | 2026-07-15 | **View recipe modal (REQ-MEAL-10):** Click library recipe → readable view; **Edit Recipe** opens existing edit form. Updated REQ-MEAL-03. |
@@ -865,6 +907,7 @@ All open questions are resolved. Reference for agents and future you:
 **Meals:** REQ-MEAL-01 … REQ-MEAL-10  
 **Receipts:** REQ-RCPT-01 … REQ-RCPT-13  
 **Gear:** REQ-GEAR-01 … REQ-GEAR-19  
+**Goals:** REQ-GOAL-01 … REQ-GOAL-11  
 **Folders (shared):** REQ-FOLDER-01 … REQ-FOLDER-06  
 **Home:** REQ-HOME-01  
 **Data:** REQ-DATA-01 … REQ-DATA-06  

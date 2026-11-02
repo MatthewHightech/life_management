@@ -83,6 +83,13 @@ export {
   AddShoppingItemCommentDocument as ADD_SHOPPING_ITEM_COMMENT_MUTATION,
   DeleteShoppingItemCommentDocument as DELETE_SHOPPING_ITEM_COMMENT_MUTATION,
   MarkShoppingItemCommentsReadDocument as MARK_SHOPPING_ITEM_COMMENTS_READ_MUTATION,
+  CurrentGoalsDocument as CURRENT_GOALS_QUERY,
+  PastGoalsDocument as PAST_GOALS_QUERY,
+  CreateGoalDocument as CREATE_GOAL_MUTATION,
+  UpdateGoalDocument as UPDATE_GOAL_MUTATION,
+  SetGoalCompletedDocument as SET_GOAL_COMPLETED_MUTATION,
+  DeleteGoalDocument as DELETE_GOAL_MUTATION,
+  ResetGoalsDocument as RESET_GOALS_MUTATION,
 } from "./generated/graphql";
 
 export type {
@@ -289,4 +296,19 @@ export type {
   DeleteShoppingItemCommentMutationVariables,
   MarkShoppingItemCommentsReadMutation,
   MarkShoppingItemCommentsReadMutationVariables,
+  GoalCadence,
+  CurrentGoalsQuery,
+  CurrentGoalsQueryVariables,
+  PastGoalsQuery,
+  PastGoalsQueryVariables,
+  CreateGoalMutation,
+  CreateGoalMutationVariables,
+  UpdateGoalMutation,
+  UpdateGoalMutationVariables,
+  SetGoalCompletedMutation,
+  SetGoalCompletedMutationVariables,
+  DeleteGoalMutation,
+  DeleteGoalMutationVariables,
+  ResetGoalsMutation,
+  ResetGoalsMutationVariables,
 } from "./generated/graphql";

@@ -2,6 +2,7 @@ import {
   addDays,
   calendarDayKey,
   formatMonthYear,
+  goalPeriodLabel,
   parseOptionalDate,
   startOfWeek,
   subDays,
@@ -31,6 +32,7 @@ export type DemoState = {
   gearItems: DemoRecord[];
   gearClasses: DemoRecord[];
   gearLoans: DemoRecord[];
+  goalSets: DemoRecord[];
 };
 
 const demoUser: DemoRecord = {
@@ -786,6 +788,86 @@ export function createDemoSeed(): DemoState {
               hasPhoto: false,
             },
             gearVariant: null,
+          },
+        ],
+      },
+    ],
+    goalSets: [
+      {
+        __typename: "GoalSet",
+        id: "goal-set-luke-daily",
+        cadence: "DAILY",
+        label: goalPeriodLabel("DAILY", now),
+        archivedAt: null,
+        createdAt: today,
+        user: demoUser,
+        goals: [
+          {
+            __typename: "Goal",
+            id: "goal-luke-meditate",
+            title: "Meditate for 20 minutes",
+            completedAt: null,
+            sortOrder: 0,
+            createdAt: today,
+            updatedAt: today,
+          },
+          {
+            __typename: "Goal",
+            id: "goal-luke-train",
+            title: "Lightsaber practice",
+            completedAt: today,
+            sortOrder: 1,
+            createdAt: today,
+            updatedAt: today,
+          },
+        ],
+      },
+      {
+        __typename: "GoalSet",
+        id: "goal-set-vader-weekly",
+        cadence: "WEEKLY",
+        label: goalPeriodLabel("WEEKLY", now),
+        archivedAt: null,
+        createdAt: today,
+        user: demoPartner,
+        goals: [
+          {
+            __typename: "Goal",
+            id: "goal-vader-fleet",
+            title: "Review fleet readiness",
+            completedAt: null,
+            sortOrder: 0,
+            createdAt: today,
+            updatedAt: today,
+          },
+        ],
+      },
+      {
+        __typename: "GoalSet",
+        id: "goal-set-luke-daily-archive",
+        cadence: "DAILY",
+        label: goalPeriodLabel("DAILY", subDays(now, 1)),
+        archivedAt: lastWeek,
+        createdAt: lastWeek,
+        user: demoUser,
+        goals: [
+          {
+            __typename: "Goal",
+            id: "goal-luke-archive-1",
+            title: "Call Leia",
+            completedAt: lastWeek,
+            sortOrder: 0,
+            createdAt: lastWeek,
+            updatedAt: lastWeek,
+          },
+          {
+            __typename: "Goal",
+            id: "goal-luke-archive-2",
+            title: "Repair X-wing",
+            completedAt: lastWeek,
+            sortOrder: 1,
+            createdAt: lastWeek,
+            updatedAt: lastWeek,
           },
         ],
       },

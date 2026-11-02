@@ -159,13 +159,14 @@ These decisions align the Stitch export with [`requirements.md`](../requirements
 | Default home | **Tasks → Kanban** at `/` | REQ-SHELL-01 |
 | Sidebar | **Dark evergreen** (`primary` / `primary-container`); light content canvas — *mockups show a light sidebar; implement dark per this spec* | REQ-SHELL-02 |
 | Sidebar collapse | **Phase 1** — expanded 260px + collapsed 72px icon rail | REQ-SHELL-02 |
-| Top-level nav | **Module nav:** Tasks · Finance · Calendar · Meal Planning | REQ-SHELL-03 |
+| Top-level nav | **Module nav:** Tasks · Goals · Finance · Calendar · Meal Planning · Receipts · Gear | REQ-SHELL-03 |
 | Tasks module views (first pass) | **Kanban** (default) + **List** toggle only | REQ-TASK-12, REQ-TASK-14 |
 | Tasks module views (later pass) | Today · task calendar · by person | REQ-TASK-10, REQ-TASK-11, REQ-TASK-13 |
 | Google Calendar nav | Top-level **Calendar** — disabled until module ships | REQ-CAL-01 |
 | Meal Planning nav | Top-level **`/meals`** — enabled; Phase 1b implements planning UI | REQ-MEAL-01 … REQ-MEAL-06 |
 | Receipts nav | Top-level **`/receipts`** — standalone module (not under Finance) | REQ-RCPT-01 |
 | Gear nav | Top-level **`/gear`** — Gear Inventory module (Phase 1d) | REQ-GEAR-01 |
+| Goals nav | Top-level **`/goals`** — directly below Tasks (Phase 1h) | REQ-GOAL-01 |
 | Shared folders | Generic folder UI + GraphQL reused by Meals, Receipts, and Gear | REQ-FOLDER-01 … REQ-FOLDER-06 |
 | Public demo | Shared production UI with a local, refresh-reset in-memory data plane; bank/Plaid disabled | REQ-DEMO-01 … REQ-DEMO-05 |
 | Create action | **"+ New Task"** on Tasks pages (not sidebar “+ New Entry”) | — |
@@ -281,10 +282,12 @@ Use YAML frontmatter values as source of truth for implementation.
 ```
 [Dark sidebar — Life Management / Household]     [collapse toggle]
   Tasks          →  /tasks          (active module)
+  Goals          →  /goals/current  (Phase 1h — below Tasks)
   Finance        →  /finance/budget (default; redirects from /finance)
   Calendar       →  /calendar       (disabled — Google Calendar module)
   Meal Planning  →  /meals          (Phase 1b — weekly plan + grocery)
   Receipts       →  /receipts       (Phase 1c — file storage + folders)
+  Gear           →  /gear           (Phase 1d)
   ─────────────────
   Sign out
   [User — name + avatar only; no Settings or ADMIN badge in first pass]
@@ -314,6 +317,22 @@ List:    filter chips deferred (REQ-TASK-15)
 | `/finance/budget` | Household budget (purchases inbox + monthly + annual tables) | **Phase 1e — V1** · **1f purchases inbox** |
 | `/finance/reports` | Monthly Reports | Monthly financial report (REQ-FIN-27 … REQ-FIN-32) |
 | `/finance/shopping-list` | Shopping List | Household planned purchases (REQ-FIN-33 … REQ-FIN-38) |
+| `/goals` → `/goals/current` | Current Goals | Phase 1h — member columns (REQ-GOAL-01 … REQ-GOAL-11) |
+| `/goals/past` | Past Goals | Streak / hit-rate + archived sets |
+
+**Inside Goals module** (`/goals/current`, default):
+
+```
+Header:  Goals                    [Current Goals] [Past Goals]
+                                              ↑ segmented control (Finance toggle pattern)
+
+Current:  | Member A | Member B | … |
+          Daily (≤3) · Weekly (≤5) · Term (≤10)
+          checkbox + title rows; Reset (owner only) archives cadence set
+
+Past:     [Hit-rate / streak cards per member]
+          Archived sets (4 per cadence) · Load more…
+```
 
 **Inside Finance module** (`/finance/budget`, default):
 
@@ -880,6 +899,50 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 
 **Out of scope (Phase 1d):** search/filter, barcode, finance linking, household-member borrowers, partial returns, email automation.
 
+### 8.16 Goals (Phase 1h)
+
+Reference: REQ-GOAL-01 … REQ-GOAL-11 · module accent **muted blue** (`muted-blue` / `text-secondary` on cadence section headers — same selected-board chip treatment as Tasks kanban).
+
+**Page shell:** `ModulePageLayout` + `GoalsPageLayout` wrapping `GoalsViewToggle` (mirror Finance).
+
+**Sub-navigation:** **Current Goals** · **Past Goals**. Redirect `/goals` → `/goals/current`.
+
+**Current Goals**
+
+```
+┌──────────────┬──────────────┬──────────────┐
+│  (avatar) You│  Partner     │  …           │
+│  Daily       │  Daily       │              │
+│  ☐ Goal…     │  ☑ Goal…     │              │
+│  [+ Add]     │  (read-only) │              │
+│  [Reset]     │              │              │
+│  Weekly …    │  Weekly …    │              │
+│  Term …      │  Term …      │              │
+└──────────────┴──────────────┴──────────────┘
+```
+
+- Columns = household members (name + avatar header).
+- Three stacked cadence sections per column with soft section header strip.
+- Goal row: completion checkbox + inline title (`EditableTextCell` for owner; plain text for others).
+- Owner column: primary **Add** until cadence cap; secondary **Reset** with `ConfirmModal` (archives current set for that cadence).
+- Completed goals: checked + muted strikethrough; remain until Reset.
+
+**Past Goals**
+
+1. **Analysis strip** — per-member cards: Daily / Weekly / Term **hit-rate** (%) and **streak** (consecutive fully-complete archived sets).
+2. **Archive** — for each cadence, newest archived sets first (initial **4**), each set labeled (day / week-of / term window) with goal rows (read-only completion state). **Load more…** appends the next page of sets per cadence.
+
+**Data (conceptual)**
+
+| Entity | Role |
+|--------|------|
+| `GoalSet` | One cadence batch for one user; `archivedAt` null = current |
+| `Goal` | Title + optional `completedAt` inside a set |
+
+Shared helpers in `@life/shared` for cadence caps, term windows (Jan–Apr / May–Aug / Sep–Dec), period labels, hit-rate, and streak.
+
+**Out of scope (Phase 1h):** auto-rollover, templates, mobile app, notes/priority/assignees/comments/DnD.
+
 ### 8.15 Public demo mode
 
 The landing-page **Explore Demo** action creates a same-site session cookie and enters the normal app shell. The protected route layout accepts either the real authentication cookie or the demo cookie; the demo cookie is only a mode marker and grants no API authorization.
@@ -1063,6 +1126,7 @@ Refreshing creates a fresh Apollo client and restores the seed. Exit clears the 
 | Meals | REQ-MEAL-01 … REQ-MEAL-10 |
 | Receipts | REQ-RCPT-01 … REQ-RCPT-13 |
 | Gear | REQ-GEAR-01 … REQ-GEAR-19 · §8.14 |
+| Goals | REQ-GOAL-01 … REQ-GOAL-11 · §8.16 |
 | Shared folders | REQ-FOLDER-01 … REQ-FOLDER-06 |
 | Public demo mode | REQ-DEMO-01 … REQ-DEMO-05 · §8.15 |
 | Out of scope | Dark mode, a11y-specific, real-time collab (§3.2) |
@@ -1073,6 +1137,7 @@ Refreshing creates a fresh Apollo client and restores the seed. Exit clears the 
 
 | Date | Change |
 |------|--------|
+| 2026-11-02 | **Goals (Phase 1h):** §8.16 Current/Past tabs, member columns, Daily/Weekly/Term caps, Reset → archive, streak/hit-rate, load-more. Nav below Tasks. REQ-GOAL-01 … REQ-GOAL-11. |
 | 2026-07-17 | **Public demo mode (REQ-DEMO-01 … REQ-DEMO-05):** §8.15 isolated in-memory data plane, fictional seed, demo chrome, and disabled bank integration. |
 | 2026-07-16 | **Household Shopping List (REQ-FIN-33 … REQ-FIN-38):** §8.8.4 inline table, purchased lifecycle, and shared Tasks-style comments UI. |
 | 2026-07-15 | **Monthly Reports (REQ-FIN-27 … REQ-FIN-32):** §8.8.3 read-only report, month nav, overview chart, section accordions, PDF export. |

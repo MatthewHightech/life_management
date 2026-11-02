@@ -1,10 +1,15 @@
 import { ApolloLink, Observable } from "@apollo/client";
 import type { FetchResult, Operation } from "@apollo/client";
 import {
+  archiveHitRate,
+  archiveStreak,
   budgetRemainingCents,
   budgetRemainingPercent,
   formatBudgetReportTitle,
+  goalLimit,
+  goalPeriodLabel,
   mergeGroceryIngredients,
+  type GoalCadence,
 } from "@life/shared";
 import { demoBudgetTitle, demoWeekStart, createDemoSeed } from "@/demo/seed";
 import type { DemoRecord, DemoState } from "@/demo/seed";
@@ -406,6 +411,47 @@ class DemoStore {
 
   private bankUnavailable(): never {
     throw new Error(DEMO_UNAVAILABLE_MESSAGE);
+  }
+
+  private goalSetView(set: DemoRecord) {
+    const goals = (set.goals as DemoRecord[]) ?? [];
+    const completedCount = goals.filter((goal) => goal.completedAt).length;
+    const totalCount = goals.length;
+    return {
+      ...set,
+      goals,
+      completedCount,
+      totalCount,
+      isComplete: totalCount > 0 && completedCount >= totalCount,
+    };
+  }
+
+  private findGoal(goalId: string) {
+    for (const set of this.state.goalSets) {
+      const goals = (set.goals as DemoRecord[]) ?? [];
+      const goal = goals.find((item) => item.id === goalId);
+      if (goal) {
+        return { set, goal, goals };
+      }
+    }
+    throw new Error("That goal no longer exists.");
+  }
+
+  private cadenceStats(cadence: GoalCadence, sets: DemoRecord[]) {
+    const inputs = sets.map((set) => {
+      const goals = (set.goals as DemoRecord[]) ?? [];
+      return {
+        totalCount: goals.length,
+        completedCount: goals.filter((goal) => goal.completedAt).length,
+      };
+    });
+    return {
+      __typename: "GoalCadenceStats",
+      cadence,
+      hitRate: archiveHitRate(inputs),
+      streak: archiveStreak(inputs),
+      archivedSetCount: sets.length,
+    };
   }
 
   private handlers: Record<string, (variables: Variables) => Record<string, unknown>> = {
@@ -1186,6 +1232,145 @@ class DemoStore {
     ClearGearLoanHistory: () => {
       this.state.gearLoans = this.state.gearLoans.filter((loan) => !loan.returnedAt);
       return { clearGearLoanHistory: true };
+    },
+
+    CurrentGoals: () => ({
+      currentGoals: {
+        __typename: "CurrentGoalsBoard",
+        members: this.state.household.users,
+        sets: this.state.goalSets
+          .filter((set) => !set.archivedAt)
+          .map((set) => this.goalSetView(set)),
+      },
+      me: this.state.user,
+    }),
+
+    PastGoals: (variables) => {
+      const limit = Math.max(1, Math.min(Number(variables.limit ?? 4), 50));
+      const offset = Math.max(0, Number(variables.offset ?? 0));
+      const archived = this.state.goalSets
+        .filter((set) => set.archivedAt)
+        .sort((a, b) => String(b.archivedAt).localeCompare(String(a.archivedAt)));
+      const byCadence = {
+        DAILY: archived.filter((set) => set.cadence === "DAILY"),
+        WEEKLY: archived.filter((set) => set.cadence === "WEEKLY"),
+        TERM: archived.filter((set) => set.cadence === "TERM"),
+      };
+      const page = (cadence: GoalCadence) =>
+        byCadence[cadence].slice(offset, offset + limit).map((set) => this.goalSetView(set));
+      const members = this.state.household.users as DemoRecord[];
+      const stats = members.map((user) => {
+        const forUser = (cadence: GoalCadence) =>
+          byCadence[cadence].filter((set) => (set.user as DemoRecord).id === user.id);
+        return {
+          __typename: "GoalMemberStats",
+          user,
+          daily: this.cadenceStats("DAILY", forUser("DAILY")),
+          weekly: this.cadenceStats("WEEKLY", forUser("WEEKLY")),
+          term: this.cadenceStats("TERM", forUser("TERM")),
+        };
+      });
+
+      return {
+        pastGoals: {
+          __typename: "PastGoalsArchive",
+          stats,
+          daily: page("DAILY"),
+          weekly: page("WEEKLY"),
+          term: page("TERM"),
+          hasMoreDaily: byCadence.DAILY.length > offset + limit,
+          hasMoreWeekly: byCadence.WEEKLY.length > offset + limit,
+          hasMoreTerm: byCadence.TERM.length > offset + limit,
+        },
+      };
+    },
+
+    CreateGoal: (variables) => {
+      const cadence = stringVariable(variables, "cadence") as GoalCadence;
+      const title = stringVariable(variables, "title").trim();
+      if (!title) throw new Error("Goal title is required");
+
+      let set = this.state.goalSets.find(
+        (item) =>
+          !item.archivedAt &&
+          item.cadence === cadence &&
+          (item.user as DemoRecord).id === this.state.user.id,
+      );
+
+      if (!set) {
+        set = withTimestamp(
+          {
+            cadence,
+            label: goalPeriodLabel(cadence),
+            archivedAt: null,
+            user: this.state.user,
+            goals: [],
+          },
+          this.id("goal-set"),
+          "GoalSet",
+        );
+        this.state.goalSets.push(set);
+      }
+
+      const goals = (set.goals as DemoRecord[]) ?? [];
+      if (goals.length >= goalLimit(cadence)) {
+        throw new Error(`At most ${goalLimit(cadence)} ${cadence.toLowerCase()} goals allowed`);
+      }
+
+      goals.push(
+        withTimestamp(
+          {
+            title,
+            completedAt: null,
+            sortOrder: goals.length,
+          },
+          this.id("goal"),
+          "Goal",
+        ),
+      );
+      set.goals = goals;
+      set.label = goalPeriodLabel(cadence);
+      return { createGoal: this.goalSetView(set) };
+    },
+
+    UpdateGoal: (variables) => {
+      const { goal } = this.findGoal(stringVariable(variables, "id"));
+      goal.title = stringVariable(variables, "title").trim();
+      goal.updatedAt = new Date().toISOString();
+      return { updateGoal: goal };
+    },
+
+    SetGoalCompleted: (variables) => {
+      const { goal } = this.findGoal(stringVariable(variables, "id"));
+      goal.completedAt = variables.completed ? new Date().toISOString() : null;
+      goal.updatedAt = new Date().toISOString();
+      return { setGoalCompleted: goal };
+    },
+
+    DeleteGoal: (variables) => {
+      const { set, goals } = this.findGoal(stringVariable(variables, "id"));
+      const id = stringVariable(variables, "id");
+      set.goals = goals.filter((goal) => goal.id !== id);
+      return { deleteGoal: true };
+    },
+
+    ResetGoals: (variables) => {
+      const cadence = stringVariable(variables, "cadence");
+      const set = this.state.goalSets.find(
+        (item) =>
+          !item.archivedAt &&
+          item.cadence === cadence &&
+          (item.user as DemoRecord).id === this.state.user.id,
+      );
+      if (!set) return { resetGoals: true };
+      const goals = (set.goals as DemoRecord[]) ?? [];
+      if (goals.length === 0) {
+        this.remove(this.state.goalSets, set.id);
+        return { resetGoals: true };
+      }
+      set.archivedAt = new Date().toISOString();
+      set.label = goalPeriodLabel(cadence as GoalCadence);
+      return { resetGoals: true };
     },
 
     CreateFolder: (variables) => {
