@@ -901,7 +901,7 @@ Overdue rows: soft red background (mirror list-view overdue tasks).
 
 ### 8.16 Goals (Phase 1h)
 
-Reference: REQ-GOAL-01 … REQ-GOAL-11 · module accent **muted blue** (`muted-blue` / `text-secondary` on cadence section headers — same selected-board chip treatment as Tasks kanban).
+Reference: REQ-GOAL-01 … REQ-GOAL-11 · cadence sections use the shared gray `sectionHeaderClass` strip (same as Meals / Gear / Receipts).
 
 **Page shell:** `ModulePageLayout` + `GoalsPageLayout` wrapping `GoalsViewToggle` (mirror Finance).
 
@@ -922,7 +922,7 @@ Reference: REQ-GOAL-01 … REQ-GOAL-11 · module accent **muted blue** (`muted-b
 ```
 
 - Columns = household members (name + avatar header).
-- Three stacked cadence sections per column with soft section header strip.
+- Three stacked cadence sections per column with shared gray `sectionHeaderClass` strip.
 - Goal row: completion checkbox + inline title (`EditableTextCell` for owner; plain text for others).
 - Owner column: primary **Add** until cadence cap; secondary **Reset** with `ConfirmModal` (archives current set for that cadence).
 - Completed goals: checked + muted strikethrough; remain until Reset.

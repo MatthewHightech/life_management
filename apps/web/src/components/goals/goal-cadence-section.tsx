@@ -6,6 +6,8 @@ import { GOAL_CADENCE_LABELS, GOAL_LIMITS, type GoalCadence } from "@life/shared
 import { GoalRow, type GoalRowData } from "@/components/goals/goal-row";
 import { Button } from "@/components/ui/button";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { cn } from "@/lib/cn";
+import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
 
 type GoalCadenceSectionProps = {
   cadence: GoalCadence;
@@ -57,10 +59,12 @@ export function GoalCadenceSection({
   }
 
   return (
-    <section className="rounded-lg border border-border-subtle bg-surface">
-      <header className="flex items-center justify-between gap-2 rounded-t-lg bg-muted-blue px-3 py-2">
+    <section className={sectionCardClass}>
+      <header className={cn(sectionHeaderClass, "flex items-center justify-between gap-2")}>
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-secondary">{GOAL_CADENCE_LABELS[cadence]}</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-text-main">
+            {GOAL_CADENCE_LABELS[cadence]}
+          </h3>
           {label ? <p className="truncate text-xs text-text-muted">{label}</p> : null}
         </div>
         <span className="shrink-0 text-xs text-text-muted">

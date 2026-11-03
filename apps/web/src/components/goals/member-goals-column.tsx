@@ -46,7 +46,6 @@ export function MemberGoalsColumn({
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-text-main">
             {member.name ?? member.email}
-            {isOwner ? <span className="ml-1 text-xs font-normal text-text-muted">(you)</span> : null}
           </p>
         </div>
       </header>
