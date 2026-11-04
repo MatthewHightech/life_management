@@ -26,9 +26,9 @@ export function LandingPage({
         <p className="mt-4 text-base leading-7 text-text-muted">
           I&apos;m obsessed with organization.
           <br />
-          I love my Google Calender but it wasn&apos;t enough.
+          I love my Google Calender but it&apos;s not enough.
           <br />
-          I needed simple, no-hassle, and maximum visibility for my family.
+          I needed simple, hassle-free, maximum visibility for my family.
           <br />
           So I built this.
         </p>
