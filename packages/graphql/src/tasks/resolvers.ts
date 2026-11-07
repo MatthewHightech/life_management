@@ -1,5 +1,5 @@
 import { Prisma, TaskPriority, TaskStatus } from "@prisma/client";
-import { dayBounds, parseOptionalDate, toIsoString } from "@life/shared";
+import { dayBounds, isPastDueDate, parseOptionalDate, toIsoString } from "@life/shared";
 import { GraphQLContext } from "../context";
 import { assertTaskInHousehold, requireHouseholdUser } from "../auth";
 import {
@@ -593,8 +593,7 @@ export const taskResolvers = {
         return false;
       }
 
-      const { end: todayEnd } = dayBounds();
-      return parent.dueDate < todayEnd;
+      return isPastDueDate(parent.dueDate);
     },
     subtaskProgress: (parent: { subtasks?: { status: TaskStatus }[] }) => {
       const subtasks = parent.subtasks ?? [];

@@ -3,10 +3,14 @@ import {
   buildMonthGrid,
   dayBounds,
   formatCalendarGroupLabel,
+  formatDueDate,
   formatLongDate,
   formatShortDate,
+  isPastDueDate,
+  parseDueDate,
   parseOptionalDate,
   toDateInputValue,
+  toDueDateIso,
   toIsoString,
 } from "@life/shared";
 
@@ -20,6 +24,29 @@ describe("shared dates", () => {
     expect(end.getHours()).toBe(23);
     expect(end.getMinutes()).toBe(59);
   });
+
+  it("marks date-only dues overdue only after that Pacific calendar day ends", () => {
+    // Legacy local-midnight shapes (PDT 07:00Z / PST 08:00Z) and UTC-noon
+    const duePdtMidnight = new Date("2026-11-06T07:00:00.000Z");
+    const duePstMidnight = new Date("2026-11-06T08:00:00.000Z");
+    const dueUtcNoon = new Date("2026-11-06T12:00:00.000Z");
+
+    for (const dueNov6 of [duePdtMidnight, duePstMidnight, dueUtcNoon]) {
+      expect(isPastDueDate(dueNov6, new Date("2026-11-06T06:59:59.000Z"))).toBe(false); // Nov 5 10:59pm PT
+      expect(isPastDueDate(dueNov6, new Date("2026-11-07T00:00:00.000Z"))).toBe(false); // Nov 6 4:00pm PT
+      expect(isPastDueDate(dueNov6, new Date("2026-11-07T07:59:59.000Z"))).toBe(false); // Nov 6 11:59pm PT
+      expect(isPastDueDate(dueNov6, new Date("2026-11-07T08:00:00.000Z"))).toBe(true); // Nov 7 12:00am PT
+    }
+  });
+
+  it("stores and displays due dates by calendar day, not local midnight instant", () => {
+    const picked = new Date(2026, 10, 6, 15, 30, 0);
+    expect(toDueDateIso(picked)).toBe("2026-11-06T12:00:00.000Z");
+    expect(formatDueDate("2026-11-06T07:00:00.000Z")).toBe("Nov 6");
+    expect(parseDueDate("2026-11-06T07:00:00.000Z")).toEqual(new Date(2026, 10, 6));
+  });
+
+
 
   it("parses optional ISO dates", () => {
     expect(parseOptionalDate(null)).toBeNull();

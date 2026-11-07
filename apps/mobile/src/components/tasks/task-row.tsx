@@ -3,7 +3,7 @@ import {
   TASK_PRIORITY_LABELS,
   TASK_STATUS_COLORS,
   TASK_STATUS_LABELS,
-  formatShortDate,
+  formatDueDate,
   type TaskPriority,
   type TaskStatus,
 } from "@life/shared";
@@ -66,7 +66,7 @@ export function TaskRow({ task, onPress, onToggleComplete, busy }: TaskRowProps)
           <AvatarStack users={task.assignees} size={22} showEmpty={false} />
           {task.dueDate ? (
             <Text style={[styles.due, task.isOverdue && styles.titleOverdue]}>
-              {formatShortDate(task.dueDate)}
+              {formatDueDate(task.dueDate)}
             </Text>
           ) : null}
           {task.commentCount > 0 ? (

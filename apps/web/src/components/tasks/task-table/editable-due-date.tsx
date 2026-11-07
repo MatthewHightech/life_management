@@ -1,6 +1,6 @@
 "use client";
 
-import { formatShortDate, parseOptionalDate, startOfDay, toIsoString } from "@life/shared";
+import { formatDueDate, parseDueDate, toDueDateIso } from "@life/shared";
 import { CalendarPicker } from "@/components/ui/calendar-picker";
 import { FloatingPanel } from "@/components/ui/floating-panel";
 import { useAsyncAction } from "@/hooks/use-async-action";
@@ -14,14 +14,10 @@ type EditableDueDateProps = {
   className?: string;
 };
 
-function toDueDateIso(date: Date): string | null {
-  return toIsoString(startOfDay(date));
-}
-
 export function EditableDueDate({ value, overdue, onSave, className }: EditableDueDateProps) {
   const { open, anchorRef, toggle, close, triggerClassName } = usePopoverAnchor();
   const { pending, run } = useAsyncAction(onSave);
-  const selectedDate = value ? parseOptionalDate(value) : null;
+  const selectedDate = value ? parseDueDate(value) : null;
 
   async function persist(nextIso: string | null) {
     close();
@@ -46,7 +42,7 @@ export function EditableDueDate({ value, overdue, onSave, className }: EditableD
           ),
         )}
       >
-        {value ? formatShortDate(value) : "Set date"}
+        {value ? formatDueDate(value) : "Set date"}
       </button>
 
       <FloatingPanel open={open} anchorRef={anchorRef} onClose={close} minWidth={256} className="p-0">

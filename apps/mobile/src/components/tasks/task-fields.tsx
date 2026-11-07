@@ -5,9 +5,9 @@ import {
   TASK_STATUS_COLORS,
   TASK_STATUS_LABELS,
   TASK_STATUSES,
-  formatShortDate,
-  startOfDay,
-  toIsoString,
+  formatDueDate,
+  parseDueDate,
+  toDueDateIso,
   toggleAssigneeId,
   type TaskPriority,
   type TaskStatus,
@@ -174,7 +174,7 @@ type DueDateFieldProps = {
 
 export function DueDateField({ value, onChange }: DueDateFieldProps) {
   const [showPicker, setShowPicker] = useState(false);
-  const selected = value ? new Date(value) : new Date();
+  const selected = value ? parseDueDate(value) : new Date();
 
   function openPicker() {
     if (Platform.OS === "ios") {
@@ -202,7 +202,7 @@ export function DueDateField({ value, onChange }: DueDateFieldProps) {
     <Field label="Due date">
       <Pressable style={styles.dateButton} onPress={openPicker}>
         <Text style={value ? styles.dateValue : styles.hint}>
-          {value ? formatShortDate(value) : "No due date"}
+          {value ? formatDueDate(value) : "No due date"}
         </Text>
       </Pressable>
       {showPicker ? (
@@ -215,7 +215,7 @@ export function DueDateField({ value, onChange }: DueDateFieldProps) {
               setShowPicker(false);
             }
             if (date) {
-              onChange(toIsoString(startOfDay(date)));
+              onChange(toDueDateIso(date));
             }
           }}
         />

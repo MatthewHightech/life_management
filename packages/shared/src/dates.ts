@@ -21,6 +21,57 @@ export function dayBounds(date: Date = new Date()) {
   return { start: startOfDay(date), end: endOfDay(date) };
 }
 
+/**
+ * Until per-household TZ exists, "today" for date-only dues uses Pacific
+ * (same convention as budget / meal plan).
+ */
+const DUE_DATE_TIMEZONE = "America/Los_Angeles";
+
+function calendarDayKeyInTimeZone(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+/**
+ * Due dates are date-only. We persist UTC noon on the picked calendar day
+ * (and historically local midnights like 07:00Z/08:00Z). The intended day is
+ * always the UTC calendar date of that timestamp.
+ */
+export function dueCalendarDayKey(dueDate: Date): string {
+  return dueDate.toISOString().slice(0, 10);
+}
+
+/** Persist a date-only due date as UTC noon on the picker's local calendar day. */
+export function toDueDateIso(date: Date): string {
+  return new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12),
+  ).toISOString();
+}
+
+/** Local midnight for the due calendar day — for pickers and display. */
+export function parseDueDate(value: string): Date {
+  const date = parseISO(value);
+  if (!isValid(date)) {
+    throw new Error("Invalid date value");
+  }
+  const [year, month, day] = dueCalendarDayKey(date).split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+export function formatDueDate(value: Date | string): string {
+  const date = typeof value === "string" ? parseDueDate(value) : parseDueDate(value.toISOString());
+  return format(date, "MMM d");
+}
+
+/** True only after the due calendar day has ended (from 12:00am the next day). */
+export function isPastDueDate(dueDate: Date, now: Date = new Date()): boolean {
+  return calendarDayKeyInTimeZone(now, DUE_DATE_TIMEZONE) > dueCalendarDayKey(dueDate);
+}
+
 export function parseOptionalDate(value?: string | null): Date | null {
   if (!value) {
     return null;

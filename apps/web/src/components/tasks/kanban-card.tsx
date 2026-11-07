@@ -2,7 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { formatShortDate } from "@life/shared";
+import { formatDueDate } from "@life/shared";
 import { GripVertical } from "lucide-react";
 import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
 import { TaskCommentsButton } from "@/components/tasks/task-comments-button";
@@ -155,7 +155,7 @@ export function KanbanCard({
                     overdue ? "font-medium text-error" : "text-text-muted",
                   )}
                 >
-                  {formatShortDate(task.dueDate)}
+                  {formatDueDate(task.dueDate)}
                 </p>
               ) : null}
             </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation } from "@apollo/client";
-import { formatShortDate, parseOptionalDate, startOfDay, toIsoString } from "@life/shared";
+import { formatDueDate, parseDueDate, toDueDateIso } from "@life/shared";
 import { Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { TaskPriority, TaskStatus } from "@/graphql";
@@ -34,10 +34,6 @@ type QuickAddTaskRowProps = {
   users: HouseholdUser[];
   currentUserId?: string;
 };
-
-function toDueDateIso(date: Date): string | null {
-  return toIsoString(startOfDay(date));
-}
 
 function DraftAssigneePicker({
   assigneeIds,
@@ -94,7 +90,7 @@ function DraftDueDatePicker({
   onChange: (value: string | null) => void;
 }) {
   const { open, anchorRef, toggle, close, triggerClassName } = usePopoverAnchor();
-  const selectedDate = value ? parseOptionalDate(value) : null;
+  const selectedDate = value ? parseDueDate(value) : null;
 
   function persist(nextIso: string | null) {
     close();
@@ -109,7 +105,7 @@ function DraftDueDatePicker({
         onClick={toggle}
         className={triggerClassName("inline-flex min-h-7 items-center rounded-md px-2 py-0.5 text-sm text-text-muted")}
       >
-        {value ? formatShortDate(value) : "Set date"}
+        {value ? formatDueDate(value) : "Set date"}
       </button>
 
       <FloatingPanel open={open} anchorRef={anchorRef} onClose={close} minWidth={256} className="p-0">
