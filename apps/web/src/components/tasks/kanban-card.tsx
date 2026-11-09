@@ -24,6 +24,7 @@ type KanbanCardProps = {
   onDelete?: () => void;
   overlay?: boolean;
   autoEditTitle?: boolean;
+  onAutoEditTitleApplied?: () => void;
 };
 
 export function KanbanCard({
@@ -34,6 +35,7 @@ export function KanbanCard({
   onDelete,
   overlay = false,
   autoEditTitle = false,
+  onAutoEditTitleApplied,
 }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
@@ -94,6 +96,7 @@ export function KanbanCard({
               onSave={(title) => onUpdate!({ title })}
               wrap
               startInEditMode={autoEditTitle}
+              onStartInEditModeApplied={onAutoEditTitleApplied}
               className={cn("text-sm font-medium text-text-main", overdue && "text-error")}
               inputClassName="font-medium"
             />

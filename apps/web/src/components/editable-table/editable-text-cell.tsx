@@ -14,6 +14,8 @@ type EditableTextCellProps = {
   displayPlaceholder?: string;
   /** Enter edit mode on mount / when this becomes true (e.g. newly created row). */
   startInEditMode?: boolean;
+  /** Fired when startInEditMode is honored so parents can treat it as a one-shot intent. */
+  onStartInEditModeApplied?: () => void;
   /** Select the full value when focusing (defaults to true when startInEditMode). */
   selectAllOnFocus?: boolean;
   allowClear?: boolean;
@@ -29,6 +31,7 @@ export function EditableTextCell({
   placeholder,
   displayPlaceholder,
   startInEditMode = false,
+  onStartInEditModeApplied,
   selectAllOnFocus = false,
   allowClear = false,
   disabled = false,
@@ -63,7 +66,8 @@ export function EditableTextCell({
     }
     selectAllPendingRef.current = true;
     setEditing(true);
-  }, [startInEditMode, setEditing]);
+    onStartInEditModeApplied?.();
+  }, [startInEditMode, setEditing, onStartInEditModeApplied]);
 
   useEffect(() => {
     if (!isEditing) {

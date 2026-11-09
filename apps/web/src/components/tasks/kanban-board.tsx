@@ -2,7 +2,7 @@
 
 import { DragOverlay, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { useMutation, useQuery } from "@apollo/client";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TaskStatus, TasksBoardQuery, TasksBoardQueryVariables, UpdateTaskMutationVariables } from "@/graphql";
 import {
   CREATE_TASK_MUTATION,
@@ -68,7 +68,11 @@ export function KanbanBoard() {
   });
   const [activeTask, setActiveTask] = useState<BoardTask | null>(null);
   const [activeWidth, setActiveWidth] = useState<number | null>(null);
-  const [focusTitleTaskId, setFocusTitleTaskId] = useState<string | null>(null);
+  const [pendingTitleEditTaskId, setPendingTitleEditTaskId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPendingTitleEditTaskId(null);
+  }, [activeBoardId]);
 
   const { data, loading, error } = useQuery<TasksBoardQuery, TasksBoardQueryVariables>(TASKS_BOARD_QUERY, {
     variables: kanbanQuery.variables,
@@ -154,7 +158,7 @@ export function KanbanBoard() {
       });
       const createdId = result.data?.createTask?.id;
       if (createdId) {
-        setFocusTitleTaskId(createdId);
+        setPendingTitleEditTaskId(createdId);
         setCollapsedByStatus((current) =>
           current[status] ? { ...current, [status]: false } : current,
         );
@@ -162,6 +166,13 @@ export function KanbanBoard() {
     },
     [createTask, currentUserId],
   );
+
+  const handleTitleAutoEditApplied = useCallback(() => {
+    // Defer so React Strict Mode remounts still see the pending intent on the first paint.
+    queueMicrotask(() => {
+      setPendingTitleEditTaskId(null);
+    });
+  }, []);
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
@@ -246,7 +257,8 @@ export function KanbanBoard() {
         onAddTask={(status) => void handleAddTask(status, boardId)}
         onUpdateTask={handleUpdate}
         onDeleteTask={handleDelete}
-        focusTitleTaskId={focusTitleTaskId}
+        pendingTitleEditTaskId={pendingTitleEditTaskId}
+        onTitleAutoEditApplied={handleTitleAutoEditApplied}
         onClearTasks={column.status === "DONE" ? () => handleClearDone(boardId) : undefined}
         clearingTasks={column.status === "DONE" ? clearingDone : false}
       />
