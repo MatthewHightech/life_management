@@ -52,8 +52,8 @@ export function GroceryListSection({ items }: GroceryListSectionProps) {
   }
 
   return (
-    <section className={sectionCardClass}>
-      <header className={cn(sectionHeaderClass, "flex flex-wrap items-center justify-between gap-3")}>
+    <section className={cn(sectionCardClass, "flex h-full min-h-0 flex-col")}>
+      <header className={cn(sectionHeaderClass, "flex shrink-0 flex-wrap items-center justify-between gap-3")}>
         <h2 className="text-sm font-semibold uppercase tracking-wide text-text-main">Grocery list</h2>
         <Button
           type="button"
@@ -66,7 +66,7 @@ export function GroceryListSection({ items }: GroceryListSectionProps) {
         </Button>
       </header>
 
-      <div className="space-y-2 p-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
         {items.length === 0 ? (
           <p className="text-sm text-text-muted">Assign meals to the weekly plan to build your grocery list.</p>
         ) : (
@@ -107,7 +107,10 @@ export function GroceryListSection({ items }: GroceryListSectionProps) {
           ))
         )}
 
-        <form onSubmit={(event) => void handleAdd(event)} className="grid grid-cols-[1fr_8rem_auto] gap-2 pt-2">
+        <form
+          onSubmit={(event) => void handleAdd(event)}
+          className="mt-auto grid shrink-0 grid-cols-[1fr_8rem_auto] gap-2 border-t border-border-subtle pt-3"
+        >
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}

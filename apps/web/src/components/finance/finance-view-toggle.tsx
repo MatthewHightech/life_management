@@ -1,36 +1,25 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/cn";
+import { BarChart3, ShoppingCart, Wallet } from "lucide-react";
+import { ViewToggle, type ViewToggleItem } from "@/components/ui/view-toggle";
 
-const FINANCE_VIEWS = [
-  { href: "/finance/budget", label: "Budget" },
-  { href: "/finance/reports", label: "Monthly Reports" },
-  { href: "/finance/shopping-list", label: "Shopping List" },
-] as const;
+type FinanceView = "budget" | "reports" | "shopping";
+
+const items: ViewToggleItem<FinanceView>[] = [
+  { value: "budget", label: "Budget", icon: Wallet, href: "/finance/budget" },
+  { value: "reports", label: "Monthly Reports", icon: BarChart3, href: "/finance/reports" },
+  { value: "shopping", label: "Shopping List", icon: ShoppingCart, href: "/finance/shopping-list" },
+];
+
+function activeFinanceView(pathname: string): FinanceView {
+  const match = items.find(
+    (item) => item.href && (pathname === item.href || pathname.startsWith(`${item.href}/`)),
+  );
+  return match?.value ?? "budget";
+}
 
 export function FinanceViewToggle() {
   const pathname = usePathname();
-
-  return (
-    <div className="flex rounded-lg border border-border-subtle bg-background p-1">
-      {FINANCE_VIEWS.map((view) => {
-        const active = pathname === view.href || pathname.startsWith(`${view.href}/`);
-
-        return (
-          <Link
-            key={view.href}
-            href={view.href}
-            className={cn(
-              "rounded-md px-3 py-1.5 text-sm",
-              active ? "bg-surface text-primary shadow-sm" : "text-text-muted",
-            )}
-          >
-            {view.label}
-          </Link>
-        );
-      })}
-    </div>
-  );
+  return <ViewToggle items={items} value={activeFinanceView(pathname)} />;
 }

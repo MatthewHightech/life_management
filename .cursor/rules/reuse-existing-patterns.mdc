@@ -1,0 +1,38 @@
+---
+description: Prefer existing UI patterns and consolidate duplicates before adding new components
+alwaysApply: true
+---
+
+# Reuse existing patterns
+
+Before adding or expanding UI/components, look for an existing pattern in the repo and reuse or extend it. Do not invent a parallel component that does the same job.
+
+## Before creating a new component
+
+1. **Search first** — Look in `apps/web/src/components/ui/`, shared shells, and nearby feature folders for the same chrome (toggles, pills, modals, section cards, empty states, etc.).
+2. **Match siblings** — If tasks/finance/goals/meals already share a control (e.g. `ViewToggle`), use that shared component instead of a feature-local copy.
+3. **Extend, don’t fork** — Prefer a prop or option on the existing component over a near-duplicate file.
+4. **Consolidate when you spot duplication** — If you find two+ components with the same structure and only config/routing differs, extract one shared primitive and leave thin feature wrappers only when they hold domain-specific logic (pathname, query params).
+
+## Examples
+
+```tsx
+// ❌ BAD — new meals-only toggle that copies tasks/finance chrome
+export function MealsViewToggle() { /* same bordered pill row */ }
+
+// ✅ GOOD — shared ViewToggle (href-only) + thin feature wrapper for pathname
+import { ViewToggle } from "@/components/ui/view-toggle";
+<ViewToggle items={[{ value: "recipes", label: "Recipes", href: "/meals", icon: BookOpen }]} value={active} />
+```
+
+```tsx
+// ❌ BAD — second modal/button style unique to one feature
+// ✅ GOOD — reuse existing Modal / Button / sectionCardClass patterns
+```
+
+## When a new component is justified
+
+- No existing primitive covers the interaction, **or**
+- Extending the shared one would leak unrelated domain concerns into `ui/`
+
+In that case, place reusable chrome in `components/ui/` (or another shared home) so the next feature can reuse it.

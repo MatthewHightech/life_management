@@ -1,5 +1,5 @@
-import { MealPlanningPage } from "@/components/meals/meal-planning-page";
+import { MealsRecipesPane } from "@/components/meals/meals-panes";
 
 export default function MealsPage() {
-  return <MealPlanningPage />;
+  return <MealsRecipesPane />;
 }

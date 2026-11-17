@@ -20,6 +20,7 @@ import {
   subWeeks,
 } from "@life/shared";
 import { ChevronLeft, ChevronRight, type LucideIcon } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import type { TasksBoardQuery, TasksBoardQueryVariables } from "@/graphql";
 import { TASKS_BOARD_QUERY } from "@/graphql";
@@ -27,6 +28,7 @@ import { useTaskBoards } from "@/components/tasks/task-boards-context";
 import { useTaskComments } from "@/components/tasks/task-comments-context";
 import { TasksPageLayout } from "@/components/tasks/tasks-page-layout";
 import type { BoardTask } from "@/components/tasks/task-table/types";
+import { ViewToggle, type ViewToggleItem } from "@/components/ui/view-toggle";
 import { tasksOnBoard } from "@/lib/task-boards";
 import { tasksBoardCalendarQuery } from "@/lib/task-board-queries";
 import { kanbanColumns } from "@/lib/task-status";
@@ -35,12 +37,26 @@ import { cn } from "@/lib/cn";
 type CalendarScope = "month" | "week" | "day";
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+const CALENDAR_SCOPES: CalendarScope[] = ["month", "week", "day"];
 
-const calendarScopes: { id: CalendarScope; label: string }[] = [
-  { id: "month", label: "Month" },
-  { id: "week", label: "Week" },
-  { id: "day", label: "Day" },
-];
+function parseCalendarScope(value: string | null): CalendarScope {
+  if (value === "week" || value === "day" || value === "month") {
+    return value;
+  }
+  return "month";
+}
+
+function calendarScopeHref(scope: CalendarScope, projectId: string | null) {
+  const params = new URLSearchParams();
+  if (scope !== "month") {
+    params.set("scope", scope);
+  }
+  if (projectId) {
+    params.set("project", projectId);
+  }
+  const query = params.toString();
+  return query ? `/tasks/calendar?${query}` : "/tasks/calendar";
+}
 
 const statusDotClass = Object.fromEntries(
   kanbanColumns.map((column) => [column.status, column.dotClass]),
@@ -64,36 +80,6 @@ function CalendarNavButton({
     >
       <Icon className="h-5 w-5" />
     </button>
-  );
-}
-
-function CalendarScopeToggle({
-  value,
-  onChange,
-}: {
-  value: CalendarScope;
-  onChange: (scope: CalendarScope) => void;
-}) {
-  return (
-    <div className="flex rounded-lg border border-border-subtle bg-background p-1">
-      {calendarScopes.map((scope) => {
-        const active = scope.id === value;
-
-        return (
-          <button
-            key={scope.id}
-            type="button"
-            onClick={() => onChange(scope.id)}
-            className={cn(
-              "rounded-md px-3 py-1.5 text-sm",
-              active ? "bg-surface text-primary shadow-sm" : "text-text-muted",
-            )}
-          >
-            {scope.label}
-          </button>
-        );
-      })}
-    </div>
   );
 }
 
@@ -362,9 +348,20 @@ function DayView({
 
 export function TaskCalendarBoard() {
   const { boards, boardsLoading, activeBoardId } = useTaskBoards();
-  const [scope, setScope] = useState<CalendarScope>("month");
+  const searchParams = useSearchParams();
+  const scope = parseCalendarScope(searchParams.get("scope"));
   const [focus, setFocus] = useState(() => startOfDay(new Date()));
   const today = useMemo(() => startOfDay(new Date()), []);
+
+  const calendarScopeItems = useMemo<ViewToggleItem<CalendarScope>[]>(
+    () =>
+      CALENDAR_SCOPES.map((item) => ({
+        value: item,
+        label: item === "month" ? "Month" : item === "week" ? "Week" : "Day",
+        href: calendarScopeHref(item, activeBoardId),
+      })),
+    [activeBoardId],
+  );
 
   const { data, loading, error } = useQuery<TasksBoardQuery, TasksBoardQueryVariables>(TASKS_BOARD_QUERY, {
     variables: tasksBoardCalendarQuery.variables,
@@ -394,7 +391,7 @@ export function TaskCalendarBoard() {
                 icon={ChevronLeft}
                 onClick={() => setFocus((current) => shiftFocus(current, scope, -1))}
               />
-              <CalendarScopeToggle value={scope} onChange={setScope} />
+              <ViewToggle items={calendarScopeItems} value={scope} />
             </div>
 
             <h2 className="justify-self-center text-center text-base font-semibold text-text-main">

@@ -1,99 +1,85 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
-import { forwardRef } from "react";
+import { mealPlanSlotKey, type WeekDay } from "@life/shared";
 import { X } from "lucide-react";
+import { forwardRef } from "react";
 import type { MealPlanSlot as MealPlanSlotType } from "@/components/meals/types";
-import type { MealSlot, WeekDay } from "@/graphql";
-import { mealPlanSlotKey } from "@life/shared";
-import { mealSlotLabels, weekDayLabels } from "@/lib/meal-plan-ui";
+import { DAY_MEAL_SLOT, WEEK_DAY_ORDER, weekDayFullLabels } from "@/lib/meal-plan-ui";
 import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
 import { cn } from "@/lib/cn";
 
-type MealSlotCellProps = {
+type MealDayCellProps = {
   day: WeekDay;
-  slot: MealSlot;
   assignment?: MealPlanSlotType;
-  onClear: (day: WeekDay, slot: MealSlot) => void;
+  onClear: (day: WeekDay) => void;
 };
 
-export function MealSlotCell({ day, slot, assignment, onClear }: MealSlotCellProps) {
-  const droppableId = mealPlanSlotKey(day, slot);
+function MealDayCell({ day, assignment, onClear }: MealDayCellProps) {
+  const droppableId = mealPlanSlotKey(day, DAY_MEAL_SLOT);
   const { setNodeRef, isOver } = useDroppable({
     id: droppableId,
-    data: { zone: "schedule", day, slot },
+    data: { zone: "schedule", day, slot: DAY_MEAL_SLOT },
   });
 
   return (
-    <div
-      ref={setNodeRef}
-      className={cn(
-        "min-h-16 rounded-lg border border-dashed border-border-subtle bg-background p-2",
-        isOver && "border-primary bg-warm-amber/30",
-      )}
-    >
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
-          {mealSlotLabels[slot]}
-        </span>
+    <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+      <h3 className="shrink-0 text-xs font-semibold uppercase tracking-wide text-text-muted">
+        {weekDayFullLabels[day]}
+      </h3>
+      <div
+        ref={setNodeRef}
+        className={cn(
+          "flex min-h-0 flex-1 flex-col rounded-lg border border-dashed border-border-subtle bg-background p-2.5",
+          isOver && "border-primary bg-warm-amber/30",
+        )}
+      >
         {assignment?.recipe ? (
-          <button
-            type="button"
-            onClick={() => onClear(day, slot)}
-            className="rounded p-0.5 text-text-muted hover:text-error"
-            aria-label={`Clear ${mealSlotLabels[slot]}`}
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        ) : null}
+          <div className="flex items-start justify-between gap-2">
+            <p className="min-w-0 flex-1 text-sm font-medium leading-snug text-text-main">
+              {assignment.recipe.name}
+            </p>
+            <button
+              type="button"
+              onClick={() => onClear(day)}
+              className="shrink-0 rounded p-0.5 text-text-muted hover:text-error"
+              aria-label={`Clear ${weekDayFullLabels[day]}`}
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : (
+          <p className="text-xs text-text-muted">Drop recipe</p>
+        )}
       </div>
-      {assignment?.recipe ? (
-        <p className="text-sm font-medium leading-snug text-text-main">{assignment.recipe.name}</p>
-      ) : (
-        <p className="text-xs text-text-muted">Drop recipe</p>
-      )}
     </div>
   );
 }
 
 type WeekGridSectionProps = {
   slots: MealPlanSlotType[];
-  onClear: (day: WeekDay, slot: MealSlot) => void;
+  onClear: (day: WeekDay) => void;
 };
+
+function assignmentForDay(slots: MealPlanSlotType[], day: WeekDay) {
+  const daySlots = slots.filter((entry) => entry.day === day && entry.recipe);
+  return daySlots.find((entry) => entry.slot === DAY_MEAL_SLOT) ?? daySlots[0];
+}
 
 export const WeekGridSection = forwardRef<HTMLElement, WeekGridSectionProps>(function WeekGridSection(
   { slots, onClear },
   ref,
 ) {
-  const slotMap = new Map(slots.map((entry) => [mealPlanSlotKey(entry.day, entry.slot), entry]));
-
   return (
-    <section ref={ref} className={sectionCardClass}>
-      <header className={sectionHeaderClass}>
+    <section ref={ref} className={cn(sectionCardClass, "flex h-full min-h-0 flex-col")}>
+      <header className={cn(sectionHeaderClass, "shrink-0")}>
         <h2 className="text-sm font-semibold uppercase tracking-wide text-text-main">Weekly plan</h2>
       </header>
 
-      <div className="overflow-x-auto p-3">
-        <div className="grid min-w-[760px] grid-cols-7 gap-3">
-          {(["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"] as WeekDay[]).map(
-            (day) => (
-              <div key={day} className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-                  {weekDayLabels[day]}
-                </h3>
-                {(["BREAKFAST", "LUNCH", "DINNER"] as MealSlot[]).map((slot) => (
-                  <MealSlotCell
-                    key={`${day}-${slot}`}
-                    day={day}
-                    slot={slot}
-                    assignment={slotMap.get(mealPlanSlotKey(day, slot))}
-                    onClear={onClear}
-                  />
-                ))}
-              </div>
-            ),
-          )}
-        </div>
+      <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
+        {WEEK_DAY_ORDER.map((day) => (
+          <MealDayCell key={day} day={day} assignment={assignmentForDay(slots, day)} onClear={onClear} />
+        ))}
       </div>
     </section>
   );

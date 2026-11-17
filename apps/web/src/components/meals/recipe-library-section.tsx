@@ -40,8 +40,8 @@ export const RecipeLibrarySection = forwardRef<HTMLElement, RecipeLibrarySection
     const isEmpty = folders.length === 0 && recipes.length === 0;
 
     return (
-      <section ref={ref} className={sectionCardClass}>
-        <header className={cn(sectionHeaderClass, "flex flex-wrap items-center justify-between gap-2")}>
+      <section ref={ref} className={cn(sectionCardClass, "flex h-full min-h-0 flex-col")}>
+        <header className={cn(sectionHeaderClass, "flex shrink-0 flex-wrap items-center justify-between gap-2")}>
           <h2 className="text-sm font-semibold uppercase tracking-wide text-text-main">Recipes</h2>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="ghost" onClick={onCreateFolder} className="gap-1.5 px-3 py-1.5 text-xs">
@@ -58,14 +58,16 @@ export const RecipeLibrarySection = forwardRef<HTMLElement, RecipeLibrarySection
           </div>
         </header>
 
-        <FolderBreadcrumbs
-          namespace="MEALS"
-          rootLabel="Recipes"
-          path={breadcrumbPath}
-          onNavigate={onNavigateFolder}
-        />
+        <div className="shrink-0">
+          <FolderBreadcrumbs
+            namespace="MEALS"
+            rootLabel="Recipes"
+            path={breadcrumbPath}
+            onNavigate={onNavigateFolder}
+          />
+        </div>
 
-        <div className="space-y-3 p-3">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
           {folders.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {folders.map((folder) => (
@@ -96,7 +98,7 @@ export const RecipeLibrarySection = forwardRef<HTMLElement, RecipeLibrarySection
 
           {isEmpty ? (
             <p className="text-sm text-text-muted">
-              Add folders to organize recipes, then drag them onto meal slots below.
+              Add folders to organize recipes, then drag them onto the weekly plan.
             </p>
           ) : null}
         </div>
