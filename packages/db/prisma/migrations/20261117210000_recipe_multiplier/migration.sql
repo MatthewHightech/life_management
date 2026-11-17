@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Recipe" ADD COLUMN "recipeMultiplier" DOUBLE PRECISION NOT NULL DEFAULT 1;

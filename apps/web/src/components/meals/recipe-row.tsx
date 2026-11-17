@@ -4,6 +4,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import { DeleteRecipeButton } from "@/components/meals/delete-recipe-button";
+import { recipeServingsLabel } from "@/components/meals/recipe-multiplier-control";
 import type { MealRecipe } from "@/components/meals/types";
 import { Chip } from "@/components/ui/chip";
 import { cn } from "@/lib/cn";
@@ -22,6 +23,7 @@ export function RecipeRow({ recipe, onOpen, overlay = false }: RecipeRowProps) {
   });
 
   const style = isDragging ? undefined : { transform: CSS.Translate.toString(transform) };
+  const servingsLabel = recipeServingsLabel(recipe);
 
   return (
     <article
@@ -55,9 +57,9 @@ export function RecipeRow({ recipe, onOpen, overlay = false }: RecipeRowProps) {
         {recipe.name}
       </button>
 
-      {recipe.servings ? (
+      {servingsLabel ? (
         <Chip className="bg-warm-amber text-[#6b3800] normal-case tracking-normal">
-          {recipe.servings} servings
+          {servingsLabel}
         </Chip>
       ) : null}
 

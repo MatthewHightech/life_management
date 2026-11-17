@@ -587,18 +587,19 @@ model BankAccount {
 }
 
 model Recipe {
-  id           String             @id @default(cuid())
-  householdId  String
-  household    Household          @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  folderId     String?
-  folder       Folder?            @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  name         String
-  instructions String?
-  servings     Int?
-  ingredients  RecipeIngredient[]
-  slots        MealPlanSlot[]
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  id               String             @id @default(cuid())
+  householdId      String
+  household        Household          @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  folderId         String?
+  folder           Folder?            @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  name             String
+  instructions     String?
+  servings         Int?
+  recipeMultiplier Float              @default(1)
+  ingredients      RecipeIngredient[]
+  slots            MealPlanSlot[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
   @@index([householdId])
   @@index([folderId])

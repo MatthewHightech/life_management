@@ -15,5 +15,6 @@ export type RecipeFormValues = {
   name: string;
   instructions: string;
   servings: string;
+  recipeMultiplier: number;
   ingredients: RecipeIngredientInput[];
 };

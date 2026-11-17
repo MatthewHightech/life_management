@@ -9,6 +9,7 @@ import {
   GOAL_LIMITS,
   goalPeriodLabel,
   mergeGroceryIngredients,
+  scaleGroceryIngredients,
   type GoalCadence,
 } from "@life/shared";
 import { demoBudgetTitle, demoWeekStart, createDemoSeed } from "@/demo/seed";
@@ -53,16 +54,22 @@ class DemoStore {
   private regenerateAutoGrocery() {
     const ingredients = this.state.mealSlots.flatMap((slot) => {
       const recipe = slot.recipe as DemoRecord | null;
-      return (recipe?.ingredients as DemoRecord[] | undefined) ?? [];
+      if (!recipe) {
+        return [];
+      }
+      const multiplier =
+        typeof recipe.recipeMultiplier === "number" ? recipe.recipeMultiplier : 1;
+      return scaleGroceryIngredients(
+        ((recipe.ingredients as DemoRecord[] | undefined) ?? []).map((ingredient) => ({
+          name: String(ingredient.name ?? ""),
+          quantity: ingredient.quantity != null ? String(ingredient.quantity) : null,
+          unit: ingredient.unit != null ? String(ingredient.unit) : null,
+        })),
+        multiplier,
+      );
     });
 
-    const merged = mergeGroceryIngredients(
-      ingredients.map((ingredient) => ({
-        name: String(ingredient.name ?? ""),
-        quantity: ingredient.quantity != null ? String(ingredient.quantity) : null,
-        unit: ingredient.unit != null ? String(ingredient.unit) : null,
-      })),
-    );
+    const merged = mergeGroceryIngredients(ingredients);
 
     const manualItems = this.state.groceryItems.filter((item) => item.isManual);
     this.state.groceryItems = [
@@ -344,6 +351,7 @@ class DemoStore {
         ingredients,
         instructions: recipeInput.instructions ?? existing?.instructions ?? null,
         servings: recipeInput.servings ?? existing?.servings ?? null,
+        recipeMultiplier: recipeInput.recipeMultiplier ?? existing?.recipeMultiplier ?? 1,
         folderId: recipeInput.folderId ?? existing?.folderId ?? null,
       },
       recipeId,

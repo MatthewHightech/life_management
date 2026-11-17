@@ -3,8 +3,13 @@
 import { useMutation } from "@apollo/client";
 import { FormEvent, useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
+import { DEFAULT_RECIPE_MULTIPLIER } from "@life/shared";
 import { CreateRecipeDocument, UpdateRecipeDocument } from "@/graphql";
 import { MEAL_PLAN_REFETCH } from "@/lib/refetch-queries";
+import {
+  RecipeMultiplierControl,
+  toRecipeMultiplier,
+} from "@/components/meals/recipe-multiplier-control";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import type { MealRecipe, RecipeFormValues } from "@/components/meals/types";
@@ -19,6 +24,7 @@ type RecipeSource = {
   name: string;
   instructions?: string | null;
   servings?: number | null;
+  recipeMultiplier?: number | null;
   ingredients: { name: string; quantity?: string | null; unit?: string | null }[];
 };
 
@@ -28,6 +34,7 @@ export function toRecipeFormValues(recipe?: RecipeSource | null): RecipeFormValu
       name: "",
       instructions: "",
       servings: "",
+      recipeMultiplier: DEFAULT_RECIPE_MULTIPLIER,
       ingredients: [{ ...emptyIngredient }],
     };
   }
@@ -36,6 +43,7 @@ export function toRecipeFormValues(recipe?: RecipeSource | null): RecipeFormValu
     name: recipe.name,
     instructions: recipe.instructions ?? "",
     servings: recipe.servings?.toString() ?? "",
+    recipeMultiplier: toRecipeMultiplier(recipe.recipeMultiplier),
     ingredients:
       recipe.ingredients.length > 0
         ? recipe.ingredients.map((ingredient) => ({
@@ -94,9 +102,7 @@ export function RecipeFormModal({
     }));
   }
 
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-
+  async function persistRecipe(): Promise<MealRecipe | null> {
     const ingredients = form.ingredients
       .map((ingredient) => ({
         name: ingredient.name.trim(),
@@ -106,13 +112,14 @@ export function RecipeFormModal({
       .filter((ingredient) => ingredient.name);
 
     if (!form.name.trim() || ingredients.length === 0) {
-      return;
+      return null;
     }
 
     const input = {
       name: form.name.trim(),
       instructions: form.instructions.trim() || null,
       servings: form.servings.trim() ? Number(form.servings) : null,
+      recipeMultiplier: toRecipeMultiplier(form.recipeMultiplier),
       ingredients,
     };
 
@@ -121,6 +128,12 @@ export function RecipeFormModal({
         ? (await updateRecipe({ variables: { id: recipe.id, input } })).data?.updateRecipe
         : (await createRecipe({ variables: { input: { ...input, folderId } } })).data?.createRecipe
     ) as MealRecipe | undefined;
+
+    return saved ?? null;
+  }
+
+  async function finishWithSave() {
+    const saved = await persistRecipe();
     if (saved && onSaved) {
       onSaved(saved);
       return;
@@ -128,10 +141,33 @@ export function RecipeFormModal({
     onOpenChange(false);
   }
 
+  async function handleOpenChange(nextOpen: boolean) {
+    if (nextOpen) {
+      onOpenChange(true);
+      return;
+    }
+
+    if (loading) {
+      return;
+    }
+
+    if (isEdit) {
+      await finishWithSave();
+      return;
+    }
+
+    onOpenChange(false);
+  }
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    await finishWithSave();
+  }
+
   return (
     <Modal
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={(nextOpen) => void handleOpenChange(nextOpen)}
       title={isEdit ? "Edit recipe" : "New recipe"}
       description="Save a household recipe you can drag onto the weekly plan."
       className="w-[min(100%-2rem,42rem)]"
@@ -157,6 +193,15 @@ export function RecipeFormModal({
             className="min-h-11 w-full rounded-lg border border-border-subtle px-3 py-2 text-sm outline-none focus:border-primary"
           />
         </label>
+
+        <div className="space-y-1.5">
+          <span className="text-sm font-medium text-text-main">Recipe multiplier</span>
+          <RecipeMultiplierControl
+            size="lg"
+            value={form.recipeMultiplier}
+            onChange={(recipeMultiplier) => setForm((current) => ({ ...current, recipeMultiplier }))}
+          />
+        </div>
 
         <label className="block space-y-1.5">
           <span className="text-sm font-medium text-text-main">Instructions</span>
@@ -225,8 +270,13 @@ export function RecipeFormModal({
         </fieldset>
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={loading}
+            onClick={() => void handleOpenChange(false)}
+          >
+            {isEdit ? "Close" : "Cancel"}
           </Button>
           <Button type="submit" disabled={loading || !form.name.trim()}>
             {loading ? "Saving…" : isEdit ? "Save recipe" : "Create recipe"}

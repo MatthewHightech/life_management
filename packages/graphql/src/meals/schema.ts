@@ -28,6 +28,7 @@ export const mealTypeDefs = /* GraphQL */ `
     name: String!
     instructions: String
     servings: Int
+    recipeMultiplier: Float!
     folderId: ID
     ingredients: [RecipeIngredient!]!
     createdAt: String!
@@ -81,6 +82,7 @@ export const mealTypeDefs = /* GraphQL */ `
     name: String!
     instructions: String
     servings: Int
+    recipeMultiplier: Float
     folderId: ID
     ingredients: [RecipeIngredientInput!]!
   }
@@ -89,6 +91,7 @@ export const mealTypeDefs = /* GraphQL */ `
     name: String
     instructions: String
     servings: Int
+    recipeMultiplier: Float
     ingredients: [RecipeIngredientInput!]
   }
 

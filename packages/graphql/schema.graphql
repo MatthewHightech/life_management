@@ -297,6 +297,7 @@ type Recipe {
   name: String!
   instructions: String
   servings: Int
+  recipeMultiplier: Float!
   folderId: ID
   ingredients: [RecipeIngredient!]!
   createdAt: String!
@@ -350,6 +351,7 @@ input CreateRecipeInput {
   name: String!
   instructions: String
   servings: Int
+  recipeMultiplier: Float
   folderId: ID
   ingredients: [RecipeIngredientInput!]!
 }
@@ -358,6 +360,7 @@ input UpdateRecipeInput {
   name: String
   instructions: String
   servings: Int
+  recipeMultiplier: Float
   ingredients: [RecipeIngredientInput!]
 }
 

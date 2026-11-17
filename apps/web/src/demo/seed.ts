@@ -73,6 +73,7 @@ export function createDemoSeed(): DemoState {
       instructions:
         "Whisk the batter with blue milk, rest for 10 minutes, then cook until lightly browned on both sides.",
       servings: 3,
+      recipeMultiplier: 1,
       folderId: "folder-meals-weekend",
       ingredients: [
         {
@@ -102,6 +103,7 @@ export function createDemoSeed(): DemoState {
       instructions:
         "Boil the noodles, toss with roasted vegetables, and finish with a squeeze of citrus.",
       servings: 4,
+      recipeMultiplier: 1,
       folderId: "folder-meals-weeknight",
       ingredients: [
         {
@@ -131,6 +133,7 @@ export function createDemoSeed(): DemoState {
       instructions:
         "Brown the protein, add root vegetables and broth, then simmer until thick and hearty.",
       servings: 4,
+      recipeMultiplier: 1,
       folderId: "folder-meals-weeknight",
       ingredients: [
         {

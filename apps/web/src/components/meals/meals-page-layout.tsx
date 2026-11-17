@@ -261,7 +261,15 @@ export function MealsPageLayout({ children }: MealsPageLayoutProps) {
             <div className="flex h-[calc(100dvh-8.5rem)] min-h-[28rem] gap-4">
               <div className="min-h-0 min-w-0 flex-[2]">{children}</div>
               <div className="min-h-0 min-w-0 flex-1">
-                <WeekGridSection ref={scheduleZoneRef} slots={mealPlan.slots} onClear={handleClearDay} />
+                <WeekGridSection
+                  ref={scheduleZoneRef}
+                  slots={mealPlan.slots}
+                  onClear={handleClearDay}
+                  onOpenRecipe={(recipe) => {
+                    setViewingRecipe(recipe);
+                    setViewOpen(true);
+                  }}
+                />
               </div>
             </div>
 
@@ -286,6 +294,7 @@ export function MealsPageLayout({ children }: MealsPageLayoutProps) {
             }
           }}
           onEdit={(recipe) => openForm(recipe, null)}
+          onRecipeUpdated={setViewingRecipe}
         />
         <RecipeFormModal
           open={modalOpen}

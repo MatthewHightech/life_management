@@ -7,6 +7,7 @@ const RECIPE_FIELDS = gql`
     name
     instructions
     servings
+    recipeMultiplier
     folderId
     ingredients {
       id

@@ -1,8 +1,11 @@
 import { FolderNamespace, MealSlot, Prisma, WeekDay } from "@prisma/client";
 import {
+  DEFAULT_RECIPE_MULTIPLIER,
   getMealPlanWeekStartIso,
   mergeGroceryIngredients,
+  normalizeRecipeMultiplier,
   parseMealPlanWeekStart,
+  scaleGroceryIngredients,
 } from "@life/shared";
 import { importRecipeFromUrl, RecipeImportError } from "@life/recipe-import";
 import { GraphQLContext } from "../context";
@@ -57,7 +60,18 @@ async function regenerateAutoGrocery(
     include: slotInclude,
   });
 
-  const merged = mergeGroceryIngredients(slots.flatMap((entry) => entry.recipe?.ingredients ?? []));
+  const merged = mergeGroceryIngredients(
+    slots.flatMap((entry) => {
+      const recipe = entry.recipe;
+      if (!recipe) {
+        return [];
+      }
+      return scaleGroceryIngredients(
+        recipe.ingredients,
+        normalizeRecipeMultiplier(recipe.recipeMultiplier),
+      );
+    }),
+  );
 
   await context.prisma.groceryListItem.deleteMany({
     where: { householdId, weekStart, isManual: false },
@@ -129,6 +143,7 @@ export const mealResolvers = {
           name: string;
           instructions?: string | null;
           servings?: number | null;
+          recipeMultiplier?: number | null;
           folderId?: string | null;
           ingredients: IngredientInput[];
         };
@@ -146,6 +161,10 @@ export const mealResolvers = {
           name: input.name.trim(),
           instructions: optionalText(input.instructions),
           servings: input.servings ?? null,
+          recipeMultiplier:
+            input.recipeMultiplier == null
+              ? DEFAULT_RECIPE_MULTIPLIER
+              : normalizeRecipeMultiplier(input.recipeMultiplier),
           ingredients: { create: ingredientRows(input.ingredients) },
         },
         include: recipeInclude,
@@ -160,6 +179,7 @@ export const mealResolvers = {
           name?: string | null;
           instructions?: string | null;
           servings?: number | null;
+          recipeMultiplier?: number | null;
           ingredients?: IngredientInput[] | null;
         };
       },
@@ -179,6 +199,10 @@ export const mealResolvers = {
           name: input.name?.trim() ?? undefined,
           instructions: optionalTextUpdate(input.instructions),
           servings: input.servings,
+          recipeMultiplier:
+            input.recipeMultiplier === undefined || input.recipeMultiplier === null
+              ? undefined
+              : normalizeRecipeMultiplier(input.recipeMultiplier),
           ingredients: input.ingredients ? { create: ingredientRows(input.ingredients) } : undefined,
         },
         include: recipeInclude,
