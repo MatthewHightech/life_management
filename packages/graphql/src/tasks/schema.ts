@@ -7,13 +7,6 @@ export const taskTypeDefs = `#graphql
     DONE
   }
 
-  enum TaskPriority {
-    LOW
-    MEDIUM
-    HIGH
-    URGENT
-  }
-
   enum RecurrenceFrequency {
     DAILY
     WEEKLY
@@ -60,7 +53,6 @@ export const taskTypeDefs = `#graphql
     id: ID!
     title: String!
     status: TaskStatus!
-    priority: TaskPriority!
     isShared: Boolean!
     dueDate: String
     completedAt: String
@@ -95,7 +87,6 @@ export const taskTypeDefs = `#graphql
   input CreateTaskInput {
     title: String!
     status: TaskStatus
-    priority: TaskPriority
     isShared: Boolean
     dueDate: String
     remindAt: String
@@ -111,7 +102,6 @@ export const taskTypeDefs = `#graphql
   input UpdateTaskInput {
     title: String
     status: TaskStatus
-    priority: TaskPriority
     isShared: Boolean
     dueDate: String
     remindAt: String

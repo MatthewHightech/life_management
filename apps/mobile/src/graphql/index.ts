@@ -33,7 +33,6 @@ export type {
   MoveTaskMutationVariables,
   TaskCommentsQuery,
   TaskCommentsQueryVariables,
-  TaskPriority,
   TaskProjectsQuery,
   TaskProjectsQueryVariables,
   TasksBoardQuery,

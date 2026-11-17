@@ -1,4 +1,4 @@
-import { Prisma, TaskPriority, TaskStatus } from "@prisma/client";
+import { Prisma, TaskStatus } from "@prisma/client";
 import { dayBounds, isPastDueDate, parseOptionalDate, toIsoString } from "@life/shared";
 import { GraphQLContext } from "../context";
 import { assertTaskInHousehold, requireHouseholdUser } from "../auth";
@@ -176,7 +176,7 @@ export const taskResolvers = {
       return context.prisma.task.findMany({
         where: buildTaskWhere(householdId, userId, args.filter),
         include: taskInclude,
-        orderBy: [{ dueDate: "asc" }, { priority: "desc" }, { createdAt: "asc" }],
+        orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
       });
     },
 
@@ -218,7 +218,6 @@ export const taskResolvers = {
         input: {
           title: string;
           status?: TaskStatus | null;
-          priority?: TaskPriority | null;
           isShared?: boolean | null;
           dueDate?: string | null;
           remindAt?: string | null;
@@ -255,7 +254,6 @@ export const taskResolvers = {
           createdById: userId,
           title: input.title.trim(),
           status,
-          priority: input.priority ?? TaskPriority.MEDIUM,
           isShared: input.isShared ?? true,
           dueDate: parseOptionalDate(input.dueDate),
           remindAt: parseOptionalDate(input.remindAt),
@@ -283,7 +281,6 @@ export const taskResolvers = {
         input: {
           title?: string | null;
           status?: TaskStatus | null;
-          priority?: TaskPriority | null;
           isShared?: boolean | null;
           dueDate?: string | null;
           remindAt?: string | null;
@@ -308,7 +305,6 @@ export const taskResolvers = {
         data.status = args.input.status;
         data.completedAt = args.input.status === TaskStatus.DONE ? new Date() : null;
       }
-      if (args.input.priority != null) data.priority = args.input.priority;
       if (args.input.isShared != null) data.isShared = args.input.isShared;
       if (args.input.dueDate !== undefined) data.dueDate = parseOptionalDate(args.input.dueDate);
       if (args.input.remindAt !== undefined) data.remindAt = parseOptionalDate(args.input.remindAt);

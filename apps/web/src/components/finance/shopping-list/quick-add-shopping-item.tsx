@@ -3,22 +3,20 @@
 import { useMutation } from "@apollo/client";
 import { Plus } from "lucide-react";
 import { useState } from "react";
+import { EditableUrgency } from "@/components/finance/shopping-list/editable-urgency";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { PillSelect } from "@/components/ui/pill-select";
 import {
   CREATE_SHOPPING_ITEM_MUTATION,
   SHOPPING_LIST_QUERY,
   type ShoppingListQuery,
-  type TaskPriority,
+  type ShoppingUrgency,
 } from "@/graphql";
 import { parseCadInputToCents } from "@/lib/budget-money";
 import { inlineFieldInputClass } from "@/lib/inline-edit-styles";
-import { prioritySelectOptions } from "@/lib/task-pills";
-import { priorityChipClass, priorityLabels } from "@/lib/task-status";
 import { cn } from "@/lib/cn";
 
-const DEFAULT_URGENCY: TaskPriority = "MEDIUM";
+const DEFAULT_URGENCY: ShoppingUrgency = "MEDIUM";
 const CELL = "flex min-h-10 min-w-0 items-center px-4 py-1.5";
 
 type QuickAddShoppingItemProps = {
@@ -30,7 +28,7 @@ export function QuickAddShoppingItem({
 }: QuickAddShoppingItemProps) {
   const [name, setName] = useState("");
   const [budget, setBudget] = useState("");
-  const [urgency, setUrgency] = useState<TaskPriority>(DEFAULT_URGENCY);
+  const [urgency, setUrgency] = useState<ShoppingUrgency>(DEFAULT_URGENCY);
   const [nameError, setNameError] = useState(false);
   const [budgetError, setBudgetError] = useState(false);
   const [createItem, { loading }] = useMutation(CREATE_SHOPPING_ITEM_MUTATION, {
@@ -121,13 +119,7 @@ export function QuickAddShoppingItem({
       </div>
 
       <div className={CELL}>
-        <PillSelect
-          value={urgency}
-          triggerLabel={priorityLabels[urgency]}
-          triggerChipClassName={priorityChipClass(urgency)}
-          options={prioritySelectOptions()}
-          onSelect={async (value) => setUrgency(value)}
-        />
+        <EditableUrgency value={urgency} onSave={setUrgency} />
       </div>
 
       <div className={CELL}>

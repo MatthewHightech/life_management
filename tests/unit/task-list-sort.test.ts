@@ -6,7 +6,6 @@ type BoardTask = {
   id: string;
   title: string;
   status: "TODO" | "IN_PROGRESS" | "WAITING" | "BACKLOG" | "DONE";
-  priority: string;
   isShared: boolean;
   isBlocked: boolean;
   isOverdue: boolean;
@@ -21,7 +20,6 @@ function task(overrides: Partial<BoardTask>): BoardTask {
     id: "1",
     title: "Task",
     status: "TODO",
-    priority: "MEDIUM",
     isShared: true,
     isBlocked: false,
     isOverdue: false,

@@ -1,10 +1,7 @@
 import {
-  TASK_PRIORITY_COLORS,
-  TASK_PRIORITY_LABELS,
   TASK_STATUS_COLORS,
   TASK_STATUS_LABELS,
   formatDueDate,
-  type TaskPriority,
   type TaskStatus,
 } from "@life/shared";
 import { SymbolView } from "expo-symbols";
@@ -23,9 +20,7 @@ type TaskRowProps = {
 
 export function TaskRow({ task, onPress, onToggleComplete, busy }: TaskRowProps) {
   const done = task.status === "DONE";
-  const priority = task.priority as TaskPriority;
   const status = task.status as TaskStatus;
-  const priorityColors = TASK_PRIORITY_COLORS[priority] ?? TASK_PRIORITY_COLORS.MEDIUM;
 
   return (
     <Pressable
@@ -58,11 +53,6 @@ export function TaskRow({ task, onPress, onToggleComplete, busy }: TaskRowProps)
         </Text>
         <View style={styles.meta}>
           <Chip label={TASK_STATUS_LABELS[status]} backgroundColor={TASK_STATUS_COLORS[status]} />
-          <Chip
-            label={TASK_PRIORITY_LABELS[priority]}
-            backgroundColor={priorityColors.background}
-            textColor={priorityColors.text}
-          />
           <AvatarStack users={task.assignees} size={22} showEmpty={false} />
           {task.dueDate ? (
             <Text style={[styles.due, task.isOverdue && styles.titleOverdue]}>

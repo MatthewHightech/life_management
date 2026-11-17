@@ -15,11 +15,10 @@ enum TaskStatus {
   DONE
 }
 
-enum TaskPriority {
+enum ShoppingUrgency {
   LOW
   MEDIUM
   HIGH
-  URGENT
 }
 
 enum RecurrenceFrequency {
@@ -200,7 +199,6 @@ model Task {
 
   title       String
   status      TaskStatus    @default(TODO)
-  priority    TaskPriority  @default(MEDIUM)
   isShared    Boolean       @default(true)
 
   assignments TaskAssignment[]
@@ -280,7 +278,7 @@ model ShoppingItem {
   household     Household    @relation(fields: [householdId], references: [id], onDelete: Cascade)
   name          String
   budgetCents   Int?
-  urgency       TaskPriority @default(MEDIUM)
+  urgency       ShoppingUrgency @default(MEDIUM)
   purchasedAt   DateTime?
   createdById   String
   createdBy     User         @relation("CreatedShoppingItems", fields: [createdById], references: [id], onDelete: Cascade)

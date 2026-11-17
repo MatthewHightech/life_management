@@ -1,9 +1,6 @@
 import {
-  TASK_PRIORITIES,
-  TASK_PRIORITY_LABELS,
   TASK_STATUS_LABELS,
   TASK_STATUSES,
-  type TaskPriority,
   type TaskStatus,
 } from "@life/shared";
 
@@ -53,10 +50,6 @@ export const kanbanColumns: KanbanColumn[] = [
   },
 ];
 
-export const priorityLabels: Record<TaskPriority, string> = { ...TASK_PRIORITY_LABELS };
-
-export const taskPriorities = TASK_PRIORITIES;
-
 export const taskStatuses = TASK_STATUSES;
 
 export function statusLabel(status: string) {
@@ -64,22 +57,6 @@ export function statusLabel(status: string) {
     return TASK_STATUS_LABELS[status as TaskStatus];
   }
   return status.replaceAll("_", " ").toLowerCase().replace(/^\w/, (character) => character.toUpperCase());
-}
-
-export function priorityChipClass(priority: string) {
-  if (priority === "URGENT") {
-    return "bg-error-container text-error";
-  }
-
-  if (priority === "HIGH") {
-    return "bg-warm-amber text-[#6b3800]";
-  }
-
-  if (priority === "LOW") {
-    return "bg-muted-blue text-secondary";
-  }
-
-  return "bg-sage text-primary-container";
 }
 
 export function statusChipClass(status: string) {

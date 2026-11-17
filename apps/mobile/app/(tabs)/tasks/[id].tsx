@@ -12,13 +12,12 @@ import {
   Text,
   View,
 } from "react-native";
-import type { TaskPriority, TaskStatus } from "@life/shared";
+import type { TaskStatus } from "@life/shared";
 import { TextField } from "@/src/components/field";
 import { TaskCommentsSection } from "@/src/components/tasks/task-comments";
 import {
   AssigneePicker,
   DueDateField,
-  PriorityPicker,
   ProjectPicker,
   StatusPicker,
 } from "@/src/components/tasks/task-fields";
@@ -38,7 +37,6 @@ export default function TaskDetailScreen() {
 
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState<TaskStatus>("TODO");
-  const [priority, setPriority] = useState<TaskPriority>("MEDIUM");
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -51,7 +49,6 @@ export default function TaskDetailScreen() {
     }
     setTitle(task.title);
     setStatus(task.status as TaskStatus);
-    setPriority(task.priority as TaskPriority);
     setAssigneeIds(task.assignees.map((user) => user.id));
     setDueDate(task.dueDate ?? null);
     setProjectId(task.project?.id ?? projects[0]?.id ?? null);
@@ -82,7 +79,6 @@ export default function TaskDetailScreen() {
   async function save(patch?: {
     title?: string;
     status?: TaskStatus;
-    priority?: TaskPriority;
     assigneeIds?: string[];
     dueDate?: string | null;
     projectId?: string | null;
@@ -95,7 +91,6 @@ export default function TaskDetailScreen() {
       await updateTask(task.id, {
         title: patch?.title ?? title.trim(),
         status: patch?.status ?? status,
-        priority: patch?.priority ?? priority,
         assigneeIds: patch?.assigneeIds ?? assigneeIds,
         dueDate: patch?.dueDate === undefined ? dueDate : patch.dueDate,
         projectId: patch?.projectId === undefined ? projectId : patch.projectId,
@@ -184,14 +179,6 @@ export default function TaskDetailScreen() {
             onChange={(next) => {
               setStatus(next);
               void save({ status: next });
-            }}
-          />
-
-          <PriorityPicker
-            value={priority}
-            onChange={(next) => {
-              setPriority(next);
-              void save({ priority: next });
             }}
           />
 

@@ -1,11 +1,8 @@
-import { toggleAssigneeId, type TaskPriority, type TaskStatus } from "@life/shared";
+import { toggleAssigneeId, type TaskStatus } from "@life/shared";
 import {
   kanbanColumns,
-  priorityChipClass,
-  priorityLabels,
   statusChipClass,
   statusLabel,
-  taskPriorities,
 } from "@/lib/task-status";
 
 export { toggleAssigneeId };
@@ -21,14 +18,6 @@ export function statusSelectOptions(): TaskPillOption<TaskStatus>[] {
     value: column.status,
     label: column.label,
     chipClassName: column.chipClass,
-  }));
-}
-
-export function prioritySelectOptions(): TaskPillOption<TaskPriority>[] {
-  return taskPriorities.map((priority) => ({
-    value: priority,
-    label: priorityLabels[priority],
-    chipClassName: priorityChipClass(priority),
   }));
 }
 

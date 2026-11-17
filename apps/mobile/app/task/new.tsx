@@ -8,19 +8,17 @@ import {
   Text,
   View,
 } from "react-native";
-import type { TaskPriority, TaskStatus } from "@life/shared";
+import type { TaskStatus } from "@life/shared";
 import { TextField } from "@/src/components/field";
 import {
   AssigneePicker,
   DueDateField,
-  PriorityPicker,
   StatusPicker,
 } from "@/src/components/tasks/task-fields";
 import { useTaskMutations, useTasksBoard } from "@/src/data";
 import { theme } from "@/constants/theme";
 
 const DEFAULT_STATUS: TaskStatus = "BACKLOG";
-const DEFAULT_PRIORITY: TaskPriority = "LOW";
 
 export default function NewTaskScreen() {
   const router = useRouter();
@@ -31,7 +29,6 @@ export default function NewTaskScreen() {
 
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState<TaskStatus>(DEFAULT_STATUS);
-  const [priority, setPriority] = useState<TaskPriority>(DEFAULT_PRIORITY);
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +54,6 @@ export default function NewTaskScreen() {
       await createTask({
         title: trimmed,
         status,
-        priority,
         assigneeIds,
         dueDate,
         projectId: projectId || undefined,
@@ -101,7 +97,6 @@ export default function NewTaskScreen() {
         />
 
         <StatusPicker value={status} onChange={setStatus} />
-        <PriorityPicker value={priority} onChange={setPriority} />
         <AssigneePicker users={users} selectedIds={assigneeIds} onChange={setAssigneeIds} />
         <DueDateField value={dueDate} onChange={setDueDate} />
 

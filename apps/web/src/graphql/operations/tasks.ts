@@ -5,7 +5,6 @@ const TASK_FIELDS = gql`
     id
     title
     status
-    priority
     isShared
     dueDate
     completedAt

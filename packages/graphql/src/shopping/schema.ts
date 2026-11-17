@@ -1,9 +1,15 @@
 export const shoppingTypeDefs = `#graphql
+  enum ShoppingUrgency {
+    LOW
+    MEDIUM
+    HIGH
+  }
+
   type ShoppingItem {
     id: ID!
     name: String!
     budgetCents: Int
-    urgency: TaskPriority!
+    urgency: ShoppingUrgency!
     purchasedAt: String
     createdBy: User!
     commentCount: Int!
@@ -23,14 +29,14 @@ export const shoppingTypeDefs = `#graphql
   input CreateShoppingItemInput {
     name: String!
     budgetCents: Int
-    urgency: TaskPriority
+    urgency: ShoppingUrgency
   }
 
   input UpdateShoppingItemInput {
     name: String
     budgetCents: Int
     clearBudget: Boolean
-    urgency: TaskPriority
+    urgency: ShoppingUrgency
   }
 
   extend type Query {

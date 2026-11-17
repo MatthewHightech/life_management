@@ -3,7 +3,7 @@ import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
 import { TaskCommentsButton } from "@/components/tasks/task-comments-button";
 import { EditableAssignees } from "./editable-assignees";
 import { EditableDueDate } from "./editable-due-date";
-import { EditablePriority, EditableStatus } from "./editable-pill-cells";
+import { EditableStatus } from "./editable-pill-cells";
 import { EditableText } from "./editable-text-cells";
 import type { TaskTableRowProps } from "./types";
 
@@ -38,9 +38,6 @@ export function TaskTableRow({ task, users, onDelete, onUpdate }: TaskTableRowPr
       </TaskTableCell>
       <TaskTableCell className="whitespace-nowrap">
         <EditableStatus value={task.status} onSave={(status) => onUpdate({ status })} />
-      </TaskTableCell>
-      <TaskTableCell>
-        <EditablePriority value={task.priority} onSave={(priority) => onUpdate({ priority })} />
       </TaskTableCell>
       <TaskTableCell>
         <EditableAssignees

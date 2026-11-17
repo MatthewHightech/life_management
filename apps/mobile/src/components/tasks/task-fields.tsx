@@ -1,7 +1,4 @@
 import {
-  TASK_PRIORITIES,
-  TASK_PRIORITY_COLORS,
-  TASK_PRIORITY_LABELS,
   TASK_STATUS_COLORS,
   TASK_STATUS_LABELS,
   TASK_STATUSES,
@@ -9,7 +6,6 @@ import {
   parseDueDate,
   toDueDateIso,
   toggleAssigneeId,
-  type TaskPriority,
   type TaskStatus,
 } from "@life/shared";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -39,33 +35,6 @@ export function StatusPicker({ value, onChange }: StatusPickerProps) {
             onPress={() => onChange(status)}
           />
         ))}
-      </View>
-    </Field>
-  );
-}
-
-type PriorityPickerProps = {
-  value: TaskPriority;
-  onChange: (priority: TaskPriority) => void;
-};
-
-export function PriorityPicker({ value, onChange }: PriorityPickerProps) {
-  return (
-    <Field label="Priority">
-      <View style={styles.wrap}>
-        {TASK_PRIORITIES.map((priority) => {
-          const colors = TASK_PRIORITY_COLORS[priority];
-          return (
-            <Chip
-              key={priority}
-              label={TASK_PRIORITY_LABELS[priority]}
-              backgroundColor={colors.background}
-              textColor={colors.text}
-              selected={value === priority}
-              onPress={() => onChange(priority)}
-            />
-          );
-        })}
       </View>
     </Field>
   );

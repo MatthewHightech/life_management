@@ -487,7 +487,6 @@ class DemoStore {
         {
           title: taskInput.title,
           status: taskInput.status ?? "TODO",
-          priority: taskInput.priority ?? "MEDIUM",
           isShared: taskInput.isShared ?? true,
           dueDate: taskInput.dueDate ?? null,
           completedAt: taskInput.status === "DONE" ? new Date().toISOString() : null,

@@ -4,7 +4,7 @@ import { useMutation } from "@apollo/client";
 import { formatDueDate, parseDueDate, toDueDateIso } from "@life/shared";
 import { Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import type { TaskPriority, TaskStatus } from "@/graphql";
+import type { TaskStatus } from "@/graphql";
 import { CREATE_TASK_MUTATION } from "@/graphql";
 import { AssigneeAvatars, SelectableMemberAvatar } from "@/components/ui/avatar";
 import { CalendarPicker } from "@/components/ui/calendar-picker";
@@ -13,9 +13,7 @@ import { FloatingPanel } from "@/components/ui/floating-panel";
 import { PillSelect } from "@/components/ui/pill-select";
 import { usePopoverAnchor } from "@/hooks/use-popover-anchor";
 import { inlineFieldInputClass } from "@/lib/inline-edit-styles";
-import { priorityChipClass, priorityLabels } from "@/lib/task-status";
 import {
-  prioritySelectOptions,
   statusSelectOptions,
   statusTriggerDisplay,
   toggleAssigneeId,
@@ -28,7 +26,6 @@ import type { HouseholdUser } from "./types";
 const TASK_LIST_CELL = "flex min-h-7 w-full min-w-0 items-center px-4 py-1.5";
 
 const DEFAULT_STATUS: TaskStatus = "BACKLOG";
-const DEFAULT_PRIORITY: TaskPriority = "LOW";
 
 type QuickAddTaskRowProps = {
   users: HouseholdUser[];
@@ -123,7 +120,6 @@ export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) 
   const { activeBoardId } = useTaskBoards();
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState<TaskStatus>(DEFAULT_STATUS);
-  const [priority, setPriority] = useState<TaskPriority>(DEFAULT_PRIORITY);
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [titleError, setTitleError] = useState(false);
@@ -137,7 +133,6 @@ export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) 
   function resetForm() {
     setTitle("");
     setStatus(DEFAULT_STATUS);
-    setPriority(DEFAULT_PRIORITY);
     setAssigneeIds(currentUserId ? [currentUserId] : []);
     setDueDate(null);
     setTitleError(false);
@@ -160,7 +155,6 @@ export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) 
         input: {
           title: title.trim(),
           status,
-          priority,
           dueDate,
           assigneeIds: assigneeIds.length > 0 ? assigneeIds : undefined,
           isShared: true,
@@ -204,15 +198,6 @@ export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) 
           triggerChipClassName={statusDisplay.chipClassName}
           options={statusSelectOptions()}
           onSelect={async (next) => setStatus(next)}
-        />
-      </div>
-      <div className={TASK_LIST_CELL}>
-        <PillSelect
-          value={priority}
-          triggerLabel={priorityLabels[priority]}
-          triggerChipClassName={priorityChipClass(priority)}
-          options={prioritySelectOptions()}
-          onSelect={async (next) => setPriority(next)}
         />
       </div>
       <div className={TASK_LIST_CELL}>

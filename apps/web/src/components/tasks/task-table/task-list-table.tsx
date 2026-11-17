@@ -23,7 +23,6 @@ export function TaskListTable({ tasks, users, emptyMessage, onDelete, onUpdate }
         <tr>
           <th className="px-4 py-2 font-semibold">Task name</th>
           <th className="px-4 py-2 font-semibold">Status</th>
-          <th className="px-4 py-2 font-semibold">Priority</th>
           <th className="px-4 py-2 font-semibold">Assignees</th>
           <th className="px-4 py-2 font-semibold">Due date</th>
           <th className="px-4 py-2 font-semibold" />
@@ -32,7 +31,7 @@ export function TaskListTable({ tasks, users, emptyMessage, onDelete, onUpdate }
       <tbody>
         {tasks.length === 0 && (
           <tr>
-            <td colSpan={6} className="px-4 py-6 text-center text-sm text-text-muted">
+            <td colSpan={5} className="px-4 py-6 text-center text-sm text-text-muted">
               {emptyMessage}
             </td>
           </tr>

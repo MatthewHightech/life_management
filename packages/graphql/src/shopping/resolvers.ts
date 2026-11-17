@@ -1,4 +1,4 @@
-import { Prisma, TaskPriority } from "@prisma/client";
+import { Prisma, ShoppingUrgency } from "@prisma/client";
 import { toIsoString } from "@life/shared";
 import { GraphQLContext } from "../context";
 import { requireHouseholdUser } from "../auth";
@@ -91,7 +91,7 @@ export const shoppingResolvers = {
         input: {
           name: string;
           budgetCents?: number | null;
-          urgency?: TaskPriority | null;
+          urgency?: ShoppingUrgency | null;
         };
       },
       context: GraphQLContext,
@@ -109,7 +109,7 @@ export const shoppingResolvers = {
           createdById: userId,
           name,
           budgetCents: args.input.budgetCents ?? null,
-          urgency: args.input.urgency ?? TaskPriority.MEDIUM,
+          urgency: args.input.urgency ?? ShoppingUrgency.MEDIUM,
         },
         include: shoppingItemInclude,
       });
@@ -123,7 +123,7 @@ export const shoppingResolvers = {
           name?: string | null;
           budgetCents?: number | null;
           clearBudget?: boolean | null;
-          urgency?: TaskPriority | null;
+          urgency?: ShoppingUrgency | null;
         };
       },
       context: GraphQLContext,

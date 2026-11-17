@@ -103,7 +103,7 @@ export type {
   HouseholdShellQueryVariables,
   MoveTaskMutation,
   MoveTaskMutationVariables,
-  TaskPriority,
+  ShoppingUrgency,
   TasksBoardQuery,
   TasksBoardQueryVariables,
   TaskStatus,

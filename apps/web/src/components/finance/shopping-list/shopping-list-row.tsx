@@ -8,13 +8,12 @@ import {
   EditableTableRow,
   EditableTextCell,
 } from "@/components/editable-table";
+import { EditableUrgency } from "@/components/finance/shopping-list/editable-urgency";
 import { OptionalBudgetCell } from "@/components/finance/shopping-list/optional-budget-cell";
-import { EditablePriority } from "@/components/tasks/task-table/editable-pill-cells";
 import { Avatar } from "@/components/ui/avatar";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import type {
   ShoppingListQuery,
-  TaskPriority,
   UpdateShoppingItemInput,
 } from "@/graphql";
 import { cn } from "@/lib/cn";
@@ -76,9 +75,9 @@ export function ShoppingListRow({
         </EditableTableCell>
 
         <EditableTableCell className="px-4">
-          <EditablePriority
+          <EditableUrgency
             value={item.urgency}
-            onSave={(urgency: TaskPriority) => onUpdate(item.id, { urgency })}
+            onSave={(urgency) => onUpdate(item.id, { urgency })}
           />
         </EditableTableCell>
 

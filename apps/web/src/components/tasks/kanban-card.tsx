@@ -7,13 +7,10 @@ import { GripVertical } from "lucide-react";
 import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
 import { TaskCommentsButton } from "@/components/tasks/task-comments-button";
 import { AssigneeAvatars } from "@/components/ui/avatar";
-import { Chip } from "@/components/ui/chip";
 import { EditableAssignees } from "@/components/tasks/task-table/editable-assignees";
 import { EditableDueDate } from "@/components/tasks/task-table/editable-due-date";
-import { EditablePriority } from "@/components/tasks/task-table/editable-pill-cells";
 import { EditableText } from "@/components/tasks/task-table/editable-text-cells";
 import type { BoardTask, HouseholdUser, TaskUpdateInput } from "@/components/tasks/task-table/types";
-import { priorityChipClass, priorityLabels } from "@/lib/task-status";
 import { cn } from "@/lib/cn";
 
 type KanbanCardProps = {
@@ -161,21 +158,6 @@ export function KanbanCard({
                   {formatDueDate(task.dueDate)}
                 </p>
               ) : null}
-            </div>
-
-            <div className="shrink-0">
-              {editable ? (
-                <EditablePriority
-                  value={task.priority}
-                  onSave={(priority) => onUpdate!({ priority })}
-                  triggerClassName="px-0"
-                  chipClassName="normal-case tracking-normal"
-                />
-              ) : (
-                <Chip className={cn("whitespace-nowrap normal-case tracking-normal", priorityChipClass(task.priority))}>
-                  {priorityLabels[task.priority]}
-                </Chip>
-              )}
             </div>
 
             {editable ? (

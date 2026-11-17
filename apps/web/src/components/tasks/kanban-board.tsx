@@ -149,7 +149,6 @@ export function KanbanBoard() {
           input: {
             title: "Untitled",
             status,
-            priority: "LOW",
             assigneeIds: currentUserId ? [currentUserId] : undefined,
             isShared: true,
             projectId: boardId,

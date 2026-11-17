@@ -161,13 +161,6 @@ enum TaskStatus {
   DONE
 }
 
-enum TaskPriority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-}
-
 enum RecurrenceFrequency {
   DAILY
   WEEKLY
@@ -214,7 +207,6 @@ type Task {
   id: ID!
   title: String!
   status: TaskStatus!
-  priority: TaskPriority!
   isShared: Boolean!
   dueDate: String
   completedAt: String
@@ -249,7 +241,6 @@ input TaskFilterInput {
 input CreateTaskInput {
   title: String!
   status: TaskStatus
-  priority: TaskPriority
   isShared: Boolean
   dueDate: String
   remindAt: String
@@ -265,7 +256,6 @@ input CreateTaskInput {
 input UpdateTaskInput {
   title: String
   status: TaskStatus
-  priority: TaskPriority
   isShared: Boolean
   dueDate: String
   remindAt: String
@@ -691,11 +681,17 @@ type PlaidLinkToken {
   expiration: String!
 }
 
+enum ShoppingUrgency {
+  LOW
+  MEDIUM
+  HIGH
+}
+
 type ShoppingItem {
   id: ID!
   name: String!
   budgetCents: Int
-  urgency: TaskPriority!
+  urgency: ShoppingUrgency!
   purchasedAt: String
   createdBy: User!
   commentCount: Int!
@@ -715,14 +711,14 @@ type ShoppingItemComment {
 input CreateShoppingItemInput {
   name: String!
   budgetCents: Int
-  urgency: TaskPriority
+  urgency: ShoppingUrgency
 }
 
 input UpdateShoppingItemInput {
   name: String
   budgetCents: Int
   clearBudget: Boolean
-  urgency: TaskPriority
+  urgency: ShoppingUrgency
 }
 
 enum GoalCadence {
