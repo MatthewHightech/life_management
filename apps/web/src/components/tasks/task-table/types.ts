@@ -6,7 +6,5 @@ export type TaskUpdateInput = UpdateTaskMutationVariables["input"];
 
 export type TaskTableRowProps = {
   task: BoardTask;
-  users: HouseholdUser[];
-  onDelete: () => void;
   onUpdate: (input: TaskUpdateInput) => Promise<void>;
 };

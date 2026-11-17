@@ -10,28 +10,26 @@ import { useBoardTasks, useTaskActions } from "@/components/tasks/use-board-task
 import { tasksBoardListQuery } from "@/lib/task-board-queries";
 
 export function TaskTable() {
-  const { boardTasks, users, currentUserId, waiting, error } = useBoardTasks(tasksBoardListQuery.variables);
-  const { onUpdate, onDelete } = useTaskActions();
+  const { boardTasks, currentUserId, waiting, error } = useBoardTasks(tasksBoardListQuery.variables);
+  const { onUpdate } = useTaskActions();
   const { activeTasks, doneTasks } = useMemo(() => partitionListTasks(boardTasks), [boardTasks]);
 
   return (
     <TasksPageLayout waiting={waiting} error={error}>
       <div className="space-y-5">
         <div className="overflow-x-auto rounded-xl border border-border-subtle bg-surface">
-          <QuickAddTaskRow users={users} currentUserId={currentUserId} />
+          <QuickAddTaskRow currentUserId={currentUserId} />
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-border-subtle bg-surface">
           <TaskListTable
             tasks={activeTasks}
-            users={users}
             emptyMessage="No active tasks yet."
-            onDelete={onDelete}
             onUpdate={onUpdate}
           />
         </div>
 
-        <DoneTasksSection tasks={doneTasks} users={users} onDelete={onDelete} onUpdate={onUpdate} />
+        <DoneTasksSection tasks={doneTasks} onUpdate={onUpdate} />
       </div>
     </TasksPageLayout>
   );

@@ -20,7 +20,6 @@ type KanbanColumnProps = {
   onToggleCollapsed?: () => void;
   onAddTask: (status: TaskStatus) => void;
   onUpdateTask: (id: string, input: TaskUpdateInput) => Promise<void>;
-  onDeleteTask: (id: string) => void;
   pendingTitleEditTaskId?: string | null;
   onTitleAutoEditApplied?: () => void;
   onClearTasks?: () => void | Promise<void>;
@@ -37,7 +36,6 @@ export function KanbanColumnView({
   onToggleCollapsed,
   onAddTask,
   onUpdateTask,
-  onDeleteTask,
   pendingTitleEditTaskId = null,
   onTitleAutoEditApplied,
   onClearTasks,
@@ -126,7 +124,6 @@ export function KanbanColumnView({
             accentClass={column.accentClass}
             users={users}
             onUpdate={(input) => onUpdateTask(task.id, input)}
-            onDelete={() => onDeleteTask(task.id)}
             autoEditTitle={task.id === pendingTitleEditTaskId}
             onAutoEditTitleApplied={
               task.id === pendingTitleEditTaskId ? onTitleAutoEditApplied : undefined

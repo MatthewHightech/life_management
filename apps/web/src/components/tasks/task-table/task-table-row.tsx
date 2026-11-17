@@ -1,10 +1,8 @@
+"use client";
+
+import { Check } from "lucide-react";
+import { useComments } from "@/components/comments/comments-context";
 import { cn } from "@/lib/cn";
-import { CommentsButton } from "@/components/comments/comments-button";
-import { EditableTextCell } from "@/components/editable-table";
-import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
-import { EditableAssignees } from "./editable-assignees";
-import { EditableDueDate } from "./editable-due-date";
-import { EditableStatus } from "./editable-pill-cells";
 import type { TaskTableRowProps } from "./types";
 
 function TaskTableCell({
@@ -23,41 +21,49 @@ function TaskTableCell({
   );
 }
 
-export function TaskTableRow({ task, users, onDelete, onUpdate }: TaskTableRowProps) {
-  const overdue = task.isOverdue;
+export function TaskTableRow({ task, onUpdate }: TaskTableRowProps) {
+  const { openComments, activeTarget } = useComments();
+  const done = task.status === "DONE";
+  const overdue = task.isOverdue && !done;
+  const isActive = activeTarget?.id === task.id;
 
   return (
-    <tr className={cn("border-b border-border-subtle last:border-b-0", overdue && "bg-error-container/40")}>
+    <tr
+      className={cn(
+        "cursor-pointer border-b border-border-subtle last:border-b-0 hover:bg-background/70",
+        overdue && "bg-error-container/40 hover:bg-error-container/55",
+        isActive && "bg-background",
+      )}
+      onClick={() => openComments({ id: task.id, title: task.title })}
+    >
+      <TaskTableCell className="w-10 px-3" contentClassName="justify-center">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            void onUpdate({ status: done ? "TODO" : "DONE" });
+          }}
+          className={cn(
+            "flex h-5 w-5 shrink-0 items-center justify-center rounded border transition",
+            done
+              ? "border-status-done bg-status-done text-on-primary"
+              : "border-border-subtle bg-surface text-transparent hover:border-status-done",
+          )}
+          aria-label={done ? `Mark ${task.title} as todo` : `Mark ${task.title} done`}
+        >
+          <Check className="h-3 w-3" />
+        </button>
+      </TaskTableCell>
       <TaskTableCell>
-        <EditableTextCell
-          value={task.title}
-          onSave={(title) => onUpdate({ title })}
-          className={cn("font-medium", overdue && "text-error")}
-          inputClassName="font-medium"
-        />
-      </TaskTableCell>
-      <TaskTableCell className="whitespace-nowrap">
-        <EditableStatus value={task.status} onSave={(status) => onUpdate({ status })} />
-      </TaskTableCell>
-      <TaskTableCell>
-        <EditableAssignees
-          assignees={task.assignees}
-          users={users}
-          onSave={(assigneeIds) => onUpdate({ assigneeIds })}
-        />
-      </TaskTableCell>
-      <TaskTableCell>
-        <EditableDueDate value={task.dueDate} overdue={overdue} onSave={(dueDate) => onUpdate({ dueDate })} />
-      </TaskTableCell>
-      <TaskTableCell contentClassName="justify-end gap-1">
-        <CommentsButton
-          targetId={task.id}
-          targetTitle={task.title}
-          commentCount={task.commentCount}
-          unreadCommentCount={task.unreadCommentCount}
-          placement="row"
-        />
-        <DeleteTaskButton taskTitle={task.title} onConfirm={onDelete} />
+        <span
+          className={cn(
+            "truncate font-medium text-text-main",
+            done && "text-text-muted line-through",
+            overdue && "text-error",
+          )}
+        >
+          {task.title}
+        </span>
       </TaskTableCell>
     </tr>
   );

@@ -50,7 +50,7 @@ export function KanbanBoard() {
   const { tasks, boardTasks, fallbackBoardId, users, currentUserId, waiting, error } = useBoardTasks(
     tasksBoardKanbanQuery.variables,
   );
-  const { onUpdate, onDelete } = useTaskActions();
+  const { onUpdate } = useTaskActions();
   const [collapsedByStatus, setCollapsedByStatus] = useState<Partial<Record<TaskStatus, boolean>>>({
     DONE: true,
   });
@@ -198,7 +198,6 @@ export function KanbanBoard() {
         }
         onAddTask={(status) => void handleAddTask(status, boardId)}
         onUpdateTask={onUpdate}
-        onDeleteTask={onDelete}
         pendingTitleEditTaskId={pendingTitleEditTaskId}
         onTitleAutoEditApplied={handleTitleAutoEditApplied}
         onClearTasks={

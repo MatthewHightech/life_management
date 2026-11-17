@@ -2,7 +2,7 @@
 
 import { formatShortDate, isSameDay } from "@life/shared";
 import { Trash2, X } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { CommentsTarget } from "@/components/comments/comments-context";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,9 @@ type CommentsSidebarProps = {
   comments: CommentView[];
   loading: boolean;
   posting: boolean;
+  eyebrow?: string;
+  title?: string;
+  details?: ReactNode;
   onClose: () => void;
   onTargetVisible: (target: CommentsTarget) => void;
   onPost: (target: CommentsTarget, body: string) => Promise<void>;
@@ -45,6 +48,9 @@ export function CommentsSidebar({
   comments,
   loading,
   posting,
+  eyebrow = "Comments",
+  title,
+  details,
   onClose,
   onTargetVisible,
   onPost,
@@ -65,6 +71,7 @@ export function CommentsSidebar({
     return null;
   }
   const visibleTarget = panelTarget;
+  const heading = title ?? visibleTarget.title;
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -80,8 +87,8 @@ export function CommentsSidebar({
     <SlideOverPanel isVisible={isVisible} onClose={onClose} closeLabel="Close comments" className="max-w-md">
       <header className="flex items-start justify-between gap-3 border-b border-border-subtle px-4 py-4">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Comments</p>
-          <h2 className="truncate text-lg font-semibold text-text-main">{visibleTarget.title}</h2>
+          <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">{eyebrow}</p>
+          {details ? null : <h2 className="truncate text-lg font-semibold text-text-main">{heading}</h2>}
         </div>
         <button
           type="button"
@@ -93,7 +100,12 @@ export function CommentsSidebar({
         </button>
       </header>
 
+      {details}
+
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+        {details ? (
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-text-muted">Comments</p>
+        ) : null}
         {loading && comments.length === 0 ? (
           <p className="text-sm text-text-muted">Loading comments…</p>
         ) : comments.length === 0 ? (

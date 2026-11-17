@@ -3,10 +3,9 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { formatDueDate } from "@life/shared";
-import { GripVertical } from "lucide-react";
-import { CommentsButton } from "@/components/comments/comments-button";
+import { GripVertical, MessageCircle } from "lucide-react";
+import { useComments } from "@/components/comments/comments-context";
 import { EditableTextCell } from "@/components/editable-table";
-import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
 import { AssigneeAvatars } from "@/components/ui/avatar";
 import { EditableAssignees } from "@/components/tasks/task-table/editable-assignees";
 import { EditableDueDate } from "@/components/tasks/task-table/editable-due-date";
@@ -18,7 +17,6 @@ type KanbanCardProps = {
   accentClass: string;
   users?: HouseholdUser[];
   onUpdate?: (input: TaskUpdateInput) => Promise<void>;
-  onDelete?: () => void;
   overlay?: boolean;
   autoEditTitle?: boolean;
   onAutoEditTitleApplied?: () => void;
@@ -29,11 +27,11 @@ export function KanbanCard({
   accentClass,
   users = [],
   onUpdate,
-  onDelete,
   overlay = false,
   autoEditTitle = false,
   onAutoEditTitleApplied,
 }: KanbanCardProps) {
+  const { openComments, activeTarget } = useComments();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
     data: { type: "task", status: task.status },
@@ -44,32 +42,35 @@ export function KanbanCard({
 
   const overdue = task.isOverdue;
   const editable = Boolean(onUpdate) && !overlay;
+  const isActive = activeTarget?.id === task.id;
+  const hasUnread = task.unreadCommentCount > 0;
 
   return (
     <article
       ref={setNodeRef}
       style={style}
+      onClick={() => {
+        if (editable) {
+          openComments({ id: task.id, title: task.title });
+        }
+      }}
       className={cn(
         "relative rounded-lg border border-border-subtle bg-surface p-2 shadow-sm",
         "border-t-4",
         accentClass,
         isDragging && "opacity-0",
         overlay && "cursor-grabbing shadow-lg",
-        editable && "cursor-default",
+        editable && "cursor-pointer",
+        isActive && "bg-background",
       )}
     >
-      {editable && onDelete ? (
-        <div className="absolute right-1 top-1">
-          <DeleteTaskButton taskTitle={task.title} onConfirm={onDelete} />
-        </div>
-      ) : null}
-
-      <div className="flex items-start gap-1.5 pr-5">
+      <div className="flex items-start gap-1.5">
         {editable ? (
           <button
             type="button"
             {...listeners}
             {...attributes}
+            onClick={(event) => event.stopPropagation()}
             className="shrink-0 cursor-grab rounded p-0.5 text-text-muted transition hover:text-text-main active:cursor-grabbing"
             aria-label="Drag task"
           >
@@ -83,15 +84,17 @@ export function KanbanCard({
 
         <div className="min-w-0 flex-1 space-y-1">
           {editable ? (
-            <EditableTextCell
-              value={task.title}
-              onSave={(title) => onUpdate!({ title })}
-              wrap
-              startInEditMode={autoEditTitle}
-              onStartInEditModeApplied={onAutoEditTitleApplied}
-              className={cn("text-sm font-medium text-text-main", overdue && "text-error")}
-              inputClassName="font-medium"
-            />
+            <div onClick={(event) => event.stopPropagation()}>
+              <EditableTextCell
+                value={task.title}
+                onSave={(title) => onUpdate!({ title })}
+                wrap
+                startInEditMode={autoEditTitle}
+                onStartInEditModeApplied={onAutoEditTitleApplied}
+                className={cn("text-sm font-medium text-text-main", overdue && "text-error")}
+                inputClassName="font-medium"
+              />
+            </div>
           ) : (
             <p
               className={cn(
@@ -121,7 +124,7 @@ export function KanbanCard({
           ) : null}
 
           <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
-            <div className="shrink-0">
+            <div className="shrink-0" onClick={(event) => event.stopPropagation()}>
               {editable ? (
                 <EditableAssignees
                   assignees={task.assignees}
@@ -135,7 +138,7 @@ export function KanbanCard({
               )}
             </div>
 
-            <div className="min-w-0 max-w-full">
+            <div className="min-w-0 max-w-full" onClick={(event) => event.stopPropagation()}>
               {editable ? (
                 <EditableDueDate
                   value={task.dueDate}
@@ -155,15 +158,28 @@ export function KanbanCard({
               ) : null}
             </div>
 
-            {editable ? (
-              <div className="shrink-0">
-                <CommentsButton
-                  targetId={task.id}
-                  targetTitle={task.title}
-                  commentCount={task.commentCount}
-                  unreadCommentCount={task.unreadCommentCount}
-                />
-              </div>
+            {task.commentCount > 0 ? (
+              <span
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-0.5 p-0.5 text-text-muted",
+                  hasUnread && "text-secondary",
+                )}
+                aria-label={
+                  hasUnread
+                    ? `${task.commentCount} comments, ${task.unreadCommentCount} unread`
+                    : `${task.commentCount} comments`
+                }
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
+                <span
+                  className={cn(
+                    "inline-flex items-center justify-center text-[0.65rem] font-medium tabular-nums",
+                    hasUnread && "min-h-4 min-w-4 rounded-full bg-secondary/15 px-1",
+                  )}
+                >
+                  {task.commentCount}
+                </span>
+              </span>
             ) : null}
           </div>
         </div>

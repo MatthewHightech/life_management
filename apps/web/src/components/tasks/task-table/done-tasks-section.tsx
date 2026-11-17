@@ -4,16 +4,14 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { sectionCardClass } from "@/lib/section-header";
 import { TaskListTable } from "@/components/tasks/task-table/task-list-table";
-import type { BoardTask, HouseholdUser, TaskUpdateInput } from "@/components/tasks/task-table/types";
+import type { BoardTask, TaskUpdateInput } from "@/components/tasks/task-table/types";
 
 type DoneTasksSectionProps = {
   tasks: BoardTask[];
-  users: HouseholdUser[];
-  onDelete: (id: string) => void;
   onUpdate: (id: string, input: TaskUpdateInput) => Promise<void>;
 };
 
-export function DoneTasksSection({ tasks, users, onDelete, onUpdate }: DoneTasksSectionProps) {
+export function DoneTasksSection({ tasks, onUpdate }: DoneTasksSectionProps) {
   const [collapsed, setCollapsed] = useState(true);
 
   return (
@@ -30,13 +28,7 @@ export function DoneTasksSection({ tasks, users, onDelete, onUpdate }: DoneTasks
 
       {!collapsed && (
         <div className="overflow-x-auto">
-          <TaskListTable
-          tasks={tasks}
-          users={users}
-          emptyMessage="No completed tasks."
-          onDelete={onDelete}
-          onUpdate={onUpdate}
-        />
+          <TaskListTable tasks={tasks} emptyMessage="No completed tasks." onUpdate={onUpdate} />
         </div>
       )}
     </div>
