@@ -1,0 +1,32 @@
+---
+description: All styling must use Tailwind CSS classnames, not CSS stylesheets or inline styles
+alwaysApply: true
+---
+
+# Tailwind-Only Styling
+
+Use Tailwind CSS utility classnames for all styling. Do not write custom CSS or inline styles.
+
+## Required
+
+- Style elements with `className` and Tailwind utilities
+- Prefer composing utilities over custom CSS
+- Extract repeated class patterns into components, not CSS classes
+
+## Forbidden
+
+- New `.css` / `.scss` / `.module.css` files (except Tailwind entry / config)
+- Inline `style={{ ... }}` props (except dynamic values Tailwind cannot express)
+- Custom selectors, hand-written properties, or CSS-in-JS for layout/visual styling
+
+```tsx
+// ❌ BAD
+<div style={{ marginTop: 16, color: 'red' }} />
+// custom.css: .card { padding: 1rem; }
+
+// ✅ GOOD
+<div className="mt-4 text-red-500" />
+<div className="p-4" />
+```
+
+When a value must be dynamic (e.g. computed pixel position), prefer a Tailwind arbitrary value (`w-[var(--x)]`) or a minimal inline style only for that dynamic property—still use Tailwind for everything else.

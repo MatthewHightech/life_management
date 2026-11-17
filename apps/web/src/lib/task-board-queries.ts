@@ -12,9 +12,14 @@ export const tasksBoardKanbanQuery = {
   variables: { filter: { view: "KANBAN" as const, includeDone: true } },
 };
 
-const taskListCaches = [tasksBoardListQuery, tasksBoardKanbanQuery];
+export const tasksBoardCalendarQuery = {
+  query: TASKS_BOARD_QUERY,
+  variables: { filter: { view: "CALENDAR" as const, includeDone: true } },
+};
 
-/** Refetch list, kanban, and board tabs after a task mutation so counts stay current. */
+const taskListCaches = [tasksBoardListQuery, tasksBoardKanbanQuery, tasksBoardCalendarQuery];
+
+/** Refetch list, kanban, calendar, and board tabs after a task mutation so counts stay current. */
 export const tasksBoardRefetchQueries = [...taskListCaches, TASK_PROJECTS_QUERY];
 
 type BoardTask = TasksBoardQuery["tasks"][number];

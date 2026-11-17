@@ -1,6 +1,7 @@
 import {
   addDays,
   addMonths,
+  addWeeks,
   eachDayOfInterval,
   endOfDay,
   endOfMonth,
@@ -15,6 +16,7 @@ import {
   startOfWeek,
   subDays,
   subMonths,
+  subWeeks,
 } from "date-fns";
 
 export function dayBounds(date: Date = new Date()) {
@@ -131,8 +133,30 @@ export function buildMonthGrid(month: Date, weekStartsOn: 0 | 1 = 0): Date[] {
   });
 }
 
+export function buildWeekDays(day: Date, weekStartsOn: 0 | 1 = 0): Date[] {
+  return eachDayOfInterval({
+    start: startOfWeek(day, { weekStartsOn }),
+    end: endOfWeek(day, { weekStartsOn }),
+  });
+}
+
 export function formatMonthYear(value: Date): string {
   return format(value, "MMMM yyyy");
+}
+
+export function formatWeekRange(day: Date, weekStartsOn: 0 | 1 = 0): string {
+  const start = startOfWeek(day, { weekStartsOn });
+  const end = endOfWeek(day, { weekStartsOn });
+
+  if (start.getFullYear() !== end.getFullYear()) {
+    return `${format(start, "MMM d, yyyy")} – ${format(end, "MMM d, yyyy")}`;
+  }
+
+  if (start.getMonth() !== end.getMonth()) {
+    return `${format(start, "MMM d")} – ${format(end, "MMM d, yyyy")}`;
+  }
+
+  return `${format(start, "MMM d")} – ${format(end, "d, yyyy")}`;
 }
 
 export function calendarDayKey(value: Date): string {
@@ -153,4 +177,15 @@ function parseDisplayDate(value: string): Date {
   return date;
 }
 
-export { addDays, addMonths, isSameDay, isSameMonth, startOfDay, startOfWeek, subDays, subMonths };
+export {
+  addDays,
+  addMonths,
+  addWeeks,
+  isSameDay,
+  isSameMonth,
+  startOfDay,
+  startOfWeek,
+  subDays,
+  subMonths,
+  subWeeks,
+};

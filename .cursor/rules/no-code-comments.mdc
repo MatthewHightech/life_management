@@ -1,0 +1,28 @@
+---
+description: Absolutely no in-code comments; prefer readable architecture over annotations
+alwaysApply: true
+---
+
+# No In-Code Comments
+
+Do not add comments in source code (including `//`, `/* */`, `///`, `#`, or WGSL/GLSL comment forms).
+
+## Why
+
+- Comments increase liability and go stale
+- Comments encourage justifying bad patch fixes instead of fixing design
+- Readable architecture and naming should make intent obvious
+
+## Required
+
+- Express intent with clear names, small modules, and straightforward control flow
+- If something seems to need a comment, refactor until it does not
+- Delete existing comments when touching a file
+
+## Forbidden
+
+- Inline, block, or doc comments in application/source files
+- Commenting out dead code (delete it)
+- "TODO" / "HACK" / "NOTE" comments as substitutes for structure
+
+Exception: license headers required by third-party terms, and comments inside generated files you must not edit.
