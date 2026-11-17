@@ -8,7 +8,6 @@ export const GEAR_CONDITION_LABELS: Record<GearCondition, string> = {
   RETIRED: "Retired",
 };
 
-/** Pastel chips: green (best) → yellow → orange → red (retired). */
 export const GEAR_CONDITION_CHIP_STYLES: Record<GearCondition, string> = {
   LIKE_NEW: "bg-status-done/25 text-status-done",
   GOOD: "bg-status-in-progress/30 text-[#8a6418]",

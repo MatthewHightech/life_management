@@ -2,7 +2,7 @@
 
 import { useMutation, type InternalRefetchQueriesInclude } from "@apollo/client";
 import { FormEvent, useEffect, useState } from "react";
-import { CREATE_FOLDER_MUTATION } from "@/graphql";
+import { CreateFolderDocument } from "@/graphql";
 import type { FolderColor, FolderNamespace } from "@life/shared";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ export function FolderFormModal({
     }
   }, [open]);
 
-  const [createFolder, { loading }] = useMutation(CREATE_FOLDER_MUTATION, {
+  const [createFolder, { loading }] = useMutation(CreateFolderDocument, {
     refetchQueries,
     awaitRefetchQueries: true,
     onCompleted: () => onOpenChange(false),

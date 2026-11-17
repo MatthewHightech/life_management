@@ -29,28 +29,37 @@ export function TaskBoardBar() {
   const [destinationId, setDestinationId] = useState<string>("");
   const suppressClickRef = useRef(false);
 
+  function releaseClickSuppression() {
+    window.setTimeout(() => {
+      suppressClickRef.current = false;
+    }, 0);
+  }
+
   useDndMonitor({
     onDragStart() {
       suppressClickRef.current = true;
     },
-    onDragEnd() {
-      window.setTimeout(() => {
-        suppressClickRef.current = false;
-      }, 0);
-    },
-    onDragCancel() {
-      window.setTimeout(() => {
-        suppressClickRef.current = false;
-      }, 0);
-    },
+    onDragEnd: releaseClickSuppression,
+    onDragCancel: releaseClickSuppression,
   });
 
   const others = pendingDelete ? boards.filter((board) => board.id !== pendingDelete.id) : [];
+  const hasTasks = Boolean(pendingDelete && pendingDelete.taskCount > 0);
 
   function openDelete(board: TaskBoard) {
     const destination = defaultBoardMoveTarget(boards, board.id);
     setDestinationId(destination?.id ?? "");
     setPendingDelete(board);
+  }
+
+  function confirmDelete(moveTasksToProjectId: string | null) {
+    if (!pendingDelete) {
+      return;
+    }
+    void deleteBoard(pendingDelete.id, moveTasksToProjectId).then(
+      () => setPendingDelete(null),
+      () => undefined,
+    );
   }
 
   return (
@@ -95,14 +104,14 @@ export function TaskBoardBar() {
         }}
         title={pendingDelete ? `Delete “${pendingDelete.name}”?` : "Delete project?"}
         description={
-          pendingDelete && pendingDelete.taskCount > 0
-            ? pendingDelete.taskCount === 1
+          hasTasks
+            ? pendingDelete?.taskCount === 1
               ? "This project has 1 task."
-              : `This project has ${pendingDelete.taskCount} tasks.`
+              : `This project has ${pendingDelete?.taskCount} tasks.`
             : "This project has no tasks."
         }
       >
-        {pendingDelete && pendingDelete.taskCount > 0 && others.length > 0 ? (
+        {hasTasks && others.length > 0 ? (
           <label className="mb-4 block text-sm text-text-main">
             Move tasks to
             <select
@@ -122,18 +131,12 @@ export function TaskBoardBar() {
           <Button type="button" variant="ghost" disabled={deletingBoard} onClick={() => setPendingDelete(null)}>
             Cancel
           </Button>
-          {pendingDelete && pendingDelete.taskCount > 0 ? (
+          {hasTasks ? (
             <Button
               type="button"
               variant="secondary"
               disabled={deletingBoard || !destinationId}
-              onClick={() => {
-                const board = pendingDelete;
-                void deleteBoard(board.id, destinationId).then(
-                  () => setPendingDelete(null),
-                  () => undefined,
-                );
-              }}
+              onClick={() => confirmDelete(destinationId)}
             >
               {deletingBoard ? "Moving…" : "Move tasks"}
             </Button>
@@ -142,17 +145,9 @@ export function TaskBoardBar() {
             type="button"
             disabled={deletingBoard || !pendingDelete}
             className="bg-error text-white hover:bg-error/90"
-            onClick={() => {
-              if (!pendingDelete) {
-                return;
-              }
-              void deleteBoard(pendingDelete.id, null).then(
-                () => setPendingDelete(null),
-                () => undefined,
-              );
-            }}
+            onClick={() => confirmDelete(null)}
           >
-            {deletingBoard ? "Deleting…" : pendingDelete && pendingDelete.taskCount > 0 ? "Delete tasks" : "Delete project"}
+            {deletingBoard ? "Deleting…" : hasTasks ? "Delete tasks" : "Delete project"}
           </Button>
         </div>
       </Modal>

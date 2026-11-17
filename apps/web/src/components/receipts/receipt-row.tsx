@@ -3,9 +3,10 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { FileText, GripVertical, Pencil, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
 import type { ReceiptItem } from "@/components/receipts/types";
-import { fetchReceiptBlob } from "@/lib/receipt-upload";
+import { useBlobUrl } from "@/hooks/use-blob-url";
+import { fetchReceiptBlob } from "@/lib/file-api";
 import { formatReceiptRowSubtitle } from "@/lib/receipt-display";
 import { cn } from "@/lib/cn";
 
@@ -24,39 +25,10 @@ export function ReceiptRow({ receipt, onPreview, onRename, onDelete, overlay = f
     disabled: overlay,
   });
 
-  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
   const isImage = receipt.mimeType.startsWith("image/");
   const style = isDragging ? undefined : { transform: CSS.Translate.toString(transform) };
-
-  useEffect(() => {
-    if (!isImage || overlay) {
-      return;
-    }
-
-    let active = true;
-    let objectUrl: string | null = null;
-
-    void fetchReceiptBlob(receipt.id)
-      .then((blob) => {
-        if (!active) {
-          return;
-        }
-        objectUrl = URL.createObjectURL(blob);
-        setThumbUrl(objectUrl);
-      })
-      .catch(() => {
-        if (active) {
-          setThumbUrl(null);
-        }
-      });
-
-    return () => {
-      active = false;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
-  }, [isImage, overlay, receipt.id]);
+  const loadThumb = useCallback(() => fetchReceiptBlob(receipt.id), [receipt.id]);
+  const { url: thumbUrl } = useBlobUrl(isImage && !overlay ? loadThumb : null);
 
   return (
     <article

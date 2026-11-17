@@ -23,20 +23,12 @@ type PastGoalsArchiveProps = {
   onLoadMore: () => void;
 };
 
-function setsForCadence(
-  cadence: GoalCadence,
-  props: PastGoalsArchiveProps,
-): { sets: GoalSet[]; hasMore: boolean } {
-  if (cadence === "DAILY") {
-    return { sets: props.daily, hasMore: props.hasMoreDaily };
-  }
-  if (cadence === "WEEKLY") {
-    return { sets: props.weekly, hasMore: props.hasMoreWeekly };
-  }
-  return { sets: props.term, hasMore: props.hasMoreTerm };
-}
-
 export function PastGoalsArchive(props: PastGoalsArchiveProps) {
+  const setsByCadence: Record<GoalCadence, GoalSet[]> = {
+    DAILY: props.daily,
+    WEEKLY: props.weekly,
+    TERM: props.term,
+  };
   const anySets =
     props.daily.length > 0 || props.weekly.length > 0 || props.term.length > 0;
   const anyMore = props.hasMoreDaily || props.hasMoreWeekly || props.hasMoreTerm;
@@ -52,7 +44,7 @@ export function PastGoalsArchive(props: PastGoalsArchiveProps) {
   return (
     <div className="space-y-8">
       {GOAL_CADENCES.map((cadence) => {
-        const { sets } = setsForCadence(cadence, props);
+        const sets = setsByCadence[cadence];
         if (sets.length === 0) {
           return null;
         }

@@ -13,15 +13,16 @@ import { MEAL_SLOTS, parseFolderDropId, parseMealPlanSlotKey } from "@life/share
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import type { MealPlanQuery, WeekDay } from "@/graphql";
 import {
-  ASSIGN_MEAL_PLAN_SLOT_MUTATION,
-  CLEAR_MEAL_PLAN_SLOT_MUTATION,
-  MEAL_PLAN_QUERY,
-  MOVE_RECIPE_TO_FOLDER_MUTATION,
+  AssignMealPlanSlotDocument,
+  ClearMealPlanSlotDocument,
+  MealPlanDocument,
+  MoveRecipeToFolderDocument,
 } from "@/graphql";
 import { FolderFormModal } from "@/components/folders/folder-form-modal";
 import { ImportRecipeUrlModal } from "@/components/meals/import-recipe-url-modal";
 import { MealsViewToggle } from "@/components/meals/meals-view-toggle";
 import { RecipeFormModal } from "@/components/meals/recipe-form-modal";
+import type { RecipeLibrarySectionProps } from "@/components/meals/recipe-library-section";
 import { RecipeRow } from "@/components/meals/recipe-row";
 import { RecipeViewModal } from "@/components/meals/recipe-view-modal";
 import type { MealRecipe, RecipeFormValues } from "@/components/meals/types";
@@ -35,28 +36,15 @@ import {
   folderIdAfterDelete,
 } from "@/lib/folder-utils";
 import { DAY_MEAL_SLOT } from "@/lib/meal-plan-ui";
-import { MEAL_PLAN_REFETCH } from "@/lib/meal-plan-queries";
+import { MEAL_PLAN_REFETCH } from "@/lib/refetch-queries";
 
 const MEAL_SCHEDULE_ZONE = "schedule";
 const MEALS_CONTENT_INSET = "mx-auto w-full max-w-[1400px] px-3 sm:px-4";
 
-type MealPlanData = MealPlanQuery["mealPlan"];
-
 type MealsPageContextValue = {
-  loading: boolean;
-  errorMessage: string | null;
-  mealPlan: MealPlanData | null;
+  mealPlan: MealPlanQuery["mealPlan"] | null;
   recipeZoneRef: React.RefObject<HTMLElement | null>;
-  currentFolderId: string | null;
-  breadcrumbPath: NonNullable<MealPlanData>["folders"];
-  visibleFolders: NonNullable<MealPlanData>["folders"];
-  visibleRecipes: MealRecipe[];
-  onNavigateFolder: (folderId: string | null) => void;
-  onFolderDeleted: (folderId: string) => void;
-  openCreate: () => void;
-  openImport: () => void;
-  openCreateFolder: () => void;
-  openView: (recipe: MealRecipe) => void;
+  library: RecipeLibrarySectionProps;
 };
 
 const MealsPageContext = createContext<MealsPageContextValue | null>(null);
@@ -86,14 +74,14 @@ export function MealsPageLayout({ children }: MealsPageLayoutProps) {
   const [activeRecipe, setActiveRecipe] = useState<MealRecipe | null>(null);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
 
-  const { data, loading, error } = useQuery<MealPlanQuery>(MEAL_PLAN_QUERY);
-  const [assignSlot] = useMutation(ASSIGN_MEAL_PLAN_SLOT_MUTATION, {
+  const { data, loading, error } = useQuery<MealPlanQuery>(MealPlanDocument);
+  const [assignSlot] = useMutation(AssignMealPlanSlotDocument, {
     refetchQueries: [...MEAL_PLAN_REFETCH],
   });
-  const [clearSlot] = useMutation(CLEAR_MEAL_PLAN_SLOT_MUTATION, {
+  const [clearSlot] = useMutation(ClearMealPlanSlotDocument, {
     refetchQueries: [...MEAL_PLAN_REFETCH],
   });
-  const [moveRecipeToFolder] = useMutation(MOVE_RECIPE_TO_FOLDER_MUTATION, {
+  const [moveRecipeToFolder] = useMutation(MoveRecipeToFolderDocument, {
     refetchQueries: [...MEAL_PLAN_REFETCH],
     awaitRefetchQueries: true,
   });
@@ -133,10 +121,6 @@ export function MealsPageLayout({ children }: MealsPageLayoutProps) {
     [mealPlan?.recipes, currentFolderId],
   );
 
-  const handleNavigateFolder = useCallback((folderId: string | null) => {
-    setCurrentFolderId(folderId);
-  }, []);
-
   const handleFolderDeleted = useCallback(
     (deletedFolderId: string) => {
       setCurrentFolderId((currentId) =>
@@ -146,7 +130,7 @@ export function MealsPageLayout({ children }: MealsPageLayoutProps) {
     [mealPlan?.folders],
   );
 
-  const clearDaySlots = useCallback(
+  const handleClearDay = useCallback(
     async (day: WeekDay) => {
       for (const slot of MEAL_SLOTS) {
         await clearSlot({
@@ -158,49 +142,13 @@ export function MealsPageLayout({ children }: MealsPageLayoutProps) {
     [clearSlot],
   );
 
-  const handleClearDay = useCallback(
-    (day: WeekDay) => {
-      void clearDaySlots(day);
-    },
-    [clearDaySlots],
-  );
-
-  const openCreate = useCallback(() => {
-    setViewOpen(false);
-    setViewingRecipe(null);
-    setEditingRecipe(null);
-    setImportDraft(null);
-    setModalOpen(true);
-  }, []);
-
-  const openImport = useCallback(() => {
-    setImportOpen(true);
-  }, []);
-
-  const openCreateFolder = useCallback(() => {
-    setFolderModalOpen(true);
-  }, []);
-
-  const openView = useCallback((recipe: MealRecipe) => {
-    setViewingRecipe(recipe);
-    setViewOpen(true);
-  }, []);
-
-  function openFromImport(values: RecipeFormValues) {
-    setViewOpen(false);
-    setViewingRecipe(null);
-    setEditingRecipe(null);
-    setImportDraft(values);
-    setModalOpen(true);
-  }
-
-  function openEdit(recipe: MealRecipe) {
+  const openForm = useCallback((recipe: MealRecipe | null, draft: RecipeFormValues | null) => {
     setViewOpen(false);
     setViewingRecipe(recipe);
     setEditingRecipe(recipe);
-    setImportDraft(null);
+    setImportDraft(draft);
     setModalOpen(true);
-  }
+  }, []);
 
   function handleRecipeSaved(recipe: MealRecipe) {
     setModalOpen(false);
@@ -269,36 +217,24 @@ export function MealsPageLayout({ children }: MealsPageLayoutProps) {
 
   const contextValue = useMemo<MealsPageContextValue>(
     () => ({
-      loading,
-      errorMessage: error?.message ?? null,
       mealPlan,
       recipeZoneRef,
-      currentFolderId,
-      breadcrumbPath,
-      visibleFolders,
-      visibleRecipes,
-      onNavigateFolder: handleNavigateFolder,
-      onFolderDeleted: handleFolderDeleted,
-      openCreate,
-      openImport,
-      openCreateFolder,
-      openView,
+      library: {
+        folders: visibleFolders,
+        recipes: visibleRecipes,
+        breadcrumbPath,
+        onNavigateFolder: setCurrentFolderId,
+        onCreate: () => openForm(null, null),
+        onImport: () => setImportOpen(true),
+        onCreateFolder: () => setFolderModalOpen(true),
+        onOpenRecipe: (recipe) => {
+          setViewingRecipe(recipe);
+          setViewOpen(true);
+        },
+        onFolderDeleted: handleFolderDeleted,
+      },
     }),
-    [
-      loading,
-      error?.message,
-      mealPlan,
-      currentFolderId,
-      breadcrumbPath,
-      visibleFolders,
-      visibleRecipes,
-      handleNavigateFolder,
-      handleFolderDeleted,
-      openCreate,
-      openImport,
-      openCreateFolder,
-      openView,
-    ],
+    [mealPlan, visibleFolders, visibleRecipes, breadcrumbPath, openForm, handleFolderDeleted],
   );
 
   return (
@@ -338,7 +274,7 @@ export function MealsPageLayout({ children }: MealsPageLayoutProps) {
         <ImportRecipeUrlModal
           open={importOpen}
           onOpenChange={setImportOpen}
-          onImported={openFromImport}
+          onImported={(values) => openForm(null, values)}
         />
         <RecipeViewModal
           recipe={viewingRecipe}
@@ -349,7 +285,7 @@ export function MealsPageLayout({ children }: MealsPageLayoutProps) {
               setViewingRecipe(null);
             }
           }}
-          onEdit={openEdit}
+          onEdit={(recipe) => openForm(recipe, null)}
         />
         <RecipeFormModal
           open={modalOpen}

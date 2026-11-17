@@ -2,26 +2,30 @@
 
 import { useMutation, useQuery } from "@apollo/client";
 import { Landmark, Settings2 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { BankAccountSetupModal } from "@/components/finance/budget/bank-account-setup-modal";
 import { PlaidLinkLauncher } from "@/components/finance/budget/plaid-link-launcher";
 import { Button } from "@/components/ui/button";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { Modal } from "@/components/ui/modal";
 import {
-  BANK_CONNECTIONS_QUERY,
-  COMPLETE_PLAID_UPDATE_MUTATION,
-  CREATE_PLAID_UPDATE_LINK_TOKEN_MUTATION,
-  DISCONNECT_BANK_CONNECTION_MUTATION,
-  SYNC_BANK_CONNECTION_NOW_MUTATION,
+  BankConnectionsDocument,
+  CompletePlaidUpdateDocument,
+  CreatePlaidUpdateLinkTokenDocument,
+  DisconnectBankConnectionDocument,
+  SyncBankConnectionNowDocument,
 } from "@/graphql";
 import type { BankConnectionsQuery } from "@/graphql";
 import { apolloErrorMessage } from "@/lib/apollo-error";
-import { BANK_CONNECTIONS_REFETCH } from "@/lib/budget-queries";
+import { BANK_CONNECTIONS_REFETCH } from "@/lib/refetch-queries";
 import { formatShortDate } from "@life/shared";
-import { cn } from "@/lib/cn";
 import { useDemoMode } from "@/demo/demo-context";
 import { DEMO_UNAVAILABLE_MESSAGE } from "@/demo/mode";
+
+const bankMutationOptions = {
+  refetchQueries: [...BANK_CONNECTIONS_REFETCH],
+  awaitRefetchQueries: true,
+};
 
 function isItemLoginRequiredMessage(message: string | null | undefined) {
   return Boolean(message?.includes("ITEM_LOGIN_REQUIRED"));
@@ -46,61 +50,55 @@ export function BankSettingsButton() {
   const [updateConnectionId, setUpdateConnectionId] = useState<string | null>(null);
   const updateConnectionIdRef = useRef<string | null>(null);
   const [linkToken, setLinkToken] = useState<string | null>(null);
-  const [reconnecting, setReconnecting] = useState(false);
+  const reconnecting = updateConnectionId !== null;
 
-  const { data, loading, refetch } = useQuery<BankConnectionsQuery>(BANK_CONNECTIONS_QUERY);
+  const { data, loading, refetch } = useQuery<BankConnectionsQuery>(BankConnectionsDocument);
   const connections = data?.bankConnections ?? [];
 
-  const [disconnect, { loading: disconnecting }] = useMutation(DISCONNECT_BANK_CONNECTION_MUTATION, {
-    refetchQueries: [...BANK_CONNECTIONS_REFETCH],
-    awaitRefetchQueries: true,
+  const [disconnect, { loading: disconnecting }] = useMutation(DisconnectBankConnectionDocument, {
+    ...bankMutationOptions,
     onCompleted: () => setDisconnectId(null),
   });
+  const [syncNow, { loading: syncing }] = useMutation(SyncBankConnectionNowDocument, bankMutationOptions);
+  const [createUpdateToken] = useMutation(CreatePlaidUpdateLinkTokenDocument);
+  const [completeUpdate] = useMutation(CompletePlaidUpdateDocument, bankMutationOptions);
 
-  const [syncNow, { loading: syncing }] = useMutation(SYNC_BANK_CONNECTION_NOW_MUTATION, {
-    refetchQueries: [...BANK_CONNECTIONS_REFETCH],
-    awaitRefetchQueries: true,
-  });
+  function setSyncError(connectionId: string, message: string) {
+    setSyncErrors((current) => ({ ...current, [connectionId]: message }));
+  }
 
-  const [createUpdateToken] = useMutation(CREATE_PLAID_UPDATE_LINK_TOKEN_MUTATION);
-  const [completeUpdate] = useMutation(COMPLETE_PLAID_UPDATE_MUTATION, {
-    refetchQueries: [...BANK_CONNECTIONS_REFETCH],
-    awaitRefetchQueries: true,
-  });
+  function clearSyncError(connectionId: string) {
+    setSyncErrors((current) => {
+      const next = { ...current };
+      delete next[connectionId];
+      return next;
+    });
+  }
 
-  const handleUpdateSuccess = useCallback(() => {
+  function setReconnectTarget(connectionId: string | null) {
+    setUpdateConnectionId(connectionId);
+    updateConnectionIdRef.current = connectionId;
+  }
+
+  function endReconnect() {
+    setLinkToken(null);
+    setReconnectTarget(null);
+  }
+
+  function handleUpdateSuccess() {
     const connectionId = updateConnectionIdRef.current;
     if (!connectionId) {
       setLinkToken(null);
       return;
     }
     void completeUpdate({ variables: { connectionId } })
-      .then(() => {
-        setSyncErrors((current) => {
-          const next = { ...current };
-          delete next[connectionId];
-          return next;
-        });
-      })
+      .then(() => clearSyncError(connectionId))
       .catch((error: unknown) => {
-        const message = apolloErrorMessage(error, "Could not finish bank reconnection.");
-        setSyncErrors((current) => ({ ...current, [connectionId]: message }));
+        setSyncError(connectionId, apolloErrorMessage(error, "Could not finish bank reconnection."));
         setOpen(true);
       })
-      .finally(() => {
-        setLinkToken(null);
-        setUpdateConnectionId(null);
-        updateConnectionIdRef.current = null;
-        setReconnecting(false);
-      });
-  }, [completeUpdate]);
-
-  const handleUpdateExit = useCallback(() => {
-    setLinkToken(null);
-    setUpdateConnectionId(null);
-    updateConnectionIdRef.current = null;
-    setReconnecting(false);
-  }, []);
+      .finally(endReconnect);
+  }
 
   if (demoMode) {
     return (
@@ -126,44 +124,29 @@ export function BankSettingsButton() {
     connections.find((connection) => connection.id === disconnectId) ?? null;
 
   async function handleSyncNow(connectionId: string) {
-    setSyncErrors((current) => {
-      const next = { ...current };
-      delete next[connectionId];
-      return next;
-    });
+    clearSyncError(connectionId);
     try {
       await syncNow({ variables: { connectionId } });
     } catch (error) {
-      const message = apolloErrorMessage(error, "Could not sync this bank connection.");
-      setSyncErrors((current) => ({ ...current, [connectionId]: message }));
+      setSyncError(connectionId, apolloErrorMessage(error, "Could not sync this bank connection."));
       void refetch();
     }
   }
 
   async function handleReconnect(connectionId: string) {
-    setSyncErrors((current) => {
-      const next = { ...current };
-      delete next[connectionId];
-      return next;
-    });
-    setReconnecting(true);
-    setUpdateConnectionId(connectionId);
-    updateConnectionIdRef.current = connectionId;
-    // Close first so Dialog releases its scroll/pointer lock before Plaid mounts.
+    clearSyncError(connectionId);
+    setReconnectTarget(connectionId);
     setOpen(false);
     try {
       const result = await createUpdateToken({ variables: { connectionId } });
-      const token = result.data?.createPlaidUpdateLinkToken?.linkToken as string | undefined;
+      const token = result.data?.createPlaidUpdateLinkToken?.linkToken;
       if (!token) {
         throw new Error("Could not start bank reconnection.");
       }
       setLinkToken(token);
     } catch (error) {
-      const message = apolloErrorMessage(error, "Could not start bank reconnection.");
-      setSyncErrors((current) => ({ ...current, [connectionId]: message }));
-      setUpdateConnectionId(null);
-      updateConnectionIdRef.current = null;
-      setReconnecting(false);
+      setSyncError(connectionId, apolloErrorMessage(error, "Could not start bank reconnection."));
+      setReconnectTarget(null);
       setOpen(true);
     }
   }
@@ -184,8 +167,8 @@ export function BankSettingsButton() {
       {linkToken ? (
         <PlaidLinkLauncher
           token={linkToken}
-          onSuccess={() => handleUpdateSuccess()}
-          onExit={handleUpdateExit}
+          onSuccess={handleUpdateSuccess}
+          onExit={endReconnect}
         />
       ) : null}
 
@@ -258,7 +241,7 @@ export function BankSettingsButton() {
                         <Button
                           type="button"
                           variant="secondary"
-                          className={cn("px-3 py-1.5 text-xs text-error")}
+                          className="px-3 py-1.5 text-xs text-error"
                           onClick={() => setDisconnectId(connection.id)}
                         >
                           Disconnect

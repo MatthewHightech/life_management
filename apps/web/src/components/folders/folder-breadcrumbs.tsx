@@ -1,11 +1,9 @@
 "use client";
 
-import { useDroppable } from "@dnd-kit/core";
 import { ChevronRight } from "lucide-react";
 import type { FolderNamespace } from "@life/shared";
-import { folderDropId } from "@life/shared";
 import { cn } from "@/lib/cn";
-import type { FolderTileData } from "@/components/folders/folder-tile";
+import { useFolderDropTarget, type FolderTileData } from "@/components/folders/folder-tile";
 
 type FolderBreadcrumbsProps = {
   namespace: FolderNamespace;
@@ -28,12 +26,13 @@ function BreadcrumbDropTarget({
   label: string;
   onNavigate: (folderId: string | null) => void;
   onFileDrop?: (folderId: string | null, files: FileList) => void;
-  isLast?: boolean;
+  isLast: boolean;
 }) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: folderDropId(namespace, folderId),
-    data: { namespace, folderId, zone: "library" },
-  });
+  const { isOver, setNodeRef, fileDropHandlers } = useFolderDropTarget(
+    namespace,
+    folderId,
+    onFileDrop && ((files) => onFileDrop(folderId, files)),
+  );
 
   return (
     <li className="flex min-w-0 items-center gap-1">
@@ -42,19 +41,7 @@ function BreadcrumbDropTarget({
         ref={setNodeRef}
         type="button"
         onClick={() => onNavigate(folderId)}
-        onDragOver={(event) => {
-          if (!onFileDrop || !event.dataTransfer.types.includes("Files")) {
-            return;
-          }
-          event.preventDefault();
-        }}
-        onDrop={(event) => {
-          if (!onFileDrop || !event.dataTransfer.files.length) {
-            return;
-          }
-          event.preventDefault();
-          onFileDrop(folderId, event.dataTransfer.files);
-        }}
+        {...fileDropHandlers}
         className={cn(
           "truncate rounded px-1 py-0.5 text-sm transition",
           isLast ? "font-medium text-text-main" : "text-text-muted hover:text-text-main",
@@ -75,26 +62,20 @@ export function FolderBreadcrumbs({
   onNavigate,
   onFileDrop,
 }: FolderBreadcrumbsProps) {
+  const crumbs = [{ id: null, name: rootLabel }, ...path];
+
   return (
     <nav aria-label="Folders" className="border-b border-border-subtle px-4 py-2">
       <ol className="flex min-w-0 flex-wrap items-center gap-1">
-        <BreadcrumbDropTarget
-          namespace={namespace}
-          folderId={null}
-          label={rootLabel}
-          onNavigate={onNavigate}
-          onFileDrop={onFileDrop}
-          isLast={path.length === 0}
-        />
-        {path.map((folder, index) => (
+        {crumbs.map((crumb, index) => (
           <BreadcrumbDropTarget
-            key={folder.id}
+            key={crumb.id ?? "root"}
             namespace={namespace}
-            folderId={folder.id}
-            label={folder.name}
+            folderId={crumb.id}
+            label={crumb.name}
             onNavigate={onNavigate}
             onFileDrop={onFileDrop}
-            isLast={index === path.length - 1}
+            isLast={index === crumbs.length - 1}
           />
         ))}
       </ol>

@@ -1,7 +1,8 @@
 import { Prisma, ShoppingUrgency } from "@prisma/client";
 import { toIsoString } from "@life/shared";
 import { GraphQLContext } from "../context";
-import { requireHouseholdUser } from "../auth";
+import { found, requireHouseholdUser } from "../auth";
+import { requiredTextUpdate, requireText, timestampFields } from "../fields";
 
 const shoppingItemInclude = {
   createdBy: true,
@@ -12,27 +13,11 @@ const commentInclude = {
   author: true,
 } satisfies Prisma.ShoppingItemCommentInclude;
 
-async function getShoppingItem(
-  context: GraphQLContext,
-  id: string,
-  householdId: string,
-) {
-  return context.prisma.shoppingItem.findFirst({
-    where: { id, householdId },
-    include: shoppingItemInclude,
-  });
-}
-
-async function requireShoppingItem(
-  context: GraphQLContext,
-  id: string,
-  householdId: string,
-) {
-  const item = await getShoppingItem(context, id, householdId);
-  if (!item) {
-    throw new Error("Shopping item not found");
-  }
-  return item;
+async function assertShoppingItemInHousehold(context: GraphQLContext, id: string, householdId: string) {
+  found(
+    await context.prisma.shoppingItem.findFirst({ where: { id, householdId }, select: { id: true } }),
+    "Shopping item not found",
+  );
 }
 
 function validateBudgetCents(value: number | null | undefined) {
@@ -75,7 +60,7 @@ export const shoppingResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
-      await requireShoppingItem(context, args.shoppingItemId, householdId);
+      await assertShoppingItemInHousehold(context, args.shoppingItemId, householdId);
       return context.prisma.shoppingItemComment.findMany({
         where: { shoppingItemId: args.shoppingItemId },
         include: commentInclude,
@@ -97,10 +82,7 @@ export const shoppingResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId, userId } = await requireHouseholdUser(context);
-      const name = args.input.name.trim();
-      if (!name) {
-        throw new Error("Item name is required");
-      }
+      const name = requireText(args.input.name, "Item name is required");
       validateBudgetCents(args.input.budgetCents);
 
       return context.prisma.shoppingItem.create({
@@ -129,24 +111,19 @@ export const shoppingResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
-      await requireShoppingItem(context, args.id, householdId);
+      await assertShoppingItemInHousehold(context, args.id, householdId);
       validateBudgetCents(args.input.budgetCents);
-
-      const name = args.input.name?.trim();
-      if (args.input.name != null && !name) {
-        throw new Error("Item name is required");
-      }
 
       return context.prisma.shoppingItem.update({
         where: { id: args.id },
         data: {
-          ...(name ? { name } : {}),
+          name: requiredTextUpdate(args.input.name, "Item name is required"),
           ...(args.input.clearBudget
             ? { budgetCents: null }
             : args.input.budgetCents != null
               ? { budgetCents: args.input.budgetCents }
               : {}),
-          ...(args.input.urgency ? { urgency: args.input.urgency } : {}),
+          urgency: args.input.urgency ?? undefined,
         },
         include: shoppingItemInclude,
       });
@@ -158,7 +135,7 @@ export const shoppingResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
-      await requireShoppingItem(context, args.id, householdId);
+      await assertShoppingItemInHousehold(context, args.id, householdId);
       return context.prisma.shoppingItem.update({
         where: { id: args.id },
         data: { purchasedAt: args.purchased ? new Date() : null },
@@ -172,7 +149,7 @@ export const shoppingResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
-      await requireShoppingItem(context, args.id, householdId);
+      await assertShoppingItemInHousehold(context, args.id, householdId);
       await context.prisma.shoppingItem.delete({ where: { id: args.id } });
       return true;
     },
@@ -195,11 +172,8 @@ export const shoppingResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId, userId } = await requireHouseholdUser(context);
-      await requireShoppingItem(context, args.shoppingItemId, householdId);
-      const body = args.body.trim();
-      if (!body) {
-        throw new Error("Comment cannot be empty");
-      }
+      await assertShoppingItemInHousehold(context, args.shoppingItemId, householdId);
+      const body = requireText(args.body, "Comment cannot be empty");
 
       const comment = await context.prisma.shoppingItemComment.create({
         data: {
@@ -219,12 +193,12 @@ export const shoppingResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId, userId } = await requireHouseholdUser(context);
-      const comment = await context.prisma.shoppingItemComment.findFirst({
-        where: { id: args.id, shoppingItem: { householdId } },
-      });
-      if (!comment) {
-        throw new Error("Comment not found");
-      }
+      const comment = found(
+        await context.prisma.shoppingItemComment.findFirst({
+          where: { id: args.id, shoppingItem: { householdId } },
+        }),
+        "Comment not found",
+      );
       if (comment.authorId !== userId) {
         throw new Error("You can only delete your own comments");
       }
@@ -239,16 +213,15 @@ export const shoppingResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId, userId } = await requireHouseholdUser(context);
-      await requireShoppingItem(context, args.shoppingItemId, householdId);
+      await assertShoppingItemInHousehold(context, args.shoppingItemId, householdId);
       await markCommentsRead(context, args.shoppingItemId, userId);
       return true;
     },
   },
 
   ShoppingItem: {
+    ...timestampFields,
     purchasedAt: (parent: { purchasedAt?: Date | null }) => toIsoString(parent.purchasedAt),
-    createdAt: (parent: { createdAt: Date }) => toIsoString(parent.createdAt)!,
-    updatedAt: (parent: { updatedAt: Date }) => toIsoString(parent.updatedAt)!,
     commentCount: (parent: { _count?: { comments: number } }) =>
       parent._count?.comments ?? 0,
     unreadCommentCount: async (
@@ -277,7 +250,7 @@ export const shoppingResolvers = {
   },
 
   ShoppingItemComment: {
-    createdAt: (parent: { createdAt: Date }) => toIsoString(parent.createdAt)!,
+    createdAt: timestampFields.createdAt,
     canDelete: (
       parent: { authorId: string },
       _args: unknown,

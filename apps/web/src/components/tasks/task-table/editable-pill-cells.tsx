@@ -2,10 +2,7 @@
 
 import type { TaskStatus } from "@/graphql";
 import { PillSelect } from "@/components/ui/pill-select";
-import {
-  statusSelectOptions,
-  statusTriggerDisplay,
-} from "@/lib/task-pills";
+import { statusSelectOptions, statusTriggerDisplay } from "@/lib/task-status";
 
 type EditableStatusProps = {
   value: TaskStatus;
@@ -20,7 +17,7 @@ export function EditableStatus({ value, onSave }: EditableStatusProps) {
       value={value}
       triggerLabel={trigger.label}
       triggerChipClassName={trigger.chipClassName}
-      options={statusSelectOptions()}
+      options={statusSelectOptions}
       onSelect={onSave}
     />
   );

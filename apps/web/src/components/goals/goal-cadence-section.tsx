@@ -6,6 +6,7 @@ import { GOAL_CADENCE_LABELS, GOAL_LIMITS, type GoalCadence } from "@life/shared
 import { GoalRow, type GoalRowData } from "@/components/goals/goal-row";
 import { Button } from "@/components/ui/button";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { useAsyncAction } from "@/hooks/use-async-action";
 import { cn } from "@/lib/cn";
 import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
 
@@ -36,27 +37,25 @@ export function GoalCadenceSection({
 }: GoalCadenceSectionProps) {
   const [draftOpen, setDraftOpen] = useState(false);
   const [draft, setDraft] = useState("");
-  const [saving, setSaving] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
-  const [resetting, setResetting] = useState(false);
 
   const limit = GOAL_LIMITS[cadence];
   const canAdd = isOwner && !readOnly && Boolean(onAdd) && goals.length < limit;
 
-  async function submitDraft() {
+  const { pending: saving, run: submitDraft } = useAsyncAction(async () => {
     const title = draft.trim();
     if (!title || !onAdd) {
       return;
     }
-    setSaving(true);
-    try {
-      await onAdd(title);
-      setDraft("");
-      setDraftOpen(false);
-    } finally {
-      setSaving(false);
-    }
-  }
+    await onAdd(title);
+    setDraft("");
+    setDraftOpen(false);
+  });
+
+  const { pending: resetting, run: confirmReset } = useAsyncAction(async () => {
+    await onReset?.();
+    setResetOpen(false);
+  });
 
   return (
     <section className={sectionCardClass}>
@@ -144,15 +143,7 @@ export function GoalCadenceSection({
           description="These goals move to Past Goals. Current goals for this cadence will be cleared."
           confirmLabel="Reset goals"
           loading={resetting}
-          onConfirm={async () => {
-            setResetting(true);
-            try {
-              await onReset();
-              setResetOpen(false);
-            } finally {
-              setResetting(false);
-            }
-          }}
+          onConfirm={confirmReset}
         />
       ) : null}
     </section>

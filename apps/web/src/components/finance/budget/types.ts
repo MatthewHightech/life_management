@@ -1,5 +1,6 @@
-import type { BudgetMonthQuery, BudgetPurchaseAllocation } from "@/graphql";
+import type { BudgetLineType, BudgetMonthQuery, BudgetPurchaseAllocation } from "@/graphql";
 
+export type BudgetScope = BudgetLineType;
 export type BudgetMonth = BudgetMonthQuery["budgetMonth"];
 export type BudgetSection = BudgetMonth["monthlySections"][number];
 export type BudgetLineItem = BudgetSection["lineItems"][number];

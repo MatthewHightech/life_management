@@ -1,6 +1,6 @@
 import { FolderColor, FolderNamespace } from "@prisma/client";
 import { GraphQLContext } from "../context";
-import { ForbiddenError, requireHouseholdUser } from "../auth";
+import { requireHouseholdUser } from "../auth";
 import { assertFolderInHousehold, folderInclude } from "./helpers";
 
 export const folderResolvers = {
@@ -20,9 +20,7 @@ export const folderResolvers = {
       const { householdId } = await requireHouseholdUser(context);
       const { input } = args;
 
-      if (input.parentId) {
-        await assertFolderInHousehold(context, input.parentId, householdId, input.namespace);
-      }
+      await assertFolderInHousehold(context, input.parentId, householdId, input.namespace);
 
       return context.prisma.folder.create({
         data: {
@@ -45,42 +43,21 @@ export const folderResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
-
-      const existing = await context.prisma.folder.findFirst({
-        where: { id: args.id, householdId },
-        select: { id: true, namespace: true },
-      });
-
-      if (!existing) {
-        throw new ForbiddenError("Folder not found in household");
-      }
-
-      const data: { name?: string; color?: FolderColor } = {};
-      if (args.input.name !== undefined && args.input.name !== null) {
-        data.name = args.input.name.trim();
-      }
-      if (args.input.color !== undefined && args.input.color !== null) {
-        data.color = args.input.color;
-      }
+      await assertFolderInHousehold(context, args.id, householdId);
 
       return context.prisma.folder.update({
         where: { id: args.id },
-        data,
+        data: {
+          name: args.input.name?.trim() ?? undefined,
+          color: args.input.color ?? undefined,
+        },
         include: folderInclude,
       });
     },
 
     deleteFolder: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
-
-      const existing = await context.prisma.folder.findFirst({
-        where: { id: args.id, householdId },
-        select: { id: true },
-      });
-
-      if (!existing) {
-        throw new ForbiddenError("Folder not found in household");
-      }
+      await assertFolderInHousehold(context, args.id, householdId);
 
       await context.prisma.folder.delete({ where: { id: args.id } });
       return true;

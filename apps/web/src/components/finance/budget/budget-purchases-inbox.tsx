@@ -8,8 +8,8 @@ import { BudgetPurchaseChip } from "@/components/finance/budget/budget-purchase-
 import { BudgetPurchaseDraftRow } from "@/components/finance/budget/budget-purchase-draft-row";
 import { SyncCreditCardButton } from "@/components/finance/budget/sync-credit-card-button";
 import { Button } from "@/components/ui/button";
-import { DELETE_BUDGET_PURCHASE_MUTATION } from "@/graphql";
-import { BUDGET_PAGE_REFETCH } from "@/lib/budget-queries";
+import { DeleteBudgetPurchaseDocument } from "@/graphql";
+import { BUDGET_PAGE_REFETCH } from "@/lib/refetch-queries";
 import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
 import { cn } from "@/lib/cn";
 
@@ -25,7 +25,7 @@ export function BudgetPurchasesInbox({ purchases, budgetYear, budgetMonth }: Bud
   const [notice, setNotice] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const [deletePurchase] = useMutation(DELETE_BUDGET_PURCHASE_MUTATION, {
+  const [deletePurchase] = useMutation(DeleteBudgetPurchaseDocument, {
     refetchQueries: [...BUDGET_PAGE_REFETCH],
     awaitRefetchQueries: true,
   });

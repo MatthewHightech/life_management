@@ -1,30 +1,50 @@
-import { GearCondition, FolderNamespace } from "@prisma/client";
+import { FolderNamespace, GearCondition, Prisma } from "@prisma/client";
 import {
   canLendGearCondition,
   validateBorrowerEmail,
   validateLoanDates,
 } from "@life/shared";
 import { GraphQLContext } from "../context";
-import { ForbiddenError, requireHouseholdUser } from "../auth";
+import { ForbiddenError, found, requireHouseholdUser } from "../auth";
+import {
+  optionalText,
+  optionalTextUpdate,
+  requiredTextUpdate,
+  requireText,
+  timestampFields,
+  toIsoDate,
+} from "../fields";
 import { assertFolderInHousehold, loadFoldersForNamespace } from "../folders/helpers";
 
-type OnLoanSets = {
-  itemIds: Set<string>;
-  variantIds: Set<string>;
-};
+const NAME_REQUIRED = "Name is required";
 
-async function loadOnLoanSets(context: GraphQLContext, householdId: string): Promise<OnLoanSets> {
+const loanInclude = {
+  items: { include: { gearItem: true, gearVariant: true } },
+} satisfies Prisma.GearLoanInclude;
+
+type LoanTarget = { gearItemId: string } | { gearVariantId: string };
+
+async function loadOnLoanIds(context: GraphQLContext, householdId: string) {
   const rows = await context.prisma.gearLoanItem.findMany({
     where: { loan: { householdId, returnedAt: null } },
     select: { gearItemId: true, gearVariantId: true },
   });
 
-  return {
-    itemIds: new Set(rows.map((row) => row.gearItemId).filter((id): id is string => Boolean(id))),
-    variantIds: new Set(
-      rows.map((row) => row.gearVariantId).filter((id): id is string => Boolean(id)),
-    ),
-  };
+  return new Set(rows.flatMap((row) => [row.gearItemId, row.gearVariantId]).filter(Boolean));
+}
+
+async function isOnActiveLoan(context: GraphQLContext, householdId: string, target: LoanTarget) {
+  const loanItem = await context.prisma.gearLoanItem.findFirst({
+    where: { loan: { householdId, returnedAt: null }, ...target },
+    select: { id: true },
+  });
+  return Boolean(loanItem);
+}
+
+async function assertNotOnActiveLoan(context: GraphQLContext, householdId: string, target: LoanTarget) {
+  if (await isOnActiveLoan(context, householdId, target)) {
+    throw new ForbiddenError("Item is on an active loan");
+  }
 }
 
 function parseDateOnly(value: string, field: string): Date {
@@ -36,92 +56,45 @@ function parseDateOnly(value: string, field: string): Date {
 }
 
 function todayDateOnly(): Date {
-  const now = new Date();
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  return new Date(`${toIsoDate(new Date())}T00:00:00.000Z`);
 }
 
-async function assertGearItemInHousehold(
+async function findGearItem(context: GraphQLContext, id: string, householdId: string) {
+  return found(
+    await context.prisma.gearItem.findFirst({ where: { id, householdId } }),
+    "Gear item not found in household",
+  );
+}
+
+async function findGearClass(context: GraphQLContext, id: string, householdId: string) {
+  return found(
+    await context.prisma.gearItemClass.findFirst({ where: { id, householdId } }),
+    "Gear item class not found in household",
+  );
+}
+
+async function findGearVariant(context: GraphQLContext, id: string, householdId: string) {
+  return found(
+    await context.prisma.gearVariant.findFirst({ where: { id, class: { householdId } } }),
+    "Gear variant not found in household",
+  );
+}
+
+async function assertGearFolder(
   context: GraphQLContext,
-  id: string,
+  folderId: string | null | undefined,
   householdId: string,
 ) {
-  const item = await context.prisma.gearItem.findFirst({
-    where: { id, householdId },
-    select: { id: true },
-  });
-  if (!item) {
-    throw new ForbiddenError("Gear item not found in household");
-  }
-}
-
-async function assertGearClassInHousehold(
-  context: GraphQLContext,
-  id: string,
-  householdId: string,
-) {
-  const itemClass = await context.prisma.gearItemClass.findFirst({
-    where: { id, householdId },
-    select: { id: true },
-  });
-  if (!itemClass) {
-    throw new ForbiddenError("Gear item class not found in household");
-  }
-}
-
-async function assertGearVariantInHousehold(
-  context: GraphQLContext,
-  id: string,
-  householdId: string,
-) {
-  const variant = await context.prisma.gearVariant.findFirst({
-    where: { id, class: { householdId } },
-    select: { id: true, classId: true },
-  });
-  if (!variant) {
-    throw new ForbiddenError("Gear variant not found in household");
-  }
-  return variant;
-}
-
-async function assertNotOnActiveLoan(
-  context: GraphQLContext,
-  householdId: string,
-  gearItemId?: string | null,
-  gearVariantId?: string | null,
-) {
-  const onLoan = await context.prisma.gearLoanItem.findFirst({
-    where: {
-      loan: { householdId, returnedAt: null },
-      OR: [
-        gearItemId ? { gearItemId } : undefined,
-        gearVariantId ? { gearVariantId } : undefined,
-      ].filter(Boolean) as { gearItemId?: string; gearVariantId?: string }[],
-    },
-    select: { id: true },
-  });
-
-  if (onLoan) {
-    throw new ForbiddenError("Item is on an active loan");
-  }
-}
-
-function withOnLoanFlag<T extends { id: string }>(
-  entity: T,
-  onLoan: OnLoanSets,
-  kind: "item" | "variant",
-): T & { isOnLoan: boolean } {
-  const isOnLoan =
-    kind === "item" ? onLoan.itemIds.has(entity.id) : onLoan.variantIds.has(entity.id);
-  return { ...entity, isOnLoan };
+  await assertFolderInHousehold(context, folderId, householdId, FolderNamespace.GEAR);
 }
 
 export const gearResolvers = {
   Query: {
     gearLibrary: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
-      const onLoan = await loadOnLoanSets(context, householdId);
 
-      const [folders, items, classes] = await Promise.all([
+      const [onLoanIds, folders, items, classes] = await Promise.all([
+        loadOnLoanIds(context, householdId),
         loadFoldersForNamespace(context, householdId, FolderNamespace.GEAR),
         context.prisma.gearItem.findMany({
           where: { householdId },
@@ -134,14 +107,17 @@ export const gearResolvers = {
         }),
       ]);
 
+      const withOnLoanFlag = <T extends { id: string }>(entity: T) => ({
+        ...entity,
+        isOnLoan: onLoanIds.has(entity.id),
+      });
+
       return {
         folders,
-        items: items.map((item) => withOnLoanFlag(item, onLoan, "item")),
+        items: items.map(withOnLoanFlag),
         classes: classes.map((itemClass) => ({
           ...itemClass,
-          variants: itemClass.variants.map((variant) =>
-            withOnLoanFlag(variant, onLoan, "variant"),
-          ),
+          variants: itemClass.variants.map(withOnLoanFlag),
         })),
       };
     },
@@ -150,21 +126,14 @@ export const gearResolvers = {
       const { householdId } = await requireHouseholdUser(context);
       const loans = await context.prisma.gearLoan.findMany({
         where: { householdId },
-        include: {
-          items: {
-            include: {
-              gearItem: true,
-              gearVariant: true,
-            },
-          },
-        },
+        include: loanInclude,
         orderBy: [{ returnBy: "asc" }, { createdAt: "desc" }],
       });
 
-      const activeLoans = loans.filter((loan) => loan.returnedAt === null);
-      const loanHistory = loans.filter((loan) => loan.returnedAt !== null);
-
-      return { activeLoans, loanHistory };
+      return {
+        activeLoans: loans.filter((loan) => loan.returnedAt === null),
+        loanHistory: loans.filter((loan) => loan.returnedAt !== null),
+      };
     },
   },
 
@@ -185,23 +154,17 @@ export const gearResolvers = {
     ) => {
       const { householdId } = await requireHouseholdUser(context);
       const { input } = args;
-      const name = input.name.trim();
-      if (!name) {
-        throw new ForbiddenError("Name is required");
-      }
-
-      if (input.folderId) {
-        await assertFolderInHousehold(context, input.folderId, householdId, FolderNamespace.GEAR);
-      }
+      const name = requireText(input.name, NAME_REQUIRED);
+      await assertGearFolder(context, input.folderId, householdId);
 
       const item = await context.prisma.gearItem.create({
         data: {
           householdId,
           folderId: input.folderId ?? null,
           name,
-          description: input.description?.trim() || null,
-          size: input.size?.trim() || null,
-          careInstructions: input.careInstructions?.trim() || null,
+          description: optionalText(input.description),
+          size: optionalText(input.size),
+          careInstructions: optionalText(input.careInstructions),
           condition: input.condition ?? GearCondition.GOOD,
         },
       });
@@ -225,71 +188,32 @@ export const gearResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
-      await assertGearItemInHousehold(context, args.id, householdId);
-
-      if (args.input.folderId) {
-        await assertFolderInHousehold(
-          context,
-          args.input.folderId,
-          householdId,
-          FolderNamespace.GEAR,
-        );
-      }
-
-      const data: {
-        name?: string;
-        description?: string | null;
-        size?: string | null;
-        careInstructions?: string | null;
-        condition?: GearCondition;
-        folderId?: string | null;
-      } = {};
-
-      if (args.input.name !== undefined && args.input.name !== null) {
-        const name = args.input.name.trim();
-        if (!name) {
-          throw new ForbiddenError("Name is required");
-        }
-        data.name = name;
-      }
-      if (args.input.description !== undefined) {
-        data.description = args.input.description?.trim() || null;
-      }
-      if (args.input.size !== undefined) {
-        data.size = args.input.size?.trim() || null;
-      }
-      if (args.input.careInstructions !== undefined) {
-        data.careInstructions = args.input.careInstructions?.trim() || null;
-      }
-      if (args.input.condition !== undefined && args.input.condition !== null) {
-        data.condition = args.input.condition;
-      }
-      if (args.input.folderId !== undefined) {
-        data.folderId = args.input.folderId;
-      }
+      const { input } = args;
+      await findGearItem(context, args.id, householdId);
+      await assertGearFolder(context, input.folderId, householdId);
 
       const item = await context.prisma.gearItem.update({
         where: { id: args.id },
-        data,
+        data: {
+          name: requiredTextUpdate(input.name, NAME_REQUIRED),
+          description: optionalTextUpdate(input.description),
+          size: optionalTextUpdate(input.size),
+          careInstructions: optionalTextUpdate(input.careInstructions),
+          condition: input.condition ?? undefined,
+          folderId: input.folderId,
+        },
       });
-      const onLoan = await loadOnLoanSets(context, householdId);
-      return withOnLoanFlag(item, onLoan, "item");
+      return { ...item, isOnLoan: await isOnActiveLoan(context, householdId, { gearItemId: item.id }) };
     },
 
     deleteGearItem: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
-      const item = await context.prisma.gearItem.findFirst({
-        where: { id: args.id, householdId },
-      });
-      if (!item) {
-        throw new ForbiddenError("Gear item not found in household");
-      }
-
-      await assertNotOnActiveLoan(context, householdId, item.id, null);
+      const item = await findGearItem(context, args.id, householdId);
+      await assertNotOnActiveLoan(context, householdId, { gearItemId: item.id });
 
       await context.prisma.gearItem.delete({ where: { id: args.id } });
       if (item.photoStorageKey) {
-        await context.deleteGearPhoto?.(item.photoStorageKey);
+        await context.deleteStoredFile?.(item.photoStorageKey);
       }
       return true;
     },
@@ -300,23 +224,14 @@ export const gearResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
-      await assertGearItemInHousehold(context, args.gearItemId, householdId);
-
-      if (args.folderId) {
-        await assertFolderInHousehold(
-          context,
-          args.folderId,
-          householdId,
-          FolderNamespace.GEAR,
-        );
-      }
+      await findGearItem(context, args.gearItemId, householdId);
+      await assertGearFolder(context, args.folderId, householdId);
 
       const item = await context.prisma.gearItem.update({
         where: { id: args.gearItemId },
         data: { folderId: args.folderId ?? null },
       });
-      const onLoan = await loadOnLoanSets(context, householdId);
-      return withOnLoanFlag(item, onLoan, "item");
+      return { ...item, isOnLoan: await isOnActiveLoan(context, householdId, { gearItemId: item.id }) };
     },
 
     createGearItemClass: async (
@@ -332,27 +247,17 @@ export const gearResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
-      const name = args.input.name.trim();
-      if (!name) {
-        throw new ForbiddenError("Name is required");
-      }
-
-      if (args.input.folderId) {
-        await assertFolderInHousehold(
-          context,
-          args.input.folderId,
-          householdId,
-          FolderNamespace.GEAR,
-        );
-      }
+      const { input } = args;
+      const name = requireText(input.name, NAME_REQUIRED);
+      await assertGearFolder(context, input.folderId, householdId);
 
       return context.prisma.gearItemClass.create({
         data: {
           householdId,
-          folderId: args.input.folderId ?? null,
+          folderId: input.folderId ?? null,
           name,
-          description: args.input.description?.trim() || null,
-          careInstructions: args.input.careInstructions?.trim() || null,
+          description: optionalText(input.description),
+          careInstructions: optionalText(input.careInstructions),
         },
         include: { variants: true },
       });
@@ -372,66 +277,40 @@ export const gearResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
-      await assertGearClassInHousehold(context, args.id, householdId);
-
-      if (args.input.folderId) {
-        await assertFolderInHousehold(
-          context,
-          args.input.folderId,
-          householdId,
-          FolderNamespace.GEAR,
-        );
-      }
-
-      const data: {
-        name?: string;
-        description?: string | null;
-        careInstructions?: string | null;
-        folderId?: string | null;
-      } = {};
-
-      if (args.input.name !== undefined && args.input.name !== null) {
-        const name = args.input.name.trim();
-        if (!name) {
-          throw new ForbiddenError("Name is required");
-        }
-        data.name = name;
-      }
-      if (args.input.description !== undefined) {
-        data.description = args.input.description?.trim() || null;
-      }
-      if (args.input.careInstructions !== undefined) {
-        data.careInstructions = args.input.careInstructions?.trim() || null;
-      }
-      if (args.input.folderId !== undefined) {
-        data.folderId = args.input.folderId;
-      }
+      const { input } = args;
+      await findGearClass(context, args.id, householdId);
+      await assertGearFolder(context, input.folderId, householdId);
 
       return context.prisma.gearItemClass.update({
         where: { id: args.id },
-        data,
+        data: {
+          name: requiredTextUpdate(input.name, NAME_REQUIRED),
+          description: optionalTextUpdate(input.description),
+          careInstructions: optionalTextUpdate(input.careInstructions),
+          folderId: input.folderId,
+        },
         include: { variants: true },
       });
     },
 
     deleteGearItemClass: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
-      const itemClass = await context.prisma.gearItemClass.findFirst({
-        where: { id: args.id, householdId },
-        include: { variants: true },
-      });
-      if (!itemClass) {
-        throw new ForbiddenError("Gear item class not found in household");
-      }
+      await findGearClass(context, args.id, householdId);
 
-      for (const variant of itemClass.variants) {
-        await assertNotOnActiveLoan(context, householdId, null, variant.id);
-        if (variant.photoStorageKey) {
-          await context.deleteGearPhoto?.(variant.photoStorageKey);
-        }
+      const variants = await context.prisma.gearVariant.findMany({
+        where: { classId: args.id },
+        select: { id: true, photoStorageKey: true },
+      });
+      for (const variant of variants) {
+        await assertNotOnActiveLoan(context, householdId, { gearVariantId: variant.id });
       }
 
       await context.prisma.gearItemClass.delete({ where: { id: args.id } });
+      for (const variant of variants) {
+        if (variant.photoStorageKey) {
+          await context.deleteStoredFile?.(variant.photoStorageKey);
+        }
+      }
       return true;
     },
 
@@ -441,16 +320,8 @@ export const gearResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
-      await assertGearClassInHousehold(context, args.classId, householdId);
-
-      if (args.folderId) {
-        await assertFolderInHousehold(
-          context,
-          args.folderId,
-          householdId,
-          FolderNamespace.GEAR,
-        );
-      }
+      await findGearClass(context, args.classId, householdId);
+      await assertGearFolder(context, args.folderId, householdId);
 
       return context.prisma.gearItemClass.update({
         where: { id: args.classId },
@@ -472,18 +343,15 @@ export const gearResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
-      await assertGearClassInHousehold(context, args.input.classId, householdId);
-      const name = args.input.name.trim();
-      if (!name) {
-        throw new ForbiddenError("Name is required");
-      }
+      const { input } = args;
+      await findGearClass(context, input.classId, householdId);
 
       const variant = await context.prisma.gearVariant.create({
         data: {
-          classId: args.input.classId,
-          name,
-          size: args.input.size?.trim() || null,
-          condition: args.input.condition ?? GearCondition.GOOD,
+          classId: input.classId,
+          name: requireText(input.name, NAME_REQUIRED),
+          size: optionalText(input.size),
+          condition: input.condition ?? GearCondition.GOOD,
         },
       });
 
@@ -503,45 +371,31 @@ export const gearResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
-      await assertGearVariantInHousehold(context, args.id, householdId);
-
-      const data: { name?: string; size?: string | null; condition?: GearCondition } = {};
-      if (args.input.name !== undefined && args.input.name !== null) {
-        const name = args.input.name.trim();
-        if (!name) {
-          throw new ForbiddenError("Name is required");
-        }
-        data.name = name;
-      }
-      if (args.input.size !== undefined) {
-        data.size = args.input.size?.trim() || null;
-      }
-      if (args.input.condition !== undefined && args.input.condition !== null) {
-        data.condition = args.input.condition;
-      }
+      const { input } = args;
+      await findGearVariant(context, args.id, householdId);
 
       const variant = await context.prisma.gearVariant.update({
         where: { id: args.id },
-        data,
+        data: {
+          name: requiredTextUpdate(input.name, NAME_REQUIRED),
+          size: optionalTextUpdate(input.size),
+          condition: input.condition ?? undefined,
+        },
       });
-      const onLoan = await loadOnLoanSets(context, householdId);
-      return withOnLoanFlag(variant, onLoan, "variant");
+      return {
+        ...variant,
+        isOnLoan: await isOnActiveLoan(context, householdId, { gearVariantId: variant.id }),
+      };
     },
 
     deleteGearVariant: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
-      const variant = await context.prisma.gearVariant.findFirst({
-        where: { id: args.id, class: { householdId } },
-      });
-      if (!variant) {
-        throw new ForbiddenError("Gear variant not found in household");
-      }
-
-      await assertNotOnActiveLoan(context, householdId, null, variant.id);
+      const variant = await findGearVariant(context, args.id, householdId);
+      await assertNotOnActiveLoan(context, householdId, { gearVariantId: variant.id });
 
       await context.prisma.gearVariant.delete({ where: { id: args.id } });
       if (variant.photoStorageKey) {
-        await context.deleteGearPhoto?.(variant.photoStorageKey);
+        await context.deleteStoredFile?.(variant.photoStorageKey);
       }
       return true;
     },
@@ -563,26 +417,11 @@ export const gearResolvers = {
       const { householdId } = await requireHouseholdUser(context);
       const { input } = args;
 
-      const borrowerName = input.borrowerName.trim();
-      if (!borrowerName) {
-        throw new ForbiddenError("Borrower name is required");
-      }
-
-      let borrowerEmail: string;
-      try {
-        borrowerEmail = validateBorrowerEmail(input.borrowerEmail);
-      } catch (error) {
-        throw new ForbiddenError(error instanceof Error ? error.message : "Invalid email");
-      }
-
+      const borrowerName = requireText(input.borrowerName, "Borrower name is required");
+      const borrowerEmail = validateBorrowerEmail(input.borrowerEmail);
       const lentAt = input.lentAt ? parseDateOnly(input.lentAt, "Lent date") : todayDateOnly();
       const returnBy = parseDateOnly(input.returnBy, "Return-by date");
-
-      try {
-        validateLoanDates(lentAt, returnBy);
-      } catch (error) {
-        throw new ForbiddenError(error instanceof Error ? error.message : "Invalid loan dates");
-      }
+      validateLoanDates(lentAt, returnBy);
 
       const gearItemIds = [...new Set(input.gearItemIds)];
       const gearVariantIds = [...new Set(input.gearVariantIds)];
@@ -591,39 +430,26 @@ export const gearResolvers = {
         throw new ForbiddenError("At least one item is required to create a loan");
       }
 
-      const [items, variants, onLoan] = await Promise.all([
-        gearItemIds.length
-          ? context.prisma.gearItem.findMany({
-              where: { id: { in: gearItemIds }, householdId },
-            })
-          : Promise.resolve([]),
-        gearVariantIds.length
-          ? context.prisma.gearVariant.findMany({
-              where: { id: { in: gearVariantIds }, class: { householdId } },
-            })
-          : Promise.resolve([]),
-        loadOnLoanSets(context, householdId),
+      const [items, variants, onLoanIds] = await Promise.all([
+        context.prisma.gearItem.findMany({
+          where: { id: { in: gearItemIds }, householdId },
+        }),
+        context.prisma.gearVariant.findMany({
+          where: { id: { in: gearVariantIds }, class: { householdId } },
+        }),
+        loadOnLoanIds(context, householdId),
       ]);
 
       if (items.length !== gearItemIds.length || variants.length !== gearVariantIds.length) {
         throw new ForbiddenError("One or more gear items were not found in household");
       }
 
-      for (const item of items) {
-        if (!canLendGearCondition(item.condition)) {
-          throw new ForbiddenError(`"${item.name}" is retired and cannot be lent`);
+      for (const entry of [...items, ...variants]) {
+        if (!canLendGearCondition(entry.condition)) {
+          throw new ForbiddenError(`"${entry.name}" is retired and cannot be lent`);
         }
-        if (onLoan.itemIds.has(item.id)) {
-          throw new ForbiddenError(`"${item.name}" is already on loan`);
-        }
-      }
-
-      for (const variant of variants) {
-        if (!canLendGearCondition(variant.condition)) {
-          throw new ForbiddenError(`"${variant.name}" is retired and cannot be lent`);
-        }
-        if (onLoan.variantIds.has(variant.id)) {
-          throw new ForbiddenError(`"${variant.name}" is already on loan`);
+        if (onLoanIds.has(entry.id)) {
+          throw new ForbiddenError(`"${entry.name}" is already on loan`);
         }
       }
 
@@ -641,25 +467,16 @@ export const gearResolvers = {
             ],
           },
         },
-        include: {
-          items: {
-            include: {
-              gearItem: true,
-              gearVariant: true,
-            },
-          },
-        },
+        include: loanInclude,
       });
     },
 
     markGearLoanReturned: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
-      const loan = await context.prisma.gearLoan.findFirst({
-        where: { id: args.id, householdId },
-      });
-      if (!loan) {
-        throw new ForbiddenError("Loan not found in household");
-      }
+      const loan = found(
+        await context.prisma.gearLoan.findFirst({ where: { id: args.id, householdId } }),
+        "Loan not found in household",
+      );
       if (loan.returnedAt) {
         throw new ForbiddenError("Loan is already returned");
       }
@@ -667,14 +484,7 @@ export const gearResolvers = {
       return context.prisma.gearLoan.update({
         where: { id: args.id },
         data: { returnedAt: new Date() },
-        include: {
-          items: {
-            include: {
-              gearItem: true,
-              gearVariant: true,
-            },
-          },
-        },
+        include: loanInclude,
       });
     },
 
@@ -688,45 +498,29 @@ export const gearResolvers = {
   },
 
   GearItem: {
+    ...timestampFields,
     hasPhoto: (parent: { photoStorageKey?: string | null }) => Boolean(parent.photoStorageKey),
-    createdAt: (parent: { createdAt: Date }) => parent.createdAt.toISOString(),
-    updatedAt: (parent: { updatedAt: Date }) => parent.updatedAt.toISOString(),
     isOnLoan: (parent: { isOnLoan?: boolean }) => parent.isOnLoan ?? false,
   },
 
   GearVariant: {
+    ...timestampFields,
     hasPhoto: (parent: { photoStorageKey?: string | null }) => Boolean(parent.photoStorageKey),
-    createdAt: (parent: { createdAt: Date }) => parent.createdAt.toISOString(),
-    updatedAt: (parent: { updatedAt: Date }) => parent.updatedAt.toISOString(),
     isOnLoan: (parent: { isOnLoan?: boolean }) => parent.isOnLoan ?? false,
   },
 
   GearItemClass: {
-    createdAt: (parent: { createdAt: Date }) => parent.createdAt.toISOString(),
-    updatedAt: (parent: { updatedAt: Date }) => parent.updatedAt.toISOString(),
+    ...timestampFields,
     variants: (parent: { variants?: unknown[] }) => parent.variants ?? [],
   },
 
   GearLoan: {
-    lentAt: (parent: { lentAt: Date }) => parent.lentAt.toISOString().slice(0, 10),
-    returnBy: (parent: { returnBy: Date }) => parent.returnBy.toISOString().slice(0, 10),
+    ...timestampFields,
+    lentAt: (parent: { lentAt: Date }) => toIsoDate(parent.lentAt),
+    returnBy: (parent: { returnBy: Date }) => toIsoDate(parent.returnBy),
     returnedAt: (parent: { returnedAt: Date | null }) => parent.returnedAt?.toISOString() ?? null,
-    createdAt: (parent: { createdAt: Date }) => parent.createdAt.toISOString(),
-    updatedAt: (parent: { updatedAt: Date }) => parent.updatedAt.toISOString(),
-    isOverdue: (parent: { returnBy: Date; returnedAt: Date | null }) => {
-      if (parent.returnedAt) {
-        return false;
-      }
-      const today = todayDateOnly();
-      const due = new Date(
-        Date.UTC(
-          parent.returnBy.getUTCFullYear(),
-          parent.returnBy.getUTCMonth(),
-          parent.returnBy.getUTCDate(),
-        ),
-      );
-      return due < today;
-    },
+    isOverdue: (parent: { returnBy: Date; returnedAt: Date | null }) =>
+      !parent.returnedAt && toIsoDate(parent.returnBy) < toIsoDate(new Date()),
   },
 
   GearLoanItem: {

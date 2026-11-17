@@ -13,7 +13,7 @@ import { MonthlyReportDetail } from "@/components/finance/monthly-reports/monthl
 import { MonthlyReportOverview } from "@/components/finance/monthly-reports/monthly-report-overview";
 import { useMonthlyReportPdf } from "@/components/finance/monthly-reports/use-monthly-report-pdf";
 import { Button } from "@/components/ui/button";
-import { BUDGET_MONTH_REPORT_QUERY, type BudgetMonthReportQuery } from "@/graphql";
+import { BudgetMonthReportDocument, type BudgetMonthReportQuery } from "@/graphql";
 import { cn } from "@/lib/cn";
 
 export function MonthlyReportsPage() {
@@ -25,7 +25,7 @@ export function MonthlyReportsPage() {
 
   const isCurrentMonth = year === currentPeriod.year && month === currentPeriod.month;
 
-  const { data, loading, error } = useQuery<BudgetMonthReportQuery>(BUDGET_MONTH_REPORT_QUERY, {
+  const { data, loading, error } = useQuery<BudgetMonthReportQuery>(BudgetMonthReportDocument, {
     variables: { year, month },
   });
 

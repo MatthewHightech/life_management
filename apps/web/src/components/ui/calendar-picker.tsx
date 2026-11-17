@@ -22,23 +22,28 @@ type CalendarPickerProps = {
   onClear?: () => void;
 };
 
-function CalendarNavButton({
+export function CalendarNavButton({
   label,
   icon: Icon,
   onClick,
+  large = false,
 }: {
   label: string;
   icon: LucideIcon;
   onClick: () => void;
+  large?: boolean;
 }) {
   return (
     <button
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="rounded-md p-1 text-text-muted transition hover:bg-background hover:text-text-main"
+      className={cn(
+        "rounded-md text-text-muted transition hover:bg-background hover:text-text-main",
+        large ? "p-1.5" : "p-1",
+      )}
     >
-      <Icon className="h-4 w-4" />
+      <Icon className={large ? "h-5 w-5" : "h-4 w-4"} />
     </button>
   );
 }

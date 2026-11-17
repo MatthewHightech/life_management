@@ -9,7 +9,7 @@ import {
   toSpendComparison,
 } from "@/components/finance/monthly-reports/monthly-report-comparison";
 import { formatShortDate } from "@life/shared/dates";
-import { formatBudgetRemainingLabel, formatCadCents } from "@/lib/budget-money";
+import { formatBudgetRemainingLabel, formatCadCents } from "@life/shared";
 import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
 import { cn } from "@/lib/cn";
 

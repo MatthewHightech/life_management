@@ -2,8 +2,7 @@
 
 import { useCallback, useState } from "react";
 
-export async function downloadMonthlyReportPdf(container: HTMLElement, title: string) {
-  // html2canvas-pro supports oklab/oklch (Tailwind v4); stock html2canvas does not.
+async function downloadMonthlyReportPdf(container: HTMLElement, title: string) {
   const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
     import("html2canvas-pro"),
     import("jspdf"),
@@ -29,14 +28,13 @@ export async function downloadMonthlyReportPdf(container: HTMLElement, title: st
   const contentWidth = pageWidth - margin * 2;
   const imageHeight = (canvas.height * contentWidth) / canvas.width;
 
-  const offsetY = margin;
   let heightLeft = imageHeight;
 
   pdf.setFontSize(14);
   pdf.text(title, margin, 24);
 
-  pdf.addImage(imageData, "PNG", margin, offsetY, contentWidth, imageHeight);
-  heightLeft -= pageHeight - offsetY;
+  pdf.addImage(imageData, "PNG", margin, margin, contentWidth, imageHeight);
+  heightLeft -= pageHeight - margin;
 
   while (heightLeft > 0) {
     pdf.addPage();

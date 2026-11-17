@@ -16,30 +16,35 @@ import type { TaskStatus } from "@life/shared";
 import { TextField } from "@/src/components/field";
 import { TaskCommentsSection } from "@/src/components/tasks/task-comments";
 import {
-  AssigneePicker,
-  DueDateField,
   ProjectPicker,
-  StatusPicker,
+  TaskFields,
+  type TaskFieldValues,
 } from "@/src/components/tasks/task-fields";
 import { useTaskMutations, useTaskProjects, useTasksBoard } from "@/src/data";
 import { theme } from "@/constants/theme";
+
+type TaskDraft = TaskFieldValues & {
+  title: string;
+  projectId: string | null;
+};
 
 export default function TaskDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
-  const composerFocusedRef = useRef(false);
   const { tasks, users, loading } = useTasksBoard();
   const { projects } = useTaskProjects();
   const { updateTask, deleteTask, deleting, updating } = useTaskMutations();
 
   const task = useMemo(() => tasks.find((item) => item.id === id), [tasks, id]);
 
-  const [title, setTitle] = useState("");
-  const [status, setStatus] = useState<TaskStatus>("TODO");
-  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
-  const [dueDate, setDueDate] = useState<string | null>(null);
-  const [projectId, setProjectId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<TaskDraft>({
+    title: "",
+    status: "TODO",
+    assigneeIds: [],
+    dueDate: null,
+    projectId: null,
+  });
   const [saving, setSaving] = useState(false);
   const [composerFocused, setComposerFocused] = useState(false);
 
@@ -47,57 +52,41 @@ export default function TaskDetailScreen() {
     if (!task) {
       return;
     }
-    setTitle(task.title);
-    setStatus(task.status as TaskStatus);
-    setAssigneeIds(task.assignees.map((user) => user.id));
-    setDueDate(task.dueDate ?? null);
-    setProjectId(task.project?.id ?? projects[0]?.id ?? null);
+    setDraft({
+      title: task.title,
+      status: task.status as TaskStatus,
+      assigneeIds: task.assignees.map((user) => user.id),
+      dueDate: task.dueDate ?? null,
+      projectId: task.project?.id ?? projects[0]?.id ?? null,
+    });
   }, [projects, task]);
 
-  function scrollComposerIntoView() {
-    // Extra inset so the Post button clears the keyboard, not just the text field.
-    setTimeout(() => {
-      scrollRef.current?.scrollToEnd({ animated: true });
-    }, 50);
-  }
-
   useEffect(() => {
-    const show = Keyboard.addListener("keyboardDidShow", () => {
-      if (composerFocusedRef.current) {
-        scrollComposerIntoView();
-      }
-    });
-    return () => show.remove();
-  }, []);
-
-  useEffect(() => {
-    if (composerFocused) {
-      scrollComposerIntoView();
+    if (!composerFocused) {
+      return;
     }
+    const scrollComposerIntoView = () =>
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
+    scrollComposerIntoView();
+    const subscription = Keyboard.addListener("keyboardDidShow", scrollComposerIntoView);
+    return () => subscription.remove();
   }, [composerFocused]);
 
-  async function save(patch?: {
-    title?: string;
-    status?: TaskStatus;
-    assigneeIds?: string[];
-    dueDate?: string | null;
-    projectId?: string | null;
-  }) {
+  async function save(patch: Partial<TaskDraft>) {
     if (!task) {
       return;
     }
     setSaving(true);
     try {
-      await updateTask(task.id, {
-        title: patch?.title ?? title.trim(),
-        status: patch?.status ?? status,
-        assigneeIds: patch?.assigneeIds ?? assigneeIds,
-        dueDate: patch?.dueDate === undefined ? dueDate : patch.dueDate,
-        projectId: patch?.projectId === undefined ? projectId : patch.projectId,
-      });
+      await updateTask(task.id, { ...draft, title: draft.title.trim(), ...patch });
     } finally {
       setSaving(false);
     }
+  }
+
+  function change(patch: Partial<TaskDraft>) {
+    setDraft((current) => ({ ...current, ...patch }));
+    void save(patch);
   }
 
   function confirmDelete() {
@@ -109,11 +98,9 @@ export default function TaskDetailScreen() {
       {
         text: "Delete",
         style: "destructive",
-        onPress: () => {
-          void (async () => {
-            await deleteTask(task.id);
-            router.back();
-          })();
+        onPress: async () => {
+          await deleteTask(task.id);
+          router.back();
         },
       },
     ]);
@@ -164,61 +151,29 @@ export default function TaskDetailScreen() {
         >
           <TextField
             label="Title"
-            value={title}
-            onChangeText={setTitle}
+            value={draft.title}
+            onChangeText={(title) => setDraft((current) => ({ ...current, title }))}
             onEndEditing={() => {
-              if (title.trim() && title.trim() !== task.title) {
-                void save({ title: title.trim() });
+              const title = draft.title.trim();
+              if (title && title !== task.title) {
+                void save({ title });
               }
             }}
             returnKeyType="done"
           />
 
-          <StatusPicker
-            value={status}
-            onChange={(next) => {
-              setStatus(next);
-              void save({ status: next });
-            }}
-          />
-
-          <AssigneePicker
-            users={users}
-            selectedIds={assigneeIds}
-            onChange={(next) => {
-              setAssigneeIds(next);
-              void save({ assigneeIds: next });
-            }}
-          />
-
-          <DueDateField
-            value={dueDate}
-            onChange={(next) => {
-              setDueDate(next);
-              void save({ dueDate: next });
-            }}
-          />
+          <TaskFields values={draft} users={users} onChange={change} />
 
           <ProjectPicker
             projects={projects}
-            value={projectId}
-            onChange={(next) => {
-              setProjectId(next);
-              void save({ projectId: next });
-            }}
+            value={draft.projectId}
+            onChange={(projectId) => change({ projectId })}
           />
 
           <TaskCommentsSection
             taskId={task.id}
-            onComposerFocus={() => {
-              composerFocusedRef.current = true;
-              setComposerFocused(true);
-              scrollComposerIntoView();
-            }}
-            onComposerBlur={() => {
-              composerFocusedRef.current = false;
-              setComposerFocused(false);
-            }}
+            onComposerFocus={() => setComposerFocused(true)}
+            onComposerBlur={() => setComposerFocused(false)}
           />
 
           <Pressable
@@ -232,9 +187,6 @@ export default function TaskDetailScreen() {
               <Text style={styles.deleteText}>Delete task</Text>
             )}
           </Pressable>
-
-          {/* Spacer so scrollToEnd keeps the Post button above the keyboard */}
-          {composerFocused ? <View style={styles.composerKeyboardSpacer} /> : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </>
@@ -252,10 +204,7 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
   },
   contentComposerFocused: {
-    paddingBottom: 24,
-  },
-  composerKeyboardSpacer: {
-    height: 0,
+    paddingBottom: 44,
   },
   centered: {
     flex: 1,

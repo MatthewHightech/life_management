@@ -4,18 +4,11 @@ import { theme } from "@/constants/theme";
 type ChipProps = {
   label: string;
   backgroundColor: string;
-  textColor?: string;
   selected?: boolean;
   onPress?: () => void;
 };
 
-export function Chip({
-  label,
-  backgroundColor,
-  textColor = theme.onPrimary,
-  selected,
-  onPress,
-}: ChipProps) {
+export function Chip({ label, backgroundColor, selected, onPress }: ChipProps) {
   const content = (
     <View
       style={[
@@ -25,9 +18,7 @@ export function Chip({
         selected && styles.selected,
       ]}
     >
-      <Text style={[styles.label, { color: textColor }, selected === false && styles.unselectedLabel]}>
-        {label}
-      </Text>
+      <Text style={[styles.label, selected === false && styles.unselectedLabel]}>{label}</Text>
     </View>
   );
 
@@ -51,6 +42,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: "600",
+    color: theme.onPrimary,
   },
   unselected: {
     opacity: 0.45,

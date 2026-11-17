@@ -2,17 +2,17 @@
 
 import { useMutation } from "@apollo/client";
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 import { EditableUrgency } from "@/components/finance/shopping-list/editable-urgency";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
-  CREATE_SHOPPING_ITEM_MUTATION,
-  SHOPPING_LIST_QUERY,
+  CreateShoppingItemDocument,
+  ShoppingListDocument,
   type ShoppingListQuery,
   type ShoppingUrgency,
 } from "@/graphql";
-import { parseCadInputToCents } from "@/lib/budget-money";
+import { parseCadInputToCents } from "@life/shared";
 import { inlineFieldInputClass } from "@/lib/inline-edit-styles";
 import { cn } from "@/lib/cn";
 
@@ -31,16 +31,17 @@ export function QuickAddShoppingItem({
   const [urgency, setUrgency] = useState<ShoppingUrgency>(DEFAULT_URGENCY);
   const [nameError, setNameError] = useState(false);
   const [budgetError, setBudgetError] = useState(false);
-  const [createItem, { loading }] = useMutation(CREATE_SHOPPING_ITEM_MUTATION, {
-    refetchQueries: [{ query: SHOPPING_LIST_QUERY }],
+  const [createItem, { loading }] = useMutation(CreateShoppingItemDocument, {
+    refetchQueries: [{ query: ShoppingListDocument }],
   });
 
   async function handleAdd() {
     const trimmedName = name.trim();
     const budgetCents = budget.trim() ? parseCadInputToCents(budget) : null;
+    const budgetInvalid = Boolean(budget.trim()) && budgetCents === null;
     setNameError(!trimmedName);
-    setBudgetError(Boolean(budget.trim()) && budgetCents === null);
-    if (!trimmedName || (budget.trim() && budgetCents === null)) {
+    setBudgetError(budgetInvalid);
+    if (!trimmedName || budgetInvalid) {
       return;
     }
 
@@ -56,8 +57,13 @@ export function QuickAddShoppingItem({
     setName("");
     setBudget("");
     setUrgency(DEFAULT_URGENCY);
-    setNameError(false);
-    setBudgetError(false);
+  }
+
+  function submitOnEnter(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void handleAdd();
+    }
   }
 
   return (
@@ -74,12 +80,7 @@ export function QuickAddShoppingItem({
                 setNameError(false);
               }
             }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                void handleAdd();
-              }
-            }}
+            onKeyDown={submitOnEnter}
             className={cn(
               inlineFieldInputClass,
               "font-medium",
@@ -102,12 +103,7 @@ export function QuickAddShoppingItem({
               setBudget(event.target.value);
               setBudgetError(false);
             }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                void handleAdd();
-              }
-            }}
+            onKeyDown={submitOnEnter}
             className={cn(
               inlineFieldInputClass,
               "text-right tabular-nums",

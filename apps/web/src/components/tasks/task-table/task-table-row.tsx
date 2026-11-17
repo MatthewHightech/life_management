@@ -1,10 +1,10 @@
 import { cn } from "@/lib/cn";
+import { CommentsButton } from "@/components/comments/comments-button";
+import { EditableTextCell } from "@/components/editable-table";
 import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
-import { TaskCommentsButton } from "@/components/tasks/task-comments-button";
 import { EditableAssignees } from "./editable-assignees";
 import { EditableDueDate } from "./editable-due-date";
 import { EditableStatus } from "./editable-pill-cells";
-import { EditableText } from "./editable-text-cells";
 import type { TaskTableRowProps } from "./types";
 
 function TaskTableCell({
@@ -29,7 +29,7 @@ export function TaskTableRow({ task, users, onDelete, onUpdate }: TaskTableRowPr
   return (
     <tr className={cn("border-b border-border-subtle last:border-b-0", overdue && "bg-error-container/40")}>
       <TaskTableCell>
-        <EditableText
+        <EditableTextCell
           value={task.title}
           onSave={(title) => onUpdate({ title })}
           className={cn("font-medium", overdue && "text-error")}
@@ -50,19 +50,14 @@ export function TaskTableRow({ task, users, onDelete, onUpdate }: TaskTableRowPr
         <EditableDueDate value={task.dueDate} overdue={overdue} onSave={(dueDate) => onUpdate({ dueDate })} />
       </TaskTableCell>
       <TaskTableCell contentClassName="justify-end gap-1">
-        <TaskCommentsButton
-          taskId={task.id}
-          taskTitle={task.title}
+        <CommentsButton
+          targetId={task.id}
+          targetTitle={task.title}
           commentCount={task.commentCount}
           unreadCommentCount={task.unreadCommentCount}
           placement="row"
         />
-        <DeleteTaskButton
-          taskTitle={task.title}
-          onConfirm={onDelete}
-          variant="icon"
-          className="rounded p-0.5 text-text-muted hover:text-error"
-        />
+        <DeleteTaskButton taskTitle={task.title} onConfirm={onDelete} />
       </TaskTableCell>
     </tr>
   );

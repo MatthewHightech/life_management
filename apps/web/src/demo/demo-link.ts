@@ -6,7 +6,7 @@ import {
   budgetRemainingCents,
   budgetRemainingPercent,
   formatBudgetReportTitle,
-  goalLimit,
+  GOAL_LIMITS,
   goalPeriodLabel,
   mergeGroceryIngredients,
   type GoalCadence,
@@ -1312,8 +1312,8 @@ class DemoStore {
       }
 
       const goals = (set.goals as DemoRecord[]) ?? [];
-      if (goals.length >= goalLimit(cadence)) {
-        throw new Error(`At most ${goalLimit(cadence)} ${cadence.toLowerCase()} goals allowed`);
+      if (goals.length >= GOAL_LIMITS[cadence]) {
+        throw new Error(`At most ${GOAL_LIMITS[cadence]} ${cadence.toLowerCase()} goals allowed`);
       }
 
       goals.push(

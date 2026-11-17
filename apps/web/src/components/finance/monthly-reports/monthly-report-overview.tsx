@@ -4,7 +4,7 @@ import {
   MonthlyReportComparison,
   toSpendComparison,
 } from "@/components/finance/monthly-reports/monthly-report-comparison";
-import { formatBudgetRemainingLabel, formatCadCents } from "@/lib/budget-money";
+import { formatBudgetRemainingLabel, formatCadCents } from "@life/shared";
 import { sectionCardClass } from "@/lib/section-header";
 import { cn } from "@/lib/cn";
 

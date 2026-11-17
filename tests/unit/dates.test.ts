@@ -2,14 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   buildMonthGrid,
   dayBounds,
-  formatCalendarGroupLabel,
   formatDueDate,
   formatLongDate,
   formatShortDate,
   isPastDueDate,
   parseDueDate,
   parseOptionalDate,
-  toDateInputValue,
   toDueDateIso,
   toIsoString,
 } from "@life/shared";
@@ -59,7 +57,6 @@ describe("shared dates", () => {
     expect(formatShortDate(date)).toBe("Jun 24");
     expect(formatLongDate(date)).toBe("June 24, 2025");
     expect(formatLongDate("2026-07-17")).toBe("July 17, 2026");
-    expect(formatCalendarGroupLabel(date)).toBe("Tue, Jun 24");
   });
 
   it("serializes dates to ISO strings", () => {
@@ -68,10 +65,6 @@ describe("shared dates", () => {
     expect(toIsoString(null)).toBeNull();
   });
 
-  it("formats dates for date inputs", () => {
-    expect(toDateInputValue(null)).toBe("");
-    expect(toDateInputValue("2025-06-24T12:00:00.000Z")).toBe("2025-06-24");
-  });
 
   it("builds a month grid for calendars", () => {
     const days = buildMonthGrid(new Date(2025, 5, 1));

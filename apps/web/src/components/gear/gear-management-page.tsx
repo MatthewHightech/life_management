@@ -13,38 +13,31 @@ import { useMutation, useQuery } from "@apollo/client";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { GearLibraryQuery, GearLendingQuery } from "@/graphql";
 import {
-  CLEAR_GEAR_LOAN_HISTORY_MUTATION,
-  CREATE_GEAR_LOAN_MUTATION,
-  DELETE_GEAR_CLASS_MUTATION,
-  DELETE_GEAR_ITEM_MUTATION,
-  DELETE_GEAR_VARIANT_MUTATION,
-  GEAR_LIBRARY_QUERY,
-  GEAR_LENDING_QUERY,
-  MARK_GEAR_LOAN_RETURNED_MUTATION,
-  MOVE_GEAR_CLASS_TO_FOLDER_MUTATION,
-  MOVE_GEAR_ITEM_TO_FOLDER_MUTATION,
+  ClearGearLoanHistoryDocument,
+  CreateGearLoanDocument,
+  GearLibraryDocument,
+  GearLendingDocument,
+  MarkGearLoanReturnedDocument,
+  MoveGearItemClassToFolderDocument,
+  MoveGearItemToFolderDocument,
 } from "@/graphql";
 import { FolderFormModal } from "@/components/folders/folder-form-modal";
+import { useFolderNavigation } from "@/components/folders/use-folder-navigation";
 import { GearActiveLoans } from "@/components/gear/gear-active-loans";
 import { GearClassFormModal } from "@/components/gear/gear-class-form-modal";
 import { GearClassRow } from "@/components/gear/gear-class-row";
 import { GearVariantDragPreview } from "@/components/gear/gear-variant-table";
 import { GearItemFormModal } from "@/components/gear/gear-item-form-modal";
 import { GearItemRow } from "@/components/gear/gear-item-row";
-import { GearLendStaging } from "@/components/gear/gear-lend-staging";
+import { GearLendStaging, type GearLoanDraft } from "@/components/gear/gear-lend-staging";
 import { GearLibrarySection } from "@/components/gear/gear-library-section";
-import { GearDeleteModals } from "@/components/gear/gear-delete-modals";
+import { GearDeleteModal, type GearDeleteTarget } from "@/components/gear/gear-delete-modal";
 import { GearLoanHistory } from "@/components/gear/gear-loan-history";
-import type { GearItem, GearItemClass, StagedGearEntry } from "@/components/gear/types";
+import type { GearItem, GearItemClass, GearVariant, StagedGearEntry } from "@/components/gear/types";
 import { ModulePageLayout } from "@/components/shell/module-page-layout";
-import { GEAR_PAGE_REFETCH } from "@/lib/gear-queries";
+import { GEAR_PAGE_REFETCH } from "@/lib/refetch-queries";
 import { createLibraryCollisionDetection } from "@/lib/folder-dnd";
-import {
-  buildFolderPath,
-  filterFoldersForParent,
-  filterItemsForFolder,
-  folderIdAfterDelete,
-} from "@/lib/folder-utils";
+import { filterItemsForFolder } from "@/lib/folder-utils";
 import {
   GEAR_LEND_ZONE,
   canLendGearCondition,
@@ -52,85 +45,47 @@ import {
   parseFolderDropId,
 } from "@life/shared";
 
-type GearLibraryData = GearLibraryQuery["gearLibrary"];
-type GearLendingData = GearLendingQuery["gearLending"];
-
 type DragPreview =
   | { kind: "item"; item: GearItem }
-  | { kind: "variant"; variant: GearItemClass["variants"][number] }
+  | { kind: "variant"; variant: GearVariant }
   | { kind: "class"; itemClass: GearItemClass };
+
+const GEAR_MUTATION_OPTIONS = {
+  refetchQueries: [...GEAR_PAGE_REFETCH],
+  awaitRefetchQueries: true,
+};
 
 export function GearManagementPage() {
   const libraryZoneRef = useRef<HTMLElement>(null);
   const lendZoneRef = useRef<HTMLElement>(null);
 
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [expandedClassIds, setExpandedClassIds] = useState<Set<string>>(() => new Set());
   const [staged, setStaged] = useState<StagedGearEntry[]>([]);
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const [returningId, setReturningId] = useState<string | null>(null);
 
   const [folderModalOpen, setFolderModalOpen] = useState(false);
-  const [itemModalOpen, setItemModalOpen] = useState(false);
-  const [classModalOpen, setClassModalOpen] = useState(false);
+  const [itemForm, setItemForm] = useState<{ item: GearItem | null } | null>(null);
+  const [classForm, setClassForm] = useState<{ itemClass: GearItemClass | null } | null>(null);
   const [addingVariantClassId, setAddingVariantClassId] = useState<string | null>(null);
-
-  const [editItem, setEditItem] = useState<GearItem | null>(null);
-  const [editClass, setEditClass] = useState<GearItemClass | null>(null);
-
-  const [deleteItem, setDeleteItem] = useState<GearItem | null>(null);
-  const [deleteClass, setDeleteClass] = useState<GearItemClass | null>(null);
-  const [deleteVariant, setDeleteVariant] = useState<{
-    itemClass: GearItemClass;
-    variant: GearItemClass["variants"][number];
-  } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<GearDeleteTarget | null>(null);
 
   const {
     data: libraryData,
     loading: libraryLoading,
     error: libraryError,
-  } = useQuery<GearLibraryQuery>(GEAR_LIBRARY_QUERY);
+  } = useQuery<GearLibraryQuery>(GearLibraryDocument);
   const {
     data: lendingData,
     loading: lendingLoading,
     error: lendingError,
-  } = useQuery<GearLendingQuery>(GEAR_LENDING_QUERY);
+  } = useQuery<GearLendingQuery>(GearLendingDocument);
 
-  const [moveGearItemToFolder] = useMutation(MOVE_GEAR_ITEM_TO_FOLDER_MUTATION, {
-    refetchQueries: [...GEAR_PAGE_REFETCH],
-    awaitRefetchQueries: true,
-  });
-  const [moveGearClassToFolder] = useMutation(MOVE_GEAR_CLASS_TO_FOLDER_MUTATION, {
-    refetchQueries: [...GEAR_PAGE_REFETCH],
-    awaitRefetchQueries: true,
-  });
-  const [createGearLoan, { loading: creatingLoan }] = useMutation(CREATE_GEAR_LOAN_MUTATION, {
-    refetchQueries: [...GEAR_PAGE_REFETCH],
-    awaitRefetchQueries: true,
-  });
-  const [markReturned] = useMutation(MARK_GEAR_LOAN_RETURNED_MUTATION, {
-    refetchQueries: [...GEAR_PAGE_REFETCH],
-    awaitRefetchQueries: true,
-  });
-  const [clearHistory, { loading: clearing }] = useMutation(CLEAR_GEAR_LOAN_HISTORY_MUTATION, {
-    refetchQueries: [...GEAR_PAGE_REFETCH],
-    awaitRefetchQueries: true,
-  });
-  const [deleteGearItem, { loading: deletingItem }] = useMutation(DELETE_GEAR_ITEM_MUTATION, {
-    refetchQueries: [...GEAR_PAGE_REFETCH],
-    awaitRefetchQueries: true,
-    onCompleted: () => setDeleteItem(null),
-  });
-  const [deleteGearClass, { loading: deletingClass }] = useMutation(DELETE_GEAR_CLASS_MUTATION, {
-    refetchQueries: [...GEAR_PAGE_REFETCH],
-    awaitRefetchQueries: true,
-    onCompleted: () => setDeleteClass(null),
-  });
-  const [deleteGearVariant, { loading: deletingVariant }] = useMutation(DELETE_GEAR_VARIANT_MUTATION, {
-    refetchQueries: [...GEAR_PAGE_REFETCH],
-    awaitRefetchQueries: true,
-    onCompleted: () => setDeleteVariant(null),
-  });
+  const [moveGearItemToFolder] = useMutation(MoveGearItemToFolderDocument, GEAR_MUTATION_OPTIONS);
+  const [moveGearClassToFolder] = useMutation(MoveGearItemClassToFolderDocument, GEAR_MUTATION_OPTIONS);
+  const [createGearLoan, { loading: creatingLoan }] = useMutation(CreateGearLoanDocument, GEAR_MUTATION_OPTIONS);
+  const [markReturned] = useMutation(MarkGearLoanReturnedDocument, GEAR_MUTATION_OPTIONS);
+  const [clearHistory, { loading: clearing }] = useMutation(ClearGearLoanHistoryDocument, GEAR_MUTATION_OPTIONS);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -145,8 +100,10 @@ export function GearManagementPage() {
     [],
   );
 
-  const library: GearLibraryData | undefined = libraryData?.gearLibrary;
-  const lendingInfo: GearLendingData | undefined = lendingData?.gearLending;
+  const library = libraryData?.gearLibrary;
+  const lendingInfo = lendingData?.gearLending;
+  const { currentFolderId, setCurrentFolderId, breadcrumbPath, visibleFolders, handleFolderDeleted } =
+    useFolderNavigation(library?.folders);
 
   const itemById = useMemo(
     () => new Map(library?.items.map((item) => [item.id, item]) ?? []),
@@ -159,7 +116,7 @@ export function GearManagementPage() {
   );
 
   const variantById = useMemo(() => {
-    const map = new Map<string, { itemClass: GearItemClass; variant: GearItemClass["variants"][number] }>();
+    const map = new Map<string, { itemClass: GearItemClass; variant: GearVariant }>();
     for (const itemClass of library?.classes ?? []) {
       for (const variant of itemClass.variants) {
         map.set(variant.id, { itemClass, variant });
@@ -167,16 +124,6 @@ export function GearManagementPage() {
     }
     return map;
   }, [library?.classes]);
-
-  const breadcrumbPath = useMemo(
-    () => buildFolderPath(library?.folders ?? [], currentFolderId),
-    [library?.folders, currentFolderId],
-  );
-
-  const visibleFolders = useMemo(
-    () => filterFoldersForParent(library?.folders ?? [], currentFolderId),
-    [library?.folders, currentFolderId],
-  );
 
   const visibleItems = useMemo(
     () => filterItemsForFolder(library?.items ?? [], currentFolderId),
@@ -199,34 +146,22 @@ export function GearManagementPage() {
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
-      const dragId = String(event.active.id);
-      const parsed = parseGearDragId(dragId);
-      if (!parsed) {
-        return;
-      }
-
-      if (parsed.kind === "item") {
+      const parsed = parseGearDragId(String(event.active.id));
+      if (parsed?.kind === "item") {
         const item = itemById.get(parsed.id);
         if (item) {
           setDragPreview({ kind: "item", item });
         }
-        return;
-      }
-
-      if (parsed.kind === "variant") {
-        const match = variantById.get(parsed.id);
-        if (match) {
-          setDragPreview({
-            kind: "variant",
-            variant: match.variant,
-          });
+      } else if (parsed?.kind === "variant") {
+        const variant = variantById.get(parsed.id)?.variant;
+        if (variant) {
+          setDragPreview({ kind: "variant", variant });
         }
-        return;
-      }
-
-      const itemClass = classById.get(parsed.id);
-      if (itemClass) {
-        setDragPreview({ kind: "class", itemClass });
+      } else if (parsed) {
+        const itemClass = classById.get(parsed.id);
+        if (itemClass) {
+          setDragPreview({ kind: "class", itemClass });
+        }
       }
     },
     [classById, itemById, variantById],
@@ -237,83 +172,50 @@ export function GearManagementPage() {
       const { active, over } = event;
       setDragPreview(null);
 
-      if (!over) {
-        return;
-      }
-
       const parsed = parseGearDragId(String(active.id));
-      if (!parsed) {
+      if (!over || !parsed) {
         return;
       }
 
       const overZone = over.data.current?.zone as string | undefined;
       if (over.id === GEAR_LEND_ZONE || overZone === GEAR_LEND_ZONE) {
-        if (parsed.kind === "class") {
-          return;
-        }
-
         if (parsed.kind === "item") {
           const item = itemById.get(parsed.id);
-          if (
-            !item ||
-            item.isOnLoan ||
-            !canLendGearCondition(item.condition)
-          ) {
-            return;
+          if (item && !item.isOnLoan && canLendGearCondition(item.condition)) {
+            addToStaging({
+              kind: "item",
+              id: item.id,
+              name: item.name,
+              hasPhoto: item.hasPhoto,
+              condition: item.condition,
+            });
           }
-          addToStaging({
-            kind: "item",
-            id: item.id,
-            name: item.name,
-            hasPhoto: item.hasPhoto,
-            condition: item.condition,
-          });
-          return;
+        } else if (parsed.kind === "variant") {
+          const match = variantById.get(parsed.id);
+          if (match && !match.variant.isOnLoan && canLendGearCondition(match.variant.condition)) {
+            addToStaging({
+              kind: "variant",
+              id: match.variant.id,
+              name: match.variant.name,
+              hasPhoto: match.variant.hasPhoto,
+              condition: match.variant.condition,
+              className: match.itemClass.name,
+            });
+          }
         }
-
-        const match = variantById.get(parsed.id);
-        if (
-          !match ||
-          match.variant.isOnLoan ||
-          !canLendGearCondition(match.variant.condition)
-        ) {
-          return;
-        }
-        addToStaging({
-          kind: "variant",
-          id: match.variant.id,
-          name: match.variant.name,
-          hasPhoto: match.variant.hasPhoto,
-          condition: match.variant.condition,
-          className: match.itemClass.name,
-        });
         return;
       }
 
       const folderTarget = parseFolderDropId(String(over.id));
-      if (!folderTarget || folderTarget.namespace !== "GEAR") {
+      if (folderTarget?.namespace !== "GEAR") {
         return;
       }
 
-      if (parsed.kind === "item") {
-        const item = itemById.get(parsed.id);
-        if ((item?.folderId ?? null) === folderTarget.folderId) {
-          return;
-        }
-        void moveGearItemToFolder({
-          variables: { gearItemId: parsed.id, folderId: folderTarget.folderId },
-        });
-        return;
-      }
-
-      if (parsed.kind === "class") {
-        const itemClass = classById.get(parsed.id);
-        if ((itemClass?.folderId ?? null) === folderTarget.folderId) {
-          return;
-        }
-        void moveGearClassToFolder({
-          variables: { classId: parsed.id, folderId: folderTarget.folderId },
-        });
+      const { folderId } = folderTarget;
+      if (parsed.kind === "item" && (itemById.get(parsed.id)?.folderId ?? null) !== folderId) {
+        void moveGearItemToFolder({ variables: { gearItemId: parsed.id, folderId } });
+      } else if (parsed.kind === "class" && (classById.get(parsed.id)?.folderId ?? null) !== folderId) {
+        void moveGearClassToFolder({ variables: { classId: parsed.id, folderId } });
       }
     },
     [
@@ -327,25 +229,13 @@ export function GearManagementPage() {
   );
 
   const handleLend = useCallback(
-    async (input: {
-      borrowerName: string;
-      borrowerEmail: string;
-      lentAt: string;
-      returnBy: string;
-    }) => {
-      const gearItemIds = staged.filter((entry) => entry.kind === "item").map((entry) => entry.id);
-      const gearVariantIds = staged.filter((entry) => entry.kind === "variant").map((entry) => entry.id);
+    async (draft: GearLoanDraft) => {
+      const stagedIds = (kind: StagedGearEntry["kind"]) =>
+        staged.filter((entry) => entry.kind === kind).map((entry) => entry.id);
 
       await createGearLoan({
         variables: {
-          input: {
-            borrowerName: input.borrowerName,
-            borrowerEmail: input.borrowerEmail,
-            lentAt: input.lentAt,
-            returnBy: input.returnBy,
-            gearItemIds,
-            gearVariantIds,
-          },
+          input: { ...draft, gearItemIds: stagedIds("item"), gearVariantIds: stagedIds("variant") },
         },
       });
 
@@ -356,6 +246,8 @@ export function GearManagementPage() {
 
   const loading = libraryLoading || lendingLoading;
   const error = libraryError ?? lendingError;
+  const editItem = itemForm?.item ?? null;
+  const editClass = classForm?.itemClass ?? null;
 
   return (
     <ModulePageLayout title="Gear Inventory">
@@ -377,57 +269,32 @@ export function GearManagementPage() {
               items={visibleItems}
               classes={visibleClasses}
               breadcrumbPath={breadcrumbPath}
-              currentFolderId={currentFolderId}
               expandedClassIds={expandedClassIds}
               onNavigateFolder={setCurrentFolderId}
               onCreateFolder={() => setFolderModalOpen(true)}
-              onCreateItem={() => {
-                setEditItem(null);
-                setItemModalOpen(true);
-              }}
-              onCreateClass={() => {
-                setEditClass(null);
-                setClassModalOpen(true);
-              }}
-              onEditItem={(item) => {
-                setEditItem(item);
-                setItemModalOpen(true);
-              }}
-              onDeleteItem={setDeleteItem}
+              onCreateItem={() => setItemForm({ item: null })}
+              onCreateClass={() => setClassForm({ itemClass: null })}
+              onEditItem={(item) => setItemForm({ item })}
+              onDeleteItem={(item) => setDeleteTarget({ kind: "item", item })}
               onToggleClassExpand={(classId) => {
                 setExpandedClassIds((current) => {
                   const next = new Set(current);
-                  if (next.has(classId)) {
-                    next.delete(classId);
-                  } else {
+                  if (!next.delete(classId)) {
                     next.add(classId);
                   }
                   return next;
                 });
               }}
-              onEditClass={(itemClass) => {
-                setEditClass(itemClass);
-                setClassModalOpen(true);
-              }}
-              onDeleteClass={setDeleteClass}
+              onEditClass={(itemClass) => setClassForm({ itemClass })}
+              onDeleteClass={(itemClass) => setDeleteTarget({ kind: "class", itemClass })}
               onAddVariant={(itemClass) => {
                 setExpandedClassIds((current) => new Set(current).add(itemClass.id));
                 setAddingVariantClassId(itemClass.id);
               }}
               addingVariantClassId={addingVariantClassId}
               onCancelAddVariant={() => setAddingVariantClassId(null)}
-              onDeleteVariant={(itemClass, variantId) => {
-                const variant = itemClass.variants.find((entry) => entry.id === variantId);
-                if (!variant) {
-                  return;
-                }
-                setDeleteVariant({ itemClass, variant });
-              }}
-              onFolderDeleted={(deletedFolderId) => {
-                setCurrentFolderId((currentId) =>
-                  folderIdAfterDelete(library.folders, currentId, deletedFolderId),
-                );
-              }}
+              onDeleteVariant={(variant) => setDeleteTarget({ kind: "variant", variant })}
+              onFolderDeleted={handleFolderDeleted}
             />
 
             <GearLendStaging
@@ -501,33 +368,20 @@ export function GearManagementPage() {
       />
 
       <GearItemFormModal
-        open={itemModalOpen}
-        onOpenChange={setItemModalOpen}
+        open={Boolean(itemForm)}
+        onOpenChange={(open) => !open && setItemForm(null)}
         item={editItem}
         folderId={editItem ? editItem.folderId : currentFolderId}
       />
 
       <GearClassFormModal
-        open={classModalOpen}
-        onOpenChange={setClassModalOpen}
+        open={Boolean(classForm)}
+        onOpenChange={(open) => !open && setClassForm(null)}
         itemClass={editClass}
         folderId={editClass ? editClass.folderId : currentFolderId}
       />
 
-      <GearDeleteModals
-        deleteItem={deleteItem}
-        deleteClass={deleteClass}
-        deleteVariant={deleteVariant}
-        deletingItem={deletingItem}
-        deletingClass={deletingClass}
-        deletingVariant={deletingVariant}
-        onCloseItem={() => setDeleteItem(null)}
-        onCloseClass={() => setDeleteClass(null)}
-        onCloseVariant={() => setDeleteVariant(null)}
-        onConfirmDeleteItem={(id) => void deleteGearItem({ variables: { id } })}
-        onConfirmDeleteClass={(id) => void deleteGearClass({ variables: { id } })}
-        onConfirmDeleteVariant={(id) => void deleteGearVariant({ variables: { id } })}
-      />
+      <GearDeleteModal target={deleteTarget} onClose={() => setDeleteTarget(null)} />
     </ModulePageLayout>
   );
 }

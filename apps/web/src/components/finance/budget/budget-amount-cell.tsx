@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { InlineEditInput } from "@/components/ui/inline-edit-input";
 import { useTextInlineEdit } from "@/hooks/use-text-inline-edit";
-import { formatCadCents, parseCadInputToCents } from "@/lib/budget-money";
-import { inlineFieldInputClass, inlineFieldTriggerClass } from "@/lib/inline-edit-styles";
+import { formatCadCents, parseCadInputToCents } from "@life/shared";
+import { inlineFieldTriggerClass } from "@/lib/inline-edit-styles";
 import { cn } from "@/lib/cn";
 
 type BudgetAmountCellProps = {
@@ -14,7 +15,7 @@ type BudgetAmountCellProps = {
 
 export function BudgetAmountCell({ valueCents, onSave, className }: BudgetAmountCellProps) {
   const displayValue = formatCadCents(valueCents);
-  const { editing, setEditing, draft, setDraft, pending, commit, cancel } = useTextInlineEdit<number>({
+  const edit = useTextInlineEdit<number>({
     value: displayValue,
     onSave,
     resolveCommit: (draftValue) => {
@@ -29,7 +30,7 @@ export function BudgetAmountCell({ valueCents, onSave, className }: BudgetAmount
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!editing) {
+    if (!edit.editing) {
       return;
     }
     const input = inputRef.current;
@@ -39,26 +40,14 @@ export function BudgetAmountCell({ valueCents, onSave, className }: BudgetAmount
     input.focus();
     const end = input.value.length;
     input.setSelectionRange(end, end);
-  }, [editing]);
+  }, [edit.editing]);
 
-  if (editing) {
+  if (edit.editing) {
     return (
-      <input
+      <InlineEditInput
         ref={inputRef}
-        value={draft}
-        disabled={pending}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={() => void commit()}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            void commit();
-          }
-          if (event.key === "Escape") {
-            cancel();
-          }
-        }}
-        className={cn(inlineFieldInputClass, "w-full min-w-0 text-right tabular-nums", className)}
+        edit={edit}
+        className={cn("w-full min-w-0 text-right tabular-nums", className)}
       />
     );
   }
@@ -67,7 +56,7 @@ export function BudgetAmountCell({ valueCents, onSave, className }: BudgetAmount
     <button
       type="button"
       onMouseDown={(event) => event.preventDefault()}
-      onClick={() => setEditing(true)}
+      onClick={() => edit.setEditing(true)}
       className={cn(
         inlineFieldTriggerClass,
         "justify-end text-right tabular-nums",

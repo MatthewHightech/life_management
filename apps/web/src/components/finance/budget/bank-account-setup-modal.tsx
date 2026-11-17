@@ -4,10 +4,10 @@ import { useMutation } from "@apollo/client";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
-import { UPDATE_BANK_ACCOUNT_SYNC_MUTATION } from "@/graphql";
+import { UpdateBankAccountSyncDocument } from "@/graphql";
 import type { BankConnectionsQuery } from "@/graphql";
 import { apolloErrorMessage } from "@/lib/apollo-error";
-import { BANK_CONNECTIONS_REFETCH } from "@/lib/budget-queries";
+import { BANK_CONNECTIONS_REFETCH } from "@/lib/refetch-queries";
 import { cn } from "@/lib/cn";
 
 type BankConnection = BankConnectionsQuery["bankConnections"][number];
@@ -28,7 +28,7 @@ export function BankAccountSetupModal({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const [updateSync, { loading }] = useMutation(UPDATE_BANK_ACCOUNT_SYNC_MUTATION, {
+  const [updateSync, { loading }] = useMutation(UpdateBankAccountSyncDocument, {
     refetchQueries: [...BANK_CONNECTIONS_REFETCH],
     awaitRefetchQueries: true,
   });

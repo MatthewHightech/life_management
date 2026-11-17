@@ -3,13 +3,13 @@
 import { useMutation } from "@apollo/client";
 import { FormEvent, useState } from "react";
 import {
-  ADD_GROCERY_ITEM_MUTATION,
-  DELETE_GROCERY_ITEM_MUTATION,
-  REMOVE_BOUGHT_GROCERY_ITEMS_MUTATION,
-  UPDATE_GROCERY_ITEM_MUTATION,
+  AddGroceryItemDocument,
+  DeleteGroceryItemDocument,
+  RemoveBoughtGroceryItemsDocument,
+  UpdateGroceryItemDocument,
 } from "@/graphql";
 import type { GroceryItem } from "@/components/meals/types";
-import { MEAL_PLAN_REFETCH } from "@/lib/meal-plan-queries";
+import { MEAL_PLAN_REFETCH } from "@/lib/refetch-queries";
 import { Button } from "@/components/ui/button";
 import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
 import { cn } from "@/lib/cn";
@@ -24,11 +24,11 @@ export function GroceryListSection({ items }: GroceryListSectionProps) {
 
   const mutationOptions = { refetchQueries: [...MEAL_PLAN_REFETCH] };
 
-  const [addItem, { loading: adding }] = useMutation(ADD_GROCERY_ITEM_MUTATION, mutationOptions);
-  const [updateItem] = useMutation(UPDATE_GROCERY_ITEM_MUTATION, mutationOptions);
-  const [deleteItem] = useMutation(DELETE_GROCERY_ITEM_MUTATION, mutationOptions);
+  const [addItem, { loading: adding }] = useMutation(AddGroceryItemDocument, mutationOptions);
+  const [updateItem] = useMutation(UpdateGroceryItemDocument, mutationOptions);
+  const [deleteItem] = useMutation(DeleteGroceryItemDocument, mutationOptions);
   const [removeBought, { loading: removingBought }] = useMutation(
-    REMOVE_BOUGHT_GROCERY_ITEMS_MUTATION,
+    RemoveBoughtGroceryItemsDocument,
     mutationOptions,
   );
 

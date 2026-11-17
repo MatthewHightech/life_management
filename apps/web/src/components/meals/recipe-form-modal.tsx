@@ -3,8 +3,8 @@
 import { useMutation } from "@apollo/client";
 import { FormEvent, useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
-import { CREATE_RECIPE_MUTATION, UPDATE_RECIPE_MUTATION } from "@/graphql";
-import { MEAL_PLAN_REFETCH } from "@/lib/meal-plan-queries";
+import { CreateRecipeDocument, UpdateRecipeDocument } from "@/graphql";
+import { MEAL_PLAN_REFETCH } from "@/lib/refetch-queries";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import type { MealRecipe, RecipeFormValues } from "@/components/meals/types";
@@ -12,7 +12,17 @@ import { cn } from "@/lib/cn";
 
 const emptyIngredient = { name: "", quantity: "", unit: "" };
 
-function toFormValues(recipe?: MealRecipe | null): RecipeFormValues {
+const ingredientInputClass =
+  "min-h-10 rounded-lg border border-border-subtle px-3 py-2 text-sm outline-none focus:border-primary";
+
+type RecipeSource = {
+  name: string;
+  instructions?: string | null;
+  servings?: number | null;
+  ingredients: { name: string; quantity?: string | null; unit?: string | null }[];
+};
+
+export function toRecipeFormValues(recipe?: RecipeSource | null): RecipeFormValues {
   if (!recipe) {
     return {
       name: "",
@@ -42,9 +52,7 @@ type RecipeFormModalProps = {
   onOpenChange: (open: boolean) => void;
   recipe?: MealRecipe | null;
   folderId?: string | null;
-  /** Prefill for create (e.g. URL import). Ignored when editing an existing recipe. */
   initialValues?: RecipeFormValues | null;
-  /** Called with the saved recipe instead of only closing (e.g. return to view modal). */
   onSaved?: (recipe: MealRecipe) => void;
 };
 
@@ -56,21 +64,21 @@ export function RecipeFormModal({
   initialValues = null,
   onSaved,
 }: RecipeFormModalProps) {
-  const [form, setForm] = useState<RecipeFormValues>(() => toFormValues(recipe));
+  const [form, setForm] = useState<RecipeFormValues>(() => toRecipeFormValues(recipe));
   const isEdit = Boolean(recipe);
 
   useEffect(() => {
     if (open) {
-      setForm(recipe ? toFormValues(recipe) : (initialValues ?? toFormValues(null)));
+      setForm(recipe ? toRecipeFormValues(recipe) : (initialValues ?? toRecipeFormValues(null)));
     }
   }, [open, recipe, initialValues]);
 
-  const [createRecipe, { loading: creating }] = useMutation(CREATE_RECIPE_MUTATION, {
+  const [createRecipe, { loading: creating }] = useMutation(CreateRecipeDocument, {
     refetchQueries: [...MEAL_PLAN_REFETCH],
     awaitRefetchQueries: true,
   });
 
-  const [updateRecipe, { loading: updating }] = useMutation(UPDATE_RECIPE_MUTATION, {
+  const [updateRecipe, { loading: updating }] = useMutation(UpdateRecipeDocument, {
     refetchQueries: [...MEAL_PLAN_REFETCH],
     awaitRefetchQueries: true,
   });
@@ -108,26 +116,11 @@ export function RecipeFormModal({
       ingredients,
     };
 
-    if (isEdit && recipe) {
-      const result = await updateRecipe({ variables: { id: recipe.id, input } });
-      const saved = result.data?.updateRecipe as MealRecipe | undefined;
-      if (saved && onSaved) {
-        onSaved(saved);
-        return;
-      }
-      onOpenChange(false);
-      return;
-    }
-
-    const result = await createRecipe({
-      variables: {
-        input: {
-          ...input,
-          folderId,
-        },
-      },
-    });
-    const saved = result.data?.createRecipe as MealRecipe | undefined;
+    const saved = (
+      isEdit && recipe
+        ? (await updateRecipe({ variables: { id: recipe.id, input } })).data?.updateRecipe
+        : (await createRecipe({ variables: { input: { ...input, folderId } } })).data?.createRecipe
+    ) as MealRecipe | undefined;
     if (saved && onSaved) {
       onSaved(saved);
       return;
@@ -183,19 +176,19 @@ export function RecipeFormModal({
                 value={ingredient.name}
                 placeholder="Ingredient"
                 onChange={(event) => updateIngredient(index, "name", event.target.value)}
-                className="min-h-10 rounded-lg border border-border-subtle px-3 py-2 text-sm outline-none focus:border-primary"
+                className={ingredientInputClass}
               />
               <input
                 value={ingredient.quantity}
                 placeholder="Qty"
                 onChange={(event) => updateIngredient(index, "quantity", event.target.value)}
-                className="min-h-10 rounded-lg border border-border-subtle px-3 py-2 text-sm outline-none focus:border-primary"
+                className={ingredientInputClass}
               />
               <input
                 value={ingredient.unit}
                 placeholder="Unit"
                 onChange={(event) => updateIngredient(index, "unit", event.target.value)}
-                className="min-h-10 rounded-lg border border-border-subtle px-3 py-2 text-sm outline-none focus:border-primary"
+                className={ingredientInputClass}
               />
               <button
                 type="button"

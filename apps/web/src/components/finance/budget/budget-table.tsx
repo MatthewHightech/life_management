@@ -2,14 +2,17 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
-import type { BudgetScope } from "@/components/finance/budget/budget-scope";
-import type { BudgetSection } from "@/components/finance/budget/types";
+import type { BudgetScope, BudgetSection } from "@/components/finance/budget/types";
 import { BudgetSectionRow } from "@/components/finance/budget/budget-section-row";
 import { BudgetProgressBar } from "@/components/finance/budget/budget-progress-bar";
 import { Button } from "@/components/ui/button";
-import { formatBudgetRemainingLabel, formatCadCents } from "@/lib/budget-money";
 import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
-import { budgetRemainingCents, budgetRemainingPercent } from "@life/shared";
+import {
+  budgetRemainingCents,
+  budgetRemainingPercent,
+  formatBudgetRemainingLabel,
+  formatCadCents,
+} from "@life/shared";
 import { cn } from "@/lib/cn";
 
 type BudgetTableProps = {
@@ -19,7 +22,7 @@ type BudgetTableProps = {
   onAddSection: () => void;
   collapsible?: boolean;
   defaultCollapsed?: boolean;
-  emptyMessage?: string;
+  emptyMessage: string;
 };
 
 export function BudgetTable({
@@ -29,7 +32,7 @@ export function BudgetTable({
   onAddSection,
   collapsible = false,
   defaultCollapsed = false,
-  emptyMessage = "Add a section to start building your budget.",
+  emptyMessage,
 }: BudgetTableProps) {
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [expandedBySection, setExpandedBySection] = useState<Record<string, boolean>>({});

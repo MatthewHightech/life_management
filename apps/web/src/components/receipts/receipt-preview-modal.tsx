@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
 import type { ReceiptItem } from "@/components/receipts/types";
 import { ReceiptEditableNotes } from "@/components/receipts/receipt-editable-notes";
-import { fetchReceiptBlob } from "@/lib/receipt-upload";
+import { useBlobUrl } from "@/hooks/use-blob-url";
+import { fetchReceiptBlob } from "@/lib/file-api";
 import { formatReceiptAddedDate } from "@/lib/receipt-display";
 import { Modal } from "@/components/ui/modal";
 
@@ -14,40 +15,10 @@ type ReceiptPreviewModalProps = {
 };
 
 export function ReceiptPreviewModal({ open, onOpenChange, receipt }: ReceiptPreviewModalProps) {
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!open || !receipt) {
-      setBlobUrl(null);
-      setError(null);
-      return;
-    }
-
-    let active = true;
-    let objectUrl: string | null = null;
-
-    void fetchReceiptBlob(receipt.id)
-      .then((blob) => {
-        if (!active) {
-          return;
-        }
-        objectUrl = URL.createObjectURL(blob);
-        setBlobUrl(objectUrl);
-      })
-      .catch(() => {
-        if (active) {
-          setError("Could not load preview.");
-        }
-      });
-
-    return () => {
-      active = false;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
-  }, [open, receipt]);
+  const receiptId = receipt?.id;
+  const loadPreview = useCallback(() => fetchReceiptBlob(receiptId!), [receiptId]);
+  const { url: blobUrl, failed } = useBlobUrl(open && receiptId ? loadPreview : null);
+  const error = failed ? "Could not load preview." : null;
 
   const isPdf = receipt?.mimeType === "application/pdf";
   const isImage = receipt?.mimeType.startsWith("image/") ?? false;

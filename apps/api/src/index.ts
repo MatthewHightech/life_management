@@ -73,10 +73,7 @@ async function main() {
     },
     expressMiddleware(server, {
       context: async ({ req }) =>
-        createGraphQLContext(req.authUser ?? null, {
-          deleteReceiptFile: (storageKey) => fileStorage.delete(storageKey),
-          deleteGearPhoto: (storageKey) => fileStorage.delete(storageKey),
-        }),
+        createGraphQLContext(req.authUser ?? null, (storageKey) => fileStorage.delete(storageKey)),
     }),
   );
 

@@ -11,7 +11,7 @@ import {
 import { useMutation, useQuery } from "@apollo/client";
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { ReceiptLibraryQuery } from "@/graphql";
-import { MOVE_RECEIPT_TO_FOLDER_MUTATION, RECEIPT_LIBRARY_QUERY } from "@/graphql";
+import { MoveReceiptToFolderDocument, ReceiptLibraryDocument } from "@/graphql";
 import { ReceiptDeleteModal } from "@/components/receipts/receipt-delete-modal";
 import { ReceiptLibrarySection } from "@/components/receipts/receipt-library-section";
 import { ReceiptPreviewModal } from "@/components/receipts/receipt-preview-modal";
@@ -19,32 +19,25 @@ import { ReceiptRenameModal } from "@/components/receipts/receipt-rename-modal";
 import { ReceiptRow } from "@/components/receipts/receipt-row";
 import type { ReceiptItem } from "@/components/receipts/types";
 import { FolderFormModal } from "@/components/folders/folder-form-modal";
+import { useFolderNavigation } from "@/components/folders/use-folder-navigation";
 import { ModulePageLayout } from "@/components/shell/module-page-layout";
 import { createLibraryCollisionDetection } from "@/lib/folder-dnd";
-import {
-  buildFolderPath,
-  filterFoldersForParent,
-  filterItemsForFolder,
-  folderIdAfterDelete,
-} from "@/lib/folder-utils";
-import { RECEIPT_LIBRARY_REFETCH } from "@/lib/receipt-queries";
-import { uploadReceiptFiles } from "@/lib/receipt-upload";
+import { filterItemsForFolder } from "@/lib/folder-utils";
+import { RECEIPT_LIBRARY_REFETCH } from "@/lib/refetch-queries";
+import { uploadReceiptFiles } from "@/lib/file-api";
 import { parseFolderDropId } from "@life/shared";
-
-type ReceiptLibraryData = ReceiptLibraryQuery["receiptLibrary"];
 
 export function ReceiptManagementPage() {
   const libraryZoneRef = useRef<HTMLElement>(null);
   const [folderModalOpen, setFolderModalOpen] = useState(false);
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [activeReceipt, setActiveReceipt] = useState<ReceiptItem | null>(null);
   const [previewReceipt, setPreviewReceipt] = useState<ReceiptItem | null>(null);
   const [renameReceipt, setRenameReceipt] = useState<ReceiptItem | null>(null);
   const [deleteReceipt, setDeleteReceipt] = useState<ReceiptItem | null>(null);
 
-  const { data, loading, error, refetch } = useQuery<ReceiptLibraryQuery>(RECEIPT_LIBRARY_QUERY);
-  const [moveReceiptToFolder] = useMutation(MOVE_RECEIPT_TO_FOLDER_MUTATION, {
+  const { data, loading, error, refetch } = useQuery<ReceiptLibraryQuery>(ReceiptLibraryDocument);
+  const [moveReceiptToFolder] = useMutation(MoveReceiptToFolderDocument, {
     refetchQueries: [...RECEIPT_LIBRARY_REFETCH],
     awaitRefetchQueries: true,
   });
@@ -57,39 +50,18 @@ export function ReceiptManagementPage() {
     [],
   );
 
-  const library: ReceiptLibraryData | undefined = data?.receiptLibrary;
+  const library = data?.receiptLibrary;
+  const { currentFolderId, setCurrentFolderId, breadcrumbPath, visibleFolders, handleFolderDeleted } =
+    useFolderNavigation(library?.folders);
 
   const receiptById = useMemo(
     () => new Map(library?.receipts.map((receipt) => [receipt.id, receipt]) ?? []),
     [library?.receipts],
   );
 
-  const breadcrumbPath = useMemo(
-    () => buildFolderPath(library?.folders ?? [], currentFolderId),
-    [library?.folders, currentFolderId],
-  );
-
-  const visibleFolders = useMemo(
-    () => filterFoldersForParent(library?.folders ?? [], currentFolderId),
-    [library?.folders, currentFolderId],
-  );
-
   const visibleReceipts = useMemo(
     () => filterItemsForFolder(library?.receipts ?? [], currentFolderId),
     [library?.receipts, currentFolderId],
-  );
-
-  const handleNavigateFolder = useCallback((folderId: string | null) => {
-    setCurrentFolderId(folderId);
-  }, []);
-
-  const handleFolderDeleted = useCallback(
-    (deletedFolderId: string) => {
-      setCurrentFolderId((currentId) =>
-        folderIdAfterDelete(library?.folders ?? [], currentId, deletedFolderId),
-      );
-    },
-    [library?.folders],
   );
 
   const handleUpload = useCallback(
@@ -109,30 +81,18 @@ export function ReceiptManagementPage() {
     const { active, over } = event;
     setActiveReceipt(null);
 
-    if (!over) {
-      return;
-    }
-
-    const receiptId = String(active.id);
-    if (!receiptById.has(receiptId)) {
-      return;
-    }
-
-    const folderTarget = parseFolderDropId(String(over.id));
-    if (!folderTarget || folderTarget.namespace !== "RECEIPTS") {
-      return;
-    }
-
-    const receipt = receiptById.get(receiptId);
-    if ((receipt?.folderId ?? null) === folderTarget.folderId) {
+    const receipt = receiptById.get(String(active.id));
+    const folderTarget = over ? parseFolderDropId(String(over.id)) : null;
+    if (
+      !receipt ||
+      folderTarget?.namespace !== "RECEIPTS" ||
+      (receipt.folderId ?? null) === folderTarget.folderId
+    ) {
       return;
     }
 
     void moveReceiptToFolder({
-      variables: {
-        receiptId,
-        folderId: folderTarget.folderId,
-      },
+      variables: { receiptId: receipt.id, folderId: folderTarget.folderId },
     });
   }
 
@@ -163,7 +123,7 @@ export function ReceiptManagementPage() {
             breadcrumbPath={breadcrumbPath}
             currentFolderId={currentFolderId}
             uploading={uploading}
-            onNavigateFolder={handleNavigateFolder}
+            onNavigateFolder={setCurrentFolderId}
             onCreateFolder={() => setFolderModalOpen(true)}
             onUpload={handleUpload}
             onPreview={setPreviewReceipt}

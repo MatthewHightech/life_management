@@ -1,7 +1,5 @@
-/** Short-lived JWT for mobile GraphQL / REST requests. */
 export const accessTokenMaxAgeSeconds = 60 * 60;
 
-/** Long-lived refresh token; rotated on each refresh for indefinite use while active. */
 export const refreshTokenMaxAgeSeconds = 365 * 24 * 60 * 60;
 
 export type MobileAuthUser = {

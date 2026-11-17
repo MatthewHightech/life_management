@@ -1,48 +1,26 @@
-import { BUDGET_TIMEZONE } from "./budget";
+import { BUDGET_TIMEZONE, getPurchaseBudgetYearMonth } from "./budget";
 
-export const BUDGET_PURCHASE_DRAG_PREFIX = "budget-purchase";
-export const BUDGET_LINE_DROP_PREFIX = "budget-line";
+const BUDGET_PURCHASE_DRAG_PREFIX = "budget-purchase:";
+const BUDGET_LINE_DROP_PREFIX = "budget-line:";
+
+function parsePrefixedId(value: string, prefix: string) {
+  return value.startsWith(prefix) ? value.slice(prefix.length) || undefined : undefined;
+}
 
 export function budgetPurchaseDragId(purchaseId: string) {
-  return `${BUDGET_PURCHASE_DRAG_PREFIX}:${purchaseId}`;
+  return `${BUDGET_PURCHASE_DRAG_PREFIX}${purchaseId}`;
 }
 
 export function budgetLineDropId(lineItemId: string) {
-  return `${BUDGET_LINE_DROP_PREFIX}:${lineItemId}`;
+  return `${BUDGET_LINE_DROP_PREFIX}${lineItemId}`;
 }
 
 export function parseBudgetPurchaseDragId(value: string) {
-  if (!value.startsWith(`${BUDGET_PURCHASE_DRAG_PREFIX}:`)) {
-    return undefined;
-  }
-  const id = value.slice(BUDGET_PURCHASE_DRAG_PREFIX.length + 1);
-  return id || undefined;
+  return parsePrefixedId(value, BUDGET_PURCHASE_DRAG_PREFIX);
 }
 
 export function parseBudgetLineDropId(value: string) {
-  if (!value.startsWith(`${BUDGET_LINE_DROP_PREFIX}:`)) {
-    return undefined;
-  }
-  const id = value.slice(BUDGET_LINE_DROP_PREFIX.length + 1);
-  return id || undefined;
-}
-
-export function getPurchaseBudgetYearMonth(reference: Date) {
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: BUDGET_TIMEZONE,
-    year: "numeric",
-    month: "numeric",
-  });
-
-  const parts = formatter.formatToParts(reference);
-  const lookup = Object.fromEntries(
-    parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]),
-  );
-
-  return {
-    year: Number(lookup.year),
-    month: Number(lookup.month),
-  };
+  return parsePrefixedId(value, BUDGET_LINE_DROP_PREFIX);
 }
 
 export function purchaseMatchesMonthlyBudget(
@@ -56,6 +34,17 @@ export function purchaseMatchesMonthlyBudget(
 
 export function purchaseMatchesAnnualBudget(purchaseDate: Date, budgetYear: number) {
   return getPurchaseBudgetYearMonth(purchaseDate).year === budgetYear;
+}
+
+export function purchaseMatchesBudgetLine(
+  lineType: "MONTHLY" | "ANNUAL",
+  purchaseDate: Date,
+  budgetYear: number,
+  budgetMonth: number,
+) {
+  return lineType === "MONTHLY"
+    ? purchaseMatchesMonthlyBudget(purchaseDate, budgetYear, budgetMonth)
+    : purchaseMatchesAnnualBudget(purchaseDate, budgetYear);
 }
 
 export function purchaseDateOutsideBudgetMonthNotice(

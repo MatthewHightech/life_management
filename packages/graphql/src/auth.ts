@@ -1,6 +1,6 @@
 import { GraphQLContext } from "./context";
 
-export class AuthError extends Error {
+class AuthError extends Error {
   constructor(message = "Unauthorized") {
     super(message);
     this.name = "AuthError";
@@ -12,6 +12,13 @@ export class ForbiddenError extends Error {
     super(message);
     this.name = "ForbiddenError";
   }
+}
+
+export function found<T>(value: T | null | undefined, message: string): T {
+  if (!value) {
+    throw new ForbiddenError(message);
+  }
+  return value;
 }
 
 export async function requireHouseholdUser(context: GraphQLContext) {
@@ -34,19 +41,4 @@ export async function requireHouseholdUser(context: GraphQLContext) {
     email: user.email,
     name: user.name,
   };
-}
-
-export async function assertTaskInHousehold(
-  context: GraphQLContext,
-  taskId: string,
-  householdId: string,
-) {
-  const task = await context.prisma.task.findFirst({
-    where: { id: taskId, householdId },
-    select: { id: true },
-  });
-
-  if (!task) {
-    throw new ForbiddenError("Task not found in household");
-  }
 }

@@ -1,81 +1,67 @@
 "use client";
 
 import { useMutation, useQuery } from "@apollo/client";
-import { useCallback, useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { BankAccountSetupModal } from "@/components/finance/budget/bank-account-setup-modal";
 import { PlaidLinkLauncher } from "@/components/finance/budget/plaid-link-launcher";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import {
-  BANK_CONNECTIONS_QUERY,
-  COMPLETE_PLAID_LINK_MUTATION,
-  CREATE_PLAID_LINK_TOKEN_MUTATION,
-  SYNC_BANK_CONNECTION_NOW_MUTATION,
+  BankConnectionsDocument,
+  CompletePlaidLinkDocument,
+  CreatePlaidLinkTokenDocument,
+  SyncBankConnectionNowDocument,
 } from "@/graphql";
-import type { BankConnectionsQuery, CompletePlaidLinkMutation } from "@/graphql";
-import { BANK_CONNECTIONS_REFETCH } from "@/lib/budget-queries";
+import type { BankConnectionsQuery } from "@/graphql";
+import { BANK_CONNECTIONS_REFETCH } from "@/lib/refetch-queries";
 import { apolloErrorMessage } from "@/lib/apollo-error";
 import { useDemoMode } from "@/demo/demo-context";
 import { DEMO_UNAVAILABLE_MESSAGE } from "@/demo/mode";
 
 type BankConnection = BankConnectionsQuery["bankConnections"][number];
 
-type SyncCreditCardButtonProps = {
-  className?: string;
+const bankMutationOptions = {
+  refetchQueries: [...BANK_CONNECTIONS_REFETCH],
+  awaitRefetchQueries: true,
 };
 
-export function SyncCreditCardButton({ className }: SyncCreditCardButtonProps) {
+export function SyncCreditCardButton() {
   const demoMode = useDemoMode();
   const [introOpen, setIntroOpen] = useState(false);
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [setupConnection, setSetupConnection] = useState<BankConnection | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const { data, loading: loadingConnections } = useQuery<BankConnectionsQuery>(BANK_CONNECTIONS_QUERY);
+  const { data, loading: loadingConnections } = useQuery<BankConnectionsQuery>(BankConnectionsDocument);
   const connections = data?.bankConnections ?? [];
-  const hasBankConnection = connections.length > 0;
 
-  const [createLinkToken, { loading: creatingToken }] = useMutation(CREATE_PLAID_LINK_TOKEN_MUTATION);
-  const [completeLink, { loading: completing }] = useMutation(COMPLETE_PLAID_LINK_MUTATION, {
-    refetchQueries: [...BANK_CONNECTIONS_REFETCH],
-    awaitRefetchQueries: true,
-  });
-  const [syncNow, { loading: syncing }] = useMutation(SYNC_BANK_CONNECTION_NOW_MUTATION, {
-    refetchQueries: [...BANK_CONNECTIONS_REFETCH],
-    awaitRefetchQueries: true,
-  });
+  const [createLinkToken, { loading: creatingToken }] = useMutation(CreatePlaidLinkTokenDocument);
+  const [completeLink, { loading: completing }] = useMutation(CompletePlaidLinkDocument, bankMutationOptions);
+  const [syncNow, { loading: syncing }] = useMutation(SyncBankConnectionNowDocument, bankMutationOptions);
 
-  const handleLinkSuccess = useCallback(
-    (publicToken: string) => {
-      void completeLink({ variables: { publicToken } })
-        .then((result) => {
-          const connection = (result.data as CompletePlaidLinkMutation | undefined)?.completePlaidLink;
-          if (connection) {
-            setSetupConnection(connection);
-          }
-          setIntroOpen(false);
-          setLinkToken(null);
-        })
-        .catch((err: unknown) => {
-          setLinkToken(null);
-          setError(apolloErrorMessage(err, "Could not complete bank connection."));
-        });
-    },
-    [completeLink],
-  );
-
-  const handleLinkExit = useCallback(() => {
-    setLinkToken(null);
-  }, []);
+  function handleLinkSuccess(publicToken: string) {
+    void completeLink({ variables: { publicToken } })
+      .then((result) => {
+        const connection = result.data?.completePlaidLink;
+        if (connection) {
+          setSetupConnection(connection);
+        }
+        setIntroOpen(false);
+        setLinkToken(null);
+      })
+      .catch((err: unknown) => {
+        setLinkToken(null);
+        setError(apolloErrorMessage(err, "Could not complete bank connection."));
+      });
+  }
 
   async function startLink() {
     setError(null);
-    // Close first so Dialog releases its scroll/pointer lock before Plaid mounts.
     setIntroOpen(false);
 
     try {
       const result = await createLinkToken();
-      const token = result.data?.createPlaidLinkToken?.linkToken as string | undefined;
+      const token = result.data?.createPlaidLinkToken?.linkToken;
       if (!token) {
         throw new Error("Could not create Plaid link token.");
       }
@@ -99,9 +85,9 @@ export function SyncCreditCardButton({ className }: SyncCreditCardButtonProps) {
     }
   }
 
-  function handleClick(event: React.MouseEvent<HTMLButtonElement>) {
+  function handleClick(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
-    if (hasBankConnection) {
+    if (connections.length > 0) {
       void syncConnectedBanks();
       return;
     }
@@ -116,7 +102,7 @@ export function SyncCreditCardButton({ className }: SyncCreditCardButtonProps) {
       <Button
         type="button"
         variant="secondary"
-        className={className ?? "px-3 py-1.5 text-xs"}
+        className="px-3 py-1.5 text-xs"
         disabled={demoMode || loadingConnections || busy}
         title={demoMode ? DEMO_UNAVAILABLE_MESSAGE : error && !introOpen ? error : undefined}
         onClick={handleClick}
@@ -128,7 +114,7 @@ export function SyncCreditCardButton({ className }: SyncCreditCardButtonProps) {
         <PlaidLinkLauncher
           token={linkToken}
           onSuccess={handleLinkSuccess}
-          onExit={handleLinkExit}
+          onExit={() => setLinkToken(null)}
         />
       ) : null}
 

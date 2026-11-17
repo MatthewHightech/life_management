@@ -6,7 +6,7 @@ import {
   type TaskStatus,
 } from "@life/shared";
 import { SymbolView } from "expo-symbols";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -45,10 +45,10 @@ export default function TasksScreen() {
     DONE: true,
   });
 
+  const fallbackProjectId = projects[0]?.id ?? null;
   const resolvedProjectId = projects.some((project) => project.id === activeProjectId)
     ? activeProjectId
-    : (projects[0]?.id ?? null);
-  const fallbackProjectId = projects[0]?.id ?? null;
+    : fallbackProjectId;
 
   useEffect(() => {
     if (resolvedProjectId && resolvedProjectId !== activeProjectId) {
@@ -120,8 +120,6 @@ export default function TasksScreen() {
 
   return (
     <View style={styles.screen}>
-      <Stack.Screen options={{ headerShown: false }} />
-
       <View style={[styles.topChrome, { paddingTop: insets.top }]}>
         <ProjectBar
           projects={projects}

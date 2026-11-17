@@ -1,13 +1,14 @@
 import { Prisma, TaskStatus } from "@prisma/client";
 import { dayBounds, isPastDueDate, parseOptionalDate, toIsoString } from "@life/shared";
 import { GraphQLContext } from "../context";
-import { assertTaskInHousehold, requireHouseholdUser } from "../auth";
+import { found, requireHouseholdUser } from "../auth";
+import { requireText, timestampFields } from "../fields";
 import {
+  assertBoard,
   assignTaskTreeToBoard,
-  countRootTasksByBoard,
   createTaskBoard,
   deleteTaskBoard,
-  ensureHouseholdBoards,
+  listBoardsWithTaskCounts,
   moveTaskOntoBoard,
   renameTaskBoard,
   reorderTaskBoards,
@@ -29,6 +30,29 @@ const commentInclude = {
 
 type TaskView = "TODAY" | "CALENDAR" | "KANBAN" | "BY_PERSON" | "LIST";
 
+type TaskFilter = {
+  view?: TaskView | null;
+  status?: TaskStatus | null;
+  assigneeId?: string | null;
+  projectId?: string | null;
+  includeDone?: boolean | null;
+};
+
+type TaskInput = {
+  title: string;
+  status?: TaskStatus | null;
+  isShared?: boolean | null;
+  dueDate?: string | null;
+  remindAt?: string | null;
+  projectId?: string | null;
+  parentId?: string | null;
+  assigneeIds?: string[] | null;
+  isRecurringTemplate?: boolean | null;
+  recurrenceFrequency?: "DAILY" | "WEEKLY" | "MONTHLY" | null;
+  recurrenceInterval?: number | null;
+  recurrenceWeekdays?: number[] | null;
+};
+
 function visibleTaskWhere(householdId: string, userId: string): Prisma.TaskWhereInput {
   return {
     householdId,
@@ -41,29 +65,14 @@ function visibleTaskWhere(householdId: string, userId: string): Prisma.TaskWhere
   };
 }
 
-function buildTaskWhere(
-  householdId: string,
-  userId: string,
-  filter?: {
-    view?: TaskView | null;
-    status?: TaskStatus | null;
-    assigneeId?: string | null;
-    projectId?: string | null;
-    includeDone?: boolean | null;
-  },
-): Prisma.TaskWhereInput {
-  const { end: todayEnd } = dayBounds();
-
-  const where: Prisma.TaskWhereInput = visibleTaskWhere(householdId, userId);
-
+function buildTaskWhere(householdId: string, userId: string, filter?: TaskFilter): Prisma.TaskWhereInput {
+  const where = visibleTaskWhere(householdId, userId);
   const includeDone = filter?.includeDone || filter?.view === "KANBAN" || filter?.view === "LIST";
-
-  if (!includeDone) {
-    where.status = { not: TaskStatus.DONE };
-  }
 
   if (filter?.status) {
     where.status = filter.status;
+  } else if (!includeDone) {
+    where.status = { not: TaskStatus.DONE };
   }
 
   if (filter?.assigneeId) {
@@ -75,11 +84,7 @@ function buildTaskWhere(
   }
 
   if (filter?.view === "TODAY") {
-    where.AND = [
-      {
-        OR: [{ dueDate: null }, { dueDate: { lte: todayEnd } }],
-      },
-    ];
+    where.AND = [{ OR: [{ dueDate: null }, { dueDate: { lte: dayBounds().end } }] }];
   }
 
   if (filter?.view === "CALENDAR") {
@@ -89,26 +94,32 @@ function buildTaskWhere(
   return where;
 }
 
-async function getTaskById(context: GraphQLContext, id: string, householdId: string) {
-  return context.prisma.task.findFirst({
-    where: { id, householdId },
-    include: taskInclude,
-  });
+async function assertTaskInHousehold(context: GraphQLContext, taskId: string, householdId: string) {
+  found(
+    await context.prisma.task.findFirst({ where: { id: taskId, householdId }, select: { id: true } }),
+    "Task not found in household",
+  );
 }
 
-async function getVisibleTask(context: GraphQLContext, id: string, householdId: string, userId: string) {
-  return context.prisma.task.findFirst({
-    where: { id, ...visibleTaskWhere(householdId, userId) },
-    include: taskInclude,
-  });
+async function requireTask(context: GraphQLContext, id: string, householdId: string) {
+  return found(
+    await context.prisma.task.findFirst({ where: { id, householdId }, include: taskInclude }),
+    "Task not found",
+  );
 }
 
-async function markTaskCommentsReadForUser(
-  context: GraphQLContext,
-  taskId: string,
-  userId: string,
-  readAt = new Date(),
-) {
+async function assertVisibleTask(context: GraphQLContext, id: string, householdId: string, userId: string) {
+  found(
+    await context.prisma.task.findFirst({
+      where: { id, ...visibleTaskWhere(householdId, userId) },
+      select: { id: true },
+    }),
+    "Task not found",
+  );
+}
+
+async function markTaskCommentsReadForUser(context: GraphQLContext, taskId: string, userId: string) {
+  const readAt = new Date();
   await context.prisma.taskCommentRead.upsert({
     where: { userId_taskId: { userId, taskId } },
     create: { userId, taskId, readAt },
@@ -142,7 +153,6 @@ async function syncAssignees(
   householdId: string,
 ) {
   await assertUsersInHousehold(context, assigneeIds, householdId);
-
   await context.prisma.taskAssignment.deleteMany({ where: { taskId } });
 
   if (assigneeIds.length > 0) {
@@ -152,25 +162,9 @@ async function syncAssignees(
   }
 }
 
-function resolveStatusOnComplete(completed: boolean, current: TaskStatus): TaskStatus {
-  if (completed) {
-    return TaskStatus.DONE;
-  }
-
-  if (current === TaskStatus.DONE) {
-    return TaskStatus.TODO;
-  }
-
-  return current;
-}
-
 export const taskResolvers = {
   Query: {
-    tasks: async (
-      _parent: unknown,
-      args: { filter?: Parameters<typeof buildTaskWhere>[2] },
-      context: GraphQLContext,
-    ) => {
+    tasks: async (_parent: unknown, args: { filter?: TaskFilter }, context: GraphQLContext) => {
       const { householdId, userId } = await requireHouseholdUser(context);
 
       return context.prisma.task.findMany({
@@ -182,26 +176,20 @@ export const taskResolvers = {
 
     task: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
-      return getTaskById(context, args.id, householdId);
+      return context.prisma.task.findFirst({
+        where: { id: args.id, householdId },
+        include: taskInclude,
+      });
     },
 
     taskProjects: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
-      const projects = await ensureHouseholdBoards(context.prisma, householdId);
-      const counts = await countRootTasksByBoard(context.prisma, householdId);
-
-      return projects.map((project) => ({
-        ...project,
-        taskCount: counts.get(project.id) ?? 0,
-      }));
+      return listBoardsWithTaskCounts(context.prisma, householdId);
     },
 
     taskComments: async (_parent: unknown, args: { taskId: string }, context: GraphQLContext) => {
       const { householdId, userId } = await requireHouseholdUser(context);
-      const task = await getVisibleTask(context, args.taskId, householdId, userId);
-      if (!task) {
-        throw new Error("Task not found");
-      }
+      await assertVisibleTask(context, args.taskId, householdId, userId);
 
       return context.prisma.taskComment.findMany({
         where: { taskId: args.taskId },
@@ -212,26 +200,7 @@ export const taskResolvers = {
   },
 
   Mutation: {
-    createTask: async (
-      _parent: unknown,
-      args: {
-        input: {
-          title: string;
-          status?: TaskStatus | null;
-          isShared?: boolean | null;
-          dueDate?: string | null;
-          remindAt?: string | null;
-          projectId?: string | null;
-          parentId?: string | null;
-          assigneeIds?: string[] | null;
-          isRecurringTemplate?: boolean | null;
-          recurrenceFrequency?: "DAILY" | "WEEKLY" | "MONTHLY" | null;
-          recurrenceInterval?: number | null;
-          recurrenceWeekdays?: number[] | null;
-        };
-      },
-      context: GraphQLContext,
-    ) => {
+    createTask: async (_parent: unknown, args: { input: TaskInput }, context: GraphQLContext) => {
       const { householdId, userId } = await requireHouseholdUser(context);
       const { input } = args;
 
@@ -248,7 +217,7 @@ export const taskResolvers = {
       await assertUsersInHousehold(context, assigneeIds, householdId);
 
       const status = input.status ?? TaskStatus.TODO;
-      const task = await context.prisma.task.create({
+      return context.prisma.task.create({
         data: {
           householdId,
           createdById: userId,
@@ -270,75 +239,54 @@ export const taskResolvers = {
         },
         include: taskInclude,
       });
-
-      return task;
     },
 
     updateTask: async (
       _parent: unknown,
-      args: {
-        id: string;
-        input: {
-          title?: string | null;
-          status?: TaskStatus | null;
-          isShared?: boolean | null;
-          dueDate?: string | null;
-          remindAt?: string | null;
-          projectId?: string | null;
-          parentId?: string | null;
-          assigneeIds?: string[] | null;
-          isRecurringTemplate?: boolean | null;
-          recurrenceFrequency?: "DAILY" | "WEEKLY" | "MONTHLY" | null;
-          recurrenceInterval?: number | null;
-          recurrenceWeekdays?: number[] | null;
-        };
-      },
+      args: { id: string; input: Omit<Partial<TaskInput>, "title"> & { title?: string | null } },
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
+      const { input } = args;
       await assertTaskInHousehold(context, args.id, householdId);
 
-      const data: Prisma.TaskUpdateInput = {};
-
-      if (args.input.title != null) data.title = args.input.title.trim();
-      if (args.input.status != null) {
-        data.status = args.input.status;
-        data.completedAt = args.input.status === TaskStatus.DONE ? new Date() : null;
-      }
-      if (args.input.isShared != null) data.isShared = args.input.isShared;
-      if (args.input.dueDate !== undefined) data.dueDate = parseOptionalDate(args.input.dueDate);
-      if (args.input.remindAt !== undefined) data.remindAt = parseOptionalDate(args.input.remindAt);
-      if (args.input.projectId !== undefined) {
-        if (!args.input.projectId) {
+      if (input.projectId !== undefined) {
+        if (!input.projectId) {
           throw new Error("Task must belong to a board");
         }
-        await assignTaskTreeToBoard(context.prisma, householdId, args.id, args.input.projectId);
-      }
-      if (args.input.parentId !== undefined) {
-        data.parent = args.input.parentId ? { connect: { id: args.input.parentId } } : { disconnect: true };
-      }
-      if (args.input.isRecurringTemplate != null) data.isRecurringTemplate = args.input.isRecurringTemplate;
-      if (args.input.recurrenceFrequency !== undefined) data.recurrenceFrequency = args.input.recurrenceFrequency;
-      if (args.input.recurrenceInterval !== undefined) data.recurrenceInterval = args.input.recurrenceInterval;
-      if (args.input.recurrenceWeekdays !== undefined) {
-        data.recurrenceWeekdays = args.input.recurrenceWeekdays ?? [];
+        await assignTaskTreeToBoard(context.prisma, householdId, args.id, input.projectId);
       }
 
       await context.prisma.task.update({
         where: { id: args.id },
-        data,
+        data: {
+          title: input.title?.trim() ?? undefined,
+          ...(input.status != null && {
+            status: input.status,
+            completedAt: input.status === TaskStatus.DONE ? new Date() : null,
+          }),
+          isShared: input.isShared ?? undefined,
+          dueDate: input.dueDate === undefined ? undefined : parseOptionalDate(input.dueDate),
+          remindAt: input.remindAt === undefined ? undefined : parseOptionalDate(input.remindAt),
+          parent:
+            input.parentId === undefined
+              ? undefined
+              : input.parentId
+                ? { connect: { id: input.parentId } }
+                : { disconnect: true },
+          isRecurringTemplate: input.isRecurringTemplate ?? undefined,
+          recurrenceFrequency: input.recurrenceFrequency,
+          recurrenceInterval: input.recurrenceInterval,
+          recurrenceWeekdays:
+            input.recurrenceWeekdays === undefined ? undefined : (input.recurrenceWeekdays ?? []),
+        },
       });
 
-      if (args.input.assigneeIds !== undefined) {
-        await syncAssignees(context, args.id, args.input.assigneeIds ?? [], householdId);
+      if (input.assigneeIds !== undefined) {
+        await syncAssignees(context, args.id, input.assigneeIds ?? [], householdId);
       }
 
-      const task = await getTaskById(context, args.id, householdId);
-      if (!task) {
-        throw new Error("Task not found");
-      }
-
-      return task;
+      return requireTask(context, args.id, householdId);
     },
 
     moveTask: async (
@@ -355,11 +303,7 @@ export const taskResolvers = {
         projectId: args.projectId,
       });
 
-      const task = await getTaskById(context, args.id, householdId);
-      if (!task) {
-        throw new Error("Task not found");
-      }
-      return task;
+      return requireTask(context, args.id, householdId);
     },
 
     deleteTask: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
@@ -377,20 +321,14 @@ export const taskResolvers = {
       const { householdId, userId } = await requireHouseholdUser(context);
 
       if (args.projectId) {
-        const project = await context.prisma.taskProject.findFirst({
-          where: { id: args.projectId, householdId },
-          select: { id: true },
-        });
-        if (!project) {
-          throw new Error("Board not found");
-        }
+        await assertBoard(context.prisma, householdId, args.projectId);
       }
 
       const result = await context.prisma.task.deleteMany({
         where: {
           ...visibleTaskWhere(householdId, userId),
           status: TaskStatus.DONE,
-          ...(args.projectId ? { projectId: args.projectId } : {}),
+          projectId: args.projectId || undefined,
         },
       });
 
@@ -403,17 +341,14 @@ export const taskResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
-      const existing = await getTaskById(context, args.id, householdId);
-      if (!existing) {
-        throw new Error("Task not found");
-      }
+      const existing = await requireTask(context, args.id, householdId);
 
-      const status = resolveStatusOnComplete(args.completed, existing.status);
+      const reopenedStatus = existing.status === TaskStatus.DONE ? TaskStatus.TODO : existing.status;
 
       return context.prisma.task.update({
         where: { id: args.id },
         data: {
-          status,
+          status: args.completed ? TaskStatus.DONE : reopenedStatus,
           completedAt: args.completed ? new Date() : null,
         },
         include: taskInclude,
@@ -422,8 +357,7 @@ export const taskResolvers = {
 
     createTaskProject: async (_parent: unknown, args: { name: string }, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
-      const project = await createTaskBoard(context.prisma, householdId, args.name);
-      return { ...project, taskCount: 0 };
+      return createTaskBoard(context.prisma, householdId, args.name);
     },
 
     renameTaskProject: async (
@@ -432,20 +366,12 @@ export const taskResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
-      const project = await renameTaskBoard(context.prisma, householdId, args.id, args.name);
-      const counts = await countRootTasksByBoard(context.prisma, householdId);
-      return { ...project, taskCount: counts.get(project.id) ?? 0 };
+      return renameTaskBoard(context.prisma, householdId, args.id, args.name);
     },
 
     reorderTaskProjects: async (_parent: unknown, args: { ids: string[] }, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
-      await reorderTaskBoards(context.prisma, householdId, args.ids);
-      const projects = await ensureHouseholdBoards(context.prisma, householdId);
-      const counts = await countRootTasksByBoard(context.prisma, householdId);
-      return projects.map((project) => ({
-        ...project,
-        taskCount: counts.get(project.id) ?? 0,
-      }));
+      return reorderTaskBoards(context.prisma, householdId, args.ids);
     },
 
     deleteTaskProject: async (
@@ -472,18 +398,10 @@ export const taskResolvers = {
       }
 
       await context.prisma.taskDependency.create({
-        data: {
-          taskId: args.taskId,
-          dependsOnTaskId: args.dependsOnTaskId,
-        },
+        data: { taskId: args.taskId, dependsOnTaskId: args.dependsOnTaskId },
       });
 
-      const task = await getTaskById(context, args.taskId, householdId);
-      if (!task) {
-        throw new Error("Task not found");
-      }
-
-      return task;
+      return requireTask(context, args.taskId, householdId);
     },
 
     removeTaskDependency: async (
@@ -495,18 +413,10 @@ export const taskResolvers = {
       await assertTaskInHousehold(context, args.taskId, householdId);
 
       await context.prisma.taskDependency.deleteMany({
-        where: {
-          taskId: args.taskId,
-          dependsOnTaskId: args.dependsOnTaskId,
-        },
+        where: { taskId: args.taskId, dependsOnTaskId: args.dependsOnTaskId },
       });
 
-      const task = await getTaskById(context, args.taskId, householdId);
-      if (!task) {
-        throw new Error("Task not found");
-      }
-
-      return task;
+      return requireTask(context, args.taskId, householdId);
     },
 
     addTaskComment: async (
@@ -515,40 +425,24 @@ export const taskResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId, userId } = await requireHouseholdUser(context);
-      const task = await getVisibleTask(context, args.taskId, householdId, userId);
-      if (!task) {
-        throw new Error("Task not found");
-      }
-
-      const body = args.body.trim();
-      if (!body) {
-        throw new Error("Comment cannot be empty");
-      }
+      await assertVisibleTask(context, args.taskId, householdId, userId);
+      const body = requireText(args.body, "Comment cannot be empty");
 
       const comment = await context.prisma.taskComment.create({
-        data: {
-          taskId: args.taskId,
-          authorId: userId,
-          body,
-        },
+        data: { taskId: args.taskId, authorId: userId, body },
         include: commentInclude,
       });
 
       await markTaskCommentsReadForUser(context, args.taskId, userId);
-
       return comment;
     },
 
     deleteTaskComment: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
       const { householdId, userId } = await requireHouseholdUser(context);
-
-      const comment = await context.prisma.taskComment.findFirst({
-        where: { id: args.id, task: { householdId } },
-      });
-
-      if (!comment) {
-        throw new Error("Comment not found");
-      }
+      const comment = found(
+        await context.prisma.taskComment.findFirst({ where: { id: args.id, task: { householdId } } }),
+        "Comment not found",
+      );
 
       if (comment.authorId !== userId) {
         throw new Error("You can only delete your own comments");
@@ -564,33 +458,23 @@ export const taskResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId, userId } = await requireHouseholdUser(context);
-      const task = await getVisibleTask(context, args.taskId, householdId, userId);
-      if (!task) {
-        throw new Error("Task not found");
-      }
-
+      await assertVisibleTask(context, args.taskId, householdId, userId);
       await markTaskCommentsReadForUser(context, args.taskId, userId);
       return true;
     },
   },
 
   Task: {
+    ...timestampFields,
     assignees: (parent: { assignments?: { user: unknown }[] }) =>
       (parent.assignments ?? []).map((assignment) => assignment.user),
     dueDate: (parent: { dueDate?: Date | null }) => toIsoString(parent.dueDate),
     completedAt: (parent: { completedAt?: Date | null }) => toIsoString(parent.completedAt),
     remindAt: (parent: { remindAt?: Date | null }) => toIsoString(parent.remindAt),
-    createdAt: (parent: { createdAt: Date }) => toIsoString(parent.createdAt)!,
-    updatedAt: (parent: { updatedAt: Date }) => toIsoString(parent.updatedAt)!,
     isBlocked: (parent: { blockedBy?: { dependsOnTask: { status: TaskStatus } }[] }) =>
       (parent.blockedBy ?? []).some((dep) => dep.dependsOnTask.status !== TaskStatus.DONE),
-    isOverdue: (parent: { dueDate?: Date | null; status: TaskStatus }) => {
-      if (!parent.dueDate || parent.status === TaskStatus.DONE) {
-        return false;
-      }
-
-      return isPastDueDate(parent.dueDate);
-    },
+    isOverdue: (parent: { dueDate?: Date | null; status: TaskStatus }) =>
+      parent.status !== TaskStatus.DONE && parent.dueDate != null && isPastDueDate(parent.dueDate),
     subtaskProgress: (parent: { subtasks?: { status: TaskStatus }[] }) => {
       const subtasks = parent.subtasks ?? [];
       const total = subtasks.length;
@@ -623,13 +507,10 @@ export const taskResolvers = {
   },
 
   TaskComment: {
-    createdAt: (parent: { createdAt: Date }) => toIsoString(parent.createdAt)!,
+    createdAt: timestampFields.createdAt,
     canDelete: (parent: { authorId: string }, _args: unknown, context: GraphQLContext) =>
       Boolean(context.user?.id && parent.authorId === context.user.id),
   },
 
-  TaskProject: {
-    createdAt: (parent: { createdAt: Date }) => toIsoString(parent.createdAt)!,
-    updatedAt: (parent: { updatedAt: Date }) => toIsoString(parent.updatedAt)!,
-  },
+  TaskProject: timestampFields,
 };

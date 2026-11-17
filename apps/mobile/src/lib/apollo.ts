@@ -69,8 +69,6 @@ export function createApolloClient(getAccessToken: TokenGetter, refreshAccessTok
       typePolicies: {
         Query: {
           fields: {
-            // Replace list results wholesale (create/delete/refetch) instead of
-            // Apollo's default merge warning when array length changes.
             tasks: {
               keyArgs: ["filter"],
               merge(_existing, incoming) {
@@ -83,7 +81,6 @@ export function createApolloClient(getAccessToken: TokenGetter, refreshAccessTok
     }),
     defaultOptions: {
       watchQuery: {
-        // Show cache immediately, always hit the network in the background.
         fetchPolicy: "cache-and-network",
         nextFetchPolicy: "cache-and-network",
       },

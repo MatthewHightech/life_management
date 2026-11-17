@@ -1,13 +1,12 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect } from "react";
 import { clearLegacyClientAuthCookie, signOut } from "@/lib/auth-token";
 
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [message, setMessage] = useState("Signing you in…");
 
   useEffect(() => {
     const error = searchParams.get("error");
@@ -19,12 +18,11 @@ function AuthCallbackContent() {
       return;
     }
 
-    // Session cookie was set HttpOnly by the API before this redirect.
     clearLegacyClientAuthCookie();
     router.replace("/");
   }, [router, searchParams]);
 
-  return <p className="text-muted">{message}</p>;
+  return <p className="text-muted">Signing you in…</p>;
 }
 
 export default function AuthCallbackPage() {

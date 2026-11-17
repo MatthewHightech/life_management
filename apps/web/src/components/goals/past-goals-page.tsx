@@ -5,13 +5,13 @@ import { useState } from "react";
 import { GoalsPageLayout } from "@/components/goals/goals-page-layout";
 import { PastGoalsArchive } from "@/components/goals/past-goals-archive";
 import { PastGoalsStats } from "@/components/goals/past-goals-stats";
-import { PAST_GOALS_QUERY } from "@/graphql";
+import { PastGoalsDocument } from "@/graphql";
 
 const PAGE_SIZE = 4;
 
 export function PastGoalsPage() {
   const [limit, setLimit] = useState(PAGE_SIZE);
-  const { data, loading, error } = useQuery(PAST_GOALS_QUERY, {
+  const { data, loading, error } = useQuery(PastGoalsDocument, {
     variables: { limit, offset: 0 },
   });
 

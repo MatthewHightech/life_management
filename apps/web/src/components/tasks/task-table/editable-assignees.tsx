@@ -4,7 +4,7 @@ import { AssigneeAvatars, SelectableMemberAvatar } from "@/components/ui/avatar"
 import { FloatingPanel } from "@/components/ui/floating-panel";
 import { useAsyncAction } from "@/hooks/use-async-action";
 import { usePopoverAnchor } from "@/hooks/use-popover-anchor";
-import { toggleAssigneeId } from "@/lib/task-pills";
+import { toggleAssigneeId } from "@life/shared";
 import { cn } from "@/lib/cn";
 import type { BoardTask, HouseholdUser } from "./types";
 

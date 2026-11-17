@@ -7,8 +7,7 @@ import type { TaskStatus } from "@/graphql";
 import type { BoardTask, HouseholdUser, TaskUpdateInput } from "@/components/tasks/task-table/types";
 import { KanbanCard } from "@/components/tasks/kanban-card";
 import type { KanbanColumn } from "@/lib/task-status";
-import { Button } from "@/components/ui/button";
-import { Modal } from "@/components/ui/modal";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { cn } from "@/lib/cn";
 
 type KanbanColumnProps = {
@@ -137,7 +136,7 @@ export function KanbanColumnView({
       </div>
 
       {onClearTasks ? (
-        <Modal
+        <ConfirmModal
           open={clearOpen}
           onOpenChange={setClearOpen}
           title="Clear done tasks?"
@@ -146,22 +145,14 @@ export function KanbanColumnView({
               ? "This will permanently delete 1 completed task. This cannot be undone."
               : `This will permanently delete all ${tasks.length} completed tasks in this column. This cannot be undone.`
           }
-        >
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={() => setClearOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={clearingTasks}
-              onClick={() => {
-                void Promise.resolve(onClearTasks()).then(() => setClearOpen(false));
-              }}
-            >
-              {clearingTasks ? "Clearing…" : "Clear all"}
-            </Button>
-          </div>
-        </Modal>
+          confirmLabel="Clear all"
+          loadingLabel="Clearing…"
+          loading={clearingTasks}
+          onConfirm={async () => {
+            await onClearTasks();
+            setClearOpen(false);
+          }}
+        />
       ) : null}
     </section>
   );

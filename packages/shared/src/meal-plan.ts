@@ -158,7 +158,3 @@ export function parseMealPlanSlotKey(value: string): { day: WeekDay; slot: MealS
 
   return { day: day as WeekDay, slot: slot as MealSlot };
 }
-
-import type { FolderColor } from "./folders";
-
-export type RecipeFolderColor = FolderColor;

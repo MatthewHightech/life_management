@@ -1,35 +1,34 @@
 import { Prisma, PrismaClient, TaskStatus } from "@prisma/client";
 import { DEFAULT_TASK_BOARD_NAME } from "@life/shared";
+import { requireText } from "../fields";
 
 type BoardDb = PrismaClient | Prisma.TransactionClient;
 
-export async function ensureHouseholdBoards(prisma: PrismaClient, householdId: string) {
+const BOARD_NAME_REQUIRED = "Board name cannot be empty";
+const boardOrder = [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }];
+
+async function serializeBoardCreationForHousehold(tx: Prisma.TransactionClient, householdId: string) {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${householdId}, 0))`;
+}
+
+async function ensureHouseholdBoards(prisma: PrismaClient, householdId: string) {
   return prisma.$transaction(async (tx) => {
-    // Serialize board creation so two first visits cannot insert two default boards.
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${householdId}, 0))`;
+    await serializeBoardCreationForHousehold(tx, householdId);
 
-    let boards = await tx.taskProject.findMany({
-      where: { householdId },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
-
-    const orphanCount = await tx.task.count({
-      where: { householdId, projectId: null },
-    });
+    const boards = await tx.taskProject.findMany({ where: { householdId }, orderBy: boardOrder });
+    const orphanCount = await tx.task.count({ where: { householdId, projectId: null } });
 
     if (boards.length === 0 || orphanCount > 0) {
-      let home = boards.find((board) => board.name === DEFAULT_TASK_BOARD_NAME) ?? null;
-      if (!home) {
-        const minOrder = boards.reduce((min, board) => Math.min(min, board.sortOrder), 0);
-        home = await tx.taskProject.create({
+      const home =
+        boards.find((board) => board.name === DEFAULT_TASK_BOARD_NAME) ??
+        (await tx.taskProject.create({
           data: {
             householdId,
             name: DEFAULT_TASK_BOARD_NAME,
-            sortOrder: boards.length === 0 ? 0 : minOrder - 1,
+            sortOrder:
+              boards.length === 0 ? 0 : Math.min(0, ...boards.map((board) => board.sortOrder)) - 1,
           },
-        });
-        boards = [home, ...boards];
-      }
+        }));
 
       if (orphanCount > 0) {
         await tx.task.updateMany({
@@ -39,11 +38,32 @@ export async function ensureHouseholdBoards(prisma: PrismaClient, householdId: s
       }
     }
 
-    return tx.taskProject.findMany({
-      where: { householdId },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    });
+    return tx.taskProject.findMany({ where: { householdId }, orderBy: boardOrder });
   });
+}
+
+function countRootTasks(prisma: PrismaClient, householdId: string, projectId: string) {
+  return prisma.task.count({ where: { householdId, parentId: null, projectId } });
+}
+
+export async function listBoardsWithTaskCounts(prisma: PrismaClient, householdId: string) {
+  const boards = await ensureHouseholdBoards(prisma, householdId);
+  const counts = await prisma.task.groupBy({
+    by: ["projectId"],
+    where: { householdId, parentId: null },
+    _count: { _all: true },
+  });
+  const countByBoard = new Map(counts.map((row) => [row.projectId, row._count._all]));
+
+  return boards.map((board) => ({ ...board, taskCount: countByBoard.get(board.id) ?? 0 }));
+}
+
+export async function assertBoard(db: BoardDb, householdId: string, boardId: string) {
+  const board = await db.taskProject.findFirst({ where: { id: boardId, householdId } });
+  if (!board) {
+    throw new Error("Board not found");
+  }
+  return board;
 }
 
 export async function resolveTaskBoardId(
@@ -52,14 +72,7 @@ export async function resolveTaskBoardId(
   input: { projectId?: string | null; parentId?: string | null },
 ) {
   if (input.projectId) {
-    const project = await prisma.taskProject.findFirst({
-      where: { id: input.projectId, householdId },
-      select: { id: true },
-    });
-    if (!project) {
-      throw new Error("Board not found");
-    }
-    return project.id;
+    return (await assertBoard(prisma, householdId, input.projectId)).id;
   }
 
   if (input.parentId) {
@@ -72,8 +85,7 @@ export async function resolveTaskBoardId(
     }
   }
 
-  const boards = await ensureHouseholdBoards(prisma, householdId);
-  const first = boards[0];
+  const [first] = await ensureHouseholdBoards(prisma, householdId);
   if (!first) {
     throw new Error("Board not found");
   }
@@ -90,28 +102,14 @@ async function collectDescendantIds(db: BoardDb, rootId: string) {
       where: { parentId: { in: frontier } },
       select: { id: true },
     });
-    frontier = [];
-    for (const child of children) {
-      if (seen.has(child.id)) {
-        continue;
-      }
-      seen.add(child.id);
-      ids.push(child.id);
-      frontier.push(child.id);
+    frontier = children.map((child) => child.id).filter((id) => !seen.has(id));
+    for (const id of frontier) {
+      seen.add(id);
+      ids.push(id);
     }
   }
 
   return ids;
-}
-
-async function assertBoard(db: BoardDb, householdId: string, boardId: string) {
-  const board = await db.taskProject.findFirst({
-    where: { id: boardId, householdId },
-  });
-  if (!board) {
-    throw new Error("Board not found");
-  }
-  return board;
 }
 
 export async function assignTaskTreeToBoard(
@@ -156,24 +154,19 @@ export async function moveTaskOntoBoard(
     }
 
     const completedAt =
-      args.status === TaskStatus.DONE ? (task.status === TaskStatus.DONE ? task.completedAt ?? new Date() : new Date()) : null;
+      args.status === TaskStatus.DONE
+        ? (task.status === TaskStatus.DONE && task.completedAt) || new Date()
+        : null;
 
     await tx.task.update({
       where: { id: task.id },
-      data: {
-        status: args.status,
-        completedAt,
-        projectId,
-      },
+      data: { status: args.status, completedAt, projectId },
     });
   });
 }
 
 export async function createTaskBoard(prisma: PrismaClient, householdId: string, name: string) {
-  const trimmed = name.trim();
-  if (!trimmed) {
-    throw new Error("Board name cannot be empty");
-  }
+  const trimmed = requireText(name, BOARD_NAME_REQUIRED);
 
   await ensureHouseholdBoards(prisma, householdId);
   const last = await prisma.taskProject.aggregate({
@@ -181,26 +174,21 @@ export async function createTaskBoard(prisma: PrismaClient, householdId: string,
     _max: { sortOrder: true },
   });
 
-  return prisma.taskProject.create({
-    data: {
-      householdId,
-      name: trimmed,
-      sortOrder: (last._max.sortOrder ?? -1) + 1,
-    },
+  const board = await prisma.taskProject.create({
+    data: { householdId, name: trimmed, sortOrder: (last._max.sortOrder ?? -1) + 1 },
   });
+  return { ...board, taskCount: 0 };
 }
 
 export async function renameTaskBoard(prisma: PrismaClient, householdId: string, boardId: string, name: string) {
-  const trimmed = name.trim();
-  if (!trimmed) {
-    throw new Error("Board name cannot be empty");
-  }
+  const trimmed = requireText(name, BOARD_NAME_REQUIRED);
 
   await assertBoard(prisma, householdId, boardId);
-  return prisma.taskProject.update({
+  const board = await prisma.taskProject.update({
     where: { id: boardId },
     data: { name: trimmed },
   });
+  return { ...board, taskCount: await countRootTasks(prisma, householdId, boardId) };
 }
 
 export async function reorderTaskBoards(prisma: PrismaClient, householdId: string, ids: string[]) {
@@ -221,6 +209,8 @@ export async function reorderTaskBoards(prisma: PrismaClient, householdId: strin
       }),
     ),
   );
+
+  return listBoardsWithTaskCounts(prisma, householdId);
 }
 
 export async function deleteTaskBoard(
@@ -234,7 +224,9 @@ export async function deleteTaskBoard(
       where: { householdId },
       select: { id: true },
     });
-    if (!boards.some((board) => board.id === boardId)) {
+    const boardExists = (id: string) => boards.some((board) => board.id === id);
+
+    if (!boardExists(boardId)) {
       throw new Error("Board not found");
     }
     if (boards.length <= 1) {
@@ -245,7 +237,7 @@ export async function deleteTaskBoard(
       if (moveTasksToProjectId === boardId) {
         throw new Error("Choose a different board");
       }
-      if (!boards.some((board) => board.id === moveTasksToProjectId)) {
+      if (!boardExists(moveTasksToProjectId)) {
         throw new Error("Board not found");
       }
       await tx.task.updateMany({
@@ -260,14 +252,4 @@ export async function deleteTaskBoard(
 
     await tx.taskProject.delete({ where: { id: boardId } });
   });
-}
-
-export async function countRootTasksByBoard(prisma: PrismaClient, householdId: string) {
-  const counts = await prisma.task.groupBy({
-    by: ["projectId"],
-    where: { householdId, parentId: null },
-    _count: { _all: true },
-  });
-
-  return new Map(counts.map((row) => [row.projectId, row._count._all]));
 }

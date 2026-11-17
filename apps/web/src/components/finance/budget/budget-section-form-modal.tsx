@@ -2,9 +2,9 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useMutation } from "@apollo/client";
-import { CREATE_BUDGET_SECTION_MUTATION } from "@/graphql";
-import type { BudgetScope } from "@/components/finance/budget/budget-scope";
-import { BUDGET_PAGE_REFETCH } from "@/lib/budget-queries";
+import { CreateBudgetSectionDocument } from "@/graphql";
+import type { BudgetScope } from "@/components/finance/budget/types";
+import { BUDGET_PAGE_REFETCH } from "@/lib/refetch-queries";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 
@@ -18,7 +18,7 @@ export function BudgetSectionFormModal({ open, scope, onOpenChange }: BudgetSect
   const [name, setName] = useState("");
   const scopeLabel = scope === "MONTHLY" ? "monthly" : "annual";
 
-  const [createSection, { loading }] = useMutation(CREATE_BUDGET_SECTION_MUTATION, {
+  const [createSection, { loading }] = useMutation(CreateBudgetSectionDocument, {
     refetchQueries: [...BUDGET_PAGE_REFETCH],
     onCompleted: () => onOpenChange(false),
   });

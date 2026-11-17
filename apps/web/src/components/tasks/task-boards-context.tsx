@@ -4,18 +4,24 @@ import { useMutation, useQuery } from "@apollo/client";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import {
-  CREATE_TASK_PROJECT_MUTATION,
-  DELETE_TASK_PROJECT_MUTATION,
-  RENAME_TASK_PROJECT_MUTATION,
-  REORDER_TASK_PROJECTS_MUTATION,
-  TASK_PROJECTS_QUERY,
+  CreateTaskProjectDocument,
+  DeleteTaskProjectDocument,
+  RenameTaskProjectDocument,
+  ReorderTaskProjectsDocument,
+  TaskProjectsDocument,
   type TaskProjectsQuery,
 } from "@/graphql";
 import { moveBoardBefore } from "@/lib/task-boards";
 
 export type TaskBoard = TaskProjectsQuery["taskProjects"][number];
 
-const boardRefetch = ["TaskProjects", "TasksBoard"];
+const boardMutationOptions = { refetchQueries: ["TaskProjects", "TasksBoard"], awaitRefetchQueries: true };
+
+function projectHref(pathname: string, searchParams: URLSearchParams, projectId: string) {
+  const params = new URLSearchParams(searchParams.toString());
+  params.set("project", projectId);
+  return `${pathname}?${params.toString()}`;
+}
 
 type TaskBoardsContextValue = {
   boards: TaskBoard[];
@@ -55,32 +61,20 @@ export function TaskBoardsProvider({ children }: { children: React.ReactNode }) 
   const searchParams = useSearchParams();
   const requestedId = searchParams.get("project");
 
-  const { data, loading, error } = useQuery<TaskProjectsQuery>(TASK_PROJECTS_QUERY);
+  const { data, loading, error } = useQuery<TaskProjectsQuery>(TaskProjectsDocument);
   const [boards, setBoards] = useState<TaskBoard[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(requestedId);
-  const [previewBoardId, setPreviewBoardIdState] = useState<string | null>(null);
+  const [previewBoardId, setPreviewBoardId] = useState<string | null>(null);
   const [editingBoardId, setEditingBoardId] = useState<string | null>(null);
 
   const boardsRef = useRef<TaskBoard[]>([]);
   const draggingBoardRef = useRef(false);
   const orderSnapshotRef = useRef<TaskBoard[] | null>(null);
 
-  const [createTaskProject, { loading: creatingBoard }] = useMutation(CREATE_TASK_PROJECT_MUTATION, {
-    refetchQueries: boardRefetch,
-    awaitRefetchQueries: true,
-  });
-  const [renameTaskProject] = useMutation(RENAME_TASK_PROJECT_MUTATION, {
-    refetchQueries: boardRefetch,
-    awaitRefetchQueries: true,
-  });
-  const [reorderTaskProjects] = useMutation(REORDER_TASK_PROJECTS_MUTATION, {
-    refetchQueries: boardRefetch,
-    awaitRefetchQueries: true,
-  });
-  const [deleteTaskProject, { loading: deletingBoard }] = useMutation(DELETE_TASK_PROJECT_MUTATION, {
-    refetchQueries: boardRefetch,
-    awaitRefetchQueries: true,
-  });
+  const [createTaskProject, { loading: creatingBoard }] = useMutation(CreateTaskProjectDocument, boardMutationOptions);
+  const [renameTaskProject] = useMutation(RenameTaskProjectDocument, boardMutationOptions);
+  const [reorderTaskProjects] = useMutation(ReorderTaskProjectsDocument, boardMutationOptions);
+  const [deleteTaskProject, { loading: deletingBoard }] = useMutation(DeleteTaskProjectDocument, boardMutationOptions);
 
   useEffect(() => {
     if (draggingBoardRef.current || !data?.taskProjects) {
@@ -105,20 +99,12 @@ export function TaskBoardsProvider({ children }: { children: React.ReactNode }) 
     if (!activeBoardId || requestedId === activeBoardId) {
       return;
     }
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("project", activeBoardId);
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    router.replace(projectHref(pathname, searchParams, activeBoardId), { scroll: false });
   }, [activeBoardId, pathname, requestedId, router, searchParams]);
 
   function setActiveBoardId(id: string) {
     setSelectedId(id);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("project", id);
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }
-
-  function setPreviewBoardId(id: string | null) {
-    setPreviewBoardIdState(id);
+    router.replace(projectHref(pathname, searchParams, id), { scroll: false });
   }
 
   async function createBoard() {

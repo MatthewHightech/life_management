@@ -53,7 +53,7 @@ export function TaskRow({ task, onPress, onToggleComplete, busy }: TaskRowProps)
         </Text>
         <View style={styles.meta}>
           <Chip label={TASK_STATUS_LABELS[status]} backgroundColor={TASK_STATUS_COLORS[status]} />
-          <AvatarStack users={task.assignees} size={22} showEmpty={false} />
+          <AvatarStack users={task.assignees} size={22} />
           {task.dueDate ? (
             <Text style={[styles.due, task.isOverdue && styles.titleOverdue]}>
               {formatDueDate(task.dueDate)}

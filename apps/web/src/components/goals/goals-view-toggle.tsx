@@ -11,9 +11,7 @@ const items: ViewToggleItem<GoalsView>[] = [
 ];
 
 function activeGoalsView(pathname: string): GoalsView {
-  const match = items.find(
-    (item) => item.href && (pathname === item.href || pathname.startsWith(`${item.href}/`)),
-  );
+  const match = items.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
   return match?.value ?? "current";
 }
 

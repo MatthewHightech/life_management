@@ -1,13 +1,9 @@
 "use client";
 
 import { useMutation } from "@apollo/client";
-import { useEffect, useRef, useState } from "react";
-import { CREATE_BUDGET_LINE_ITEM_MUTATION } from "@/graphql";
-import { focusLeavesRow } from "@/lib/focus-utils";
-import { parseCadInputToCents } from "@/lib/budget-money";
-import { inlineFieldInputClass } from "@/lib/inline-edit-styles";
-import { BUDGET_PAGE_REFETCH } from "@/lib/budget-queries";
-import { cn } from "@/lib/cn";
+import { useBudgetDraftFields } from "@/components/finance/budget/use-budget-draft-fields";
+import { CreateBudgetLineItemDocument } from "@/graphql";
+import { BUDGET_PAGE_REFETCH } from "@/lib/refetch-queries";
 
 type BudgetLineDraftRowProps = {
   sectionId: string;
@@ -16,98 +12,28 @@ type BudgetLineDraftRowProps = {
 };
 
 export function BudgetLineDraftRow({ sectionId, onCreated, onCancel }: BudgetLineDraftRowProps) {
-  const rowRef = useRef<HTMLTableRowElement>(null);
-  const nameRef = useRef<HTMLInputElement>(null);
-  const committingRef = useRef(false);
-  const [name, setName] = useState("");
-  const [amount, setAmount] = useState("");
-
-  const [createLineItem, { loading }] = useMutation(CREATE_BUDGET_LINE_ITEM_MUTATION, {
+  const [createLineItem, { loading }] = useMutation(CreateBudgetLineItemDocument, {
     refetchQueries: [...BUDGET_PAGE_REFETCH],
     awaitRefetchQueries: true,
   });
 
-  useEffect(() => {
-    nameRef.current?.focus();
-  }, []);
-
-  async function commitCreate() {
-    if (committingRef.current) return;
-
-    const trimmedName = name.trim();
-    const amountCents = parseCadInputToCents(amount);
-    if (!trimmedName || amountCents === null) {
-      onCancel();
-      return;
-    }
-
-    committingRef.current = true;
-    try {
-      await createLineItem({
-        variables: {
-          input: {
-            sectionId,
-            name: trimmedName,
-            amountCents,
-          },
-        },
-      });
+  const { rowRef, nameInputProps, amountInputProps } = useBudgetDraftFields<HTMLTableRowElement>({
+    namePlaceholder: "Item name",
+    disabled: loading,
+    onCancel,
+    onSubmit: async ({ name, amountCents }) => {
+      await createLineItem({ variables: { input: { sectionId, name, amountCents } } });
       onCreated();
-    } catch {
-      committingRef.current = false;
-    }
-  }
-
-  const draftInputClass = cn(inlineFieldInputClass, "max-w-full min-w-0");
+    },
+  });
 
   return (
     <tr ref={rowRef} className="border-b border-border-subtle bg-background/80">
       <td className="max-w-0 overflow-hidden px-3 py-1.5 pl-10">
-        <input
-          ref={nameRef}
-          value={name}
-          disabled={loading}
-          placeholder="Item name"
-          onChange={(event) => setName(event.target.value)}
-          onBlur={(event) => {
-            if (focusLeavesRow(event, rowRef.current)) {
-              void commitCreate();
-            }
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              void commitCreate();
-            }
-            if (event.key === "Escape") {
-              onCancel();
-            }
-          }}
-          className={draftInputClass}
-        />
+        <input {...nameInputProps} />
       </td>
       <td className="px-3 py-1.5">
-        <input
-          value={amount}
-          disabled={loading}
-          placeholder="$0.00"
-          onChange={(event) => setAmount(event.target.value)}
-          onBlur={(event) => {
-            if (focusLeavesRow(event, rowRef.current)) {
-              void commitCreate();
-            }
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              void commitCreate();
-            }
-            if (event.key === "Escape") {
-              onCancel();
-            }
-          }}
-          className={cn(draftInputClass, "text-right tabular-nums")}
-        />
+        <input {...amountInputProps} />
       </td>
       <td className="px-3 py-1.5" />
       <td className="px-3 py-1.5" />

@@ -1,8 +1,9 @@
 "use client";
 
+import { InlineEditInput } from "@/components/ui/inline-edit-input";
 import { useTextInlineEdit } from "@/hooks/use-text-inline-edit";
-import { formatCadCents, parseCadInputToCents } from "@/lib/budget-money";
-import { inlineFieldInputClass, inlineFieldTriggerClass } from "@/lib/inline-edit-styles";
+import { formatCadCents, parseCadInputToCents } from "@life/shared";
+import { inlineFieldTriggerClass } from "@/lib/inline-edit-styles";
 import { cn } from "@/lib/cn";
 
 type OptionalBudgetCellProps = {
@@ -33,24 +34,12 @@ export function OptionalBudgetCell({
 
   if (edit.editing) {
     return (
-      <input
+      <InlineEditInput
         autoFocus
         inputMode="decimal"
-        value={edit.draft}
-        disabled={edit.pending}
         placeholder="—"
-        onChange={(event) => edit.setDraft(event.target.value)}
-        onBlur={() => void edit.commit()}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            void edit.commit();
-          }
-          if (event.key === "Escape") {
-            edit.cancel();
-          }
-        }}
-        className={cn(inlineFieldInputClass, "text-right tabular-nums")}
+        edit={edit}
+        className="text-right tabular-nums"
       />
     );
   }

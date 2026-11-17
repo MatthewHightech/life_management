@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -8,17 +8,10 @@ import {
   Text,
   View,
 } from "react-native";
-import type { TaskStatus } from "@life/shared";
 import { TextField } from "@/src/components/field";
-import {
-  AssigneePicker,
-  DueDateField,
-  StatusPicker,
-} from "@/src/components/tasks/task-fields";
+import { TaskFields, type TaskFieldValues } from "@/src/components/tasks/task-fields";
 import { useTaskMutations, useTasksBoard } from "@/src/data";
 import { theme } from "@/constants/theme";
-
-const DEFAULT_STATUS: TaskStatus = "BACKLOG";
 
 export default function NewTaskScreen() {
   const router = useRouter();
@@ -28,19 +21,22 @@ export default function NewTaskScreen() {
   const { createTask, creating } = useTaskMutations();
 
   const [title, setTitle] = useState("");
-  const [status, setStatus] = useState<TaskStatus>(DEFAULT_STATUS);
-  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
-  const [dueDate, setDueDate] = useState<string | null>(null);
+  const [fields, setFields] = useState<TaskFieldValues>({
+    status: "BACKLOG",
+    assigneeIds: [],
+    dueDate: null,
+  });
   const [error, setError] = useState<string | null>(null);
-  const [didSeedAssignee, setDidSeedAssignee] = useState(false);
+  const didSeedAssignee = useRef(false);
 
   useEffect(() => {
-    if (didSeedAssignee || !me?.id) {
+    const meId = me?.id;
+    if (didSeedAssignee.current || !meId) {
       return;
     }
-    setAssigneeIds([me.id]);
-    setDidSeedAssignee(true);
-  }, [didSeedAssignee, me?.id]);
+    didSeedAssignee.current = true;
+    setFields((current) => ({ ...current, assigneeIds: [meId] }));
+  }, [me?.id]);
 
   async function handleCreate() {
     const trimmed = title.trim();
@@ -53,9 +49,7 @@ export default function NewTaskScreen() {
     try {
       await createTask({
         title: trimmed,
-        status,
-        assigneeIds,
-        dueDate,
+        ...fields,
         projectId: projectId || undefined,
       });
       router.back();
@@ -96,9 +90,11 @@ export default function NewTaskScreen() {
           onSubmitEditing={() => void handleCreate()}
         />
 
-        <StatusPicker value={status} onChange={setStatus} />
-        <AssigneePicker users={users} selectedIds={assigneeIds} onChange={setAssigneeIds} />
-        <DueDateField value={dueDate} onChange={setDueDate} />
+        <TaskFields
+          values={fields}
+          users={users}
+          onChange={(patch) => setFields((current) => ({ ...current, ...patch }))}
+        />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </ScrollView>

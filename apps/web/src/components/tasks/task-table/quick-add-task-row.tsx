@@ -1,28 +1,21 @@
 "use client";
 
 import { useMutation } from "@apollo/client";
-import { formatDueDate, parseDueDate, toDueDateIso } from "@life/shared";
 import { Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { TaskStatus } from "@/graphql";
-import { CREATE_TASK_MUTATION } from "@/graphql";
-import { AssigneeAvatars, SelectableMemberAvatar } from "@/components/ui/avatar";
-import { CalendarPicker } from "@/components/ui/calendar-picker";
+import { CreateTaskDocument } from "@/graphql";
 import { Button } from "@/components/ui/button";
-import { FloatingPanel } from "@/components/ui/floating-panel";
-import { PillSelect } from "@/components/ui/pill-select";
-import { usePopoverAnchor } from "@/hooks/use-popover-anchor";
 import { inlineFieldInputClass } from "@/lib/inline-edit-styles";
-import {
-  statusSelectOptions,
-  statusTriggerDisplay,
-  toggleAssigneeId,
-} from "@/lib/task-pills";
 import { cn } from "@/lib/cn";
 import { useTaskBoards } from "@/components/tasks/task-boards-context";
 import { tasksBoardRefetchQueries } from "@/lib/task-board-queries";
 import { TASK_LIST_COLUMN_GRID } from "@/components/tasks/task-table/column-layout";
+import { EditableAssignees } from "./editable-assignees";
+import { EditableDueDate } from "./editable-due-date";
+import { EditableStatus } from "./editable-pill-cells";
 import type { HouseholdUser } from "./types";
+
 const TASK_LIST_CELL = "flex min-h-7 w-full min-w-0 items-center px-4 py-1.5";
 
 const DEFAULT_STATUS: TaskStatus = "BACKLOG";
@@ -32,90 +25,6 @@ type QuickAddTaskRowProps = {
   currentUserId?: string;
 };
 
-function DraftAssigneePicker({
-  assigneeIds,
-  users,
-  onChange,
-}: {
-  assigneeIds: string[];
-  users: HouseholdUser[];
-  onChange: (ids: string[]) => void;
-}) {
-  const { open, anchorRef, toggle, close, triggerClassName } = usePopoverAnchor();
-  const assignees = users.filter((user) => assigneeIds.includes(user.id));
-
-  if (users.length === 0) {
-    return <AssigneeAvatars assignees={assignees} />;
-  }
-
-  return (
-    <>
-      <button
-        ref={anchorRef}
-        type="button"
-        onClick={toggle}
-        title={assignees.length === 0 ? "Assign" : undefined}
-        aria-label={assignees.length === 0 ? "Assign people" : undefined}
-        className={triggerClassName("inline-flex min-h-7 items-center rounded-md px-1 py-0.5")}
-      >
-        <AssigneeAvatars assignees={assignees} />
-      </button>
-
-      <FloatingPanel open={open} anchorRef={anchorRef} onClose={close} minWidth={200} className="p-3">
-        <div className="flex flex-wrap justify-center gap-3">
-          {users.map((user) => (
-            <SelectableMemberAvatar
-              key={user.id}
-              name={user.name}
-              email={user.email}
-              image={user.image}
-              selected={assigneeIds.includes(user.id)}
-              onClick={() => onChange(toggleAssigneeId(assigneeIds, user.id))}
-            />
-          ))}
-        </div>
-      </FloatingPanel>
-    </>
-  );
-}
-
-function DraftDueDatePicker({
-  value,
-  onChange,
-}: {
-  value: string | null;
-  onChange: (value: string | null) => void;
-}) {
-  const { open, anchorRef, toggle, close, triggerClassName } = usePopoverAnchor();
-  const selectedDate = value ? parseDueDate(value) : null;
-
-  function persist(nextIso: string | null) {
-    close();
-    onChange(nextIso);
-  }
-
-  return (
-    <>
-      <button
-        ref={anchorRef}
-        type="button"
-        onClick={toggle}
-        className={triggerClassName("inline-flex min-h-7 items-center rounded-md px-2 py-0.5 text-sm text-text-muted")}
-      >
-        {value ? formatDueDate(value) : "Set date"}
-      </button>
-
-      <FloatingPanel open={open} anchorRef={anchorRef} onClose={close} minWidth={256} className="p-0">
-        <CalendarPicker
-          value={selectedDate}
-          onSelect={(date) => persist(toDueDateIso(date))}
-          onClear={() => persist(null)}
-        />
-      </FloatingPanel>
-    </>
-  );
-}
-
 export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) {
   const { activeBoardId } = useTaskBoards();
   const [title, setTitle] = useState("");
@@ -124,11 +33,9 @@ export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) 
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [titleError, setTitleError] = useState(false);
 
-  const [createTask, { loading }] = useMutation(CREATE_TASK_MUTATION, {
+  const [createTask, { loading }] = useMutation(CreateTaskDocument, {
     refetchQueries: tasksBoardRefetchQueries,
   });
-
-  const statusDisplay = useMemo(() => statusTriggerDisplay(status), [status]);
 
   function resetForm() {
     setTitle("");
@@ -168,7 +75,7 @@ export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) 
 
   return (
     <div className={TASK_LIST_COLUMN_GRID}>
-      <div className={cn(TASK_LIST_CELL)}>
+      <div className={TASK_LIST_CELL}>
         <div className="w-full min-w-0 space-y-1">
           <input
             value={title}
@@ -192,19 +99,17 @@ export function QuickAddTaskRow({ users, currentUserId }: QuickAddTaskRowProps) 
         </div>
       </div>
       <div className={cn(TASK_LIST_CELL, "whitespace-nowrap")}>
-        <PillSelect
-          value={status}
-          triggerLabel={statusDisplay.label}
-          triggerChipClassName={statusDisplay.chipClassName}
-          options={statusSelectOptions()}
-          onSelect={async (next) => setStatus(next)}
+        <EditableStatus value={status} onSave={async (next) => setStatus(next)} />
+      </div>
+      <div className={TASK_LIST_CELL}>
+        <EditableAssignees
+          assignees={users.filter((user) => assigneeIds.includes(user.id))}
+          users={users}
+          onSave={async (ids) => setAssigneeIds(ids)}
         />
       </div>
       <div className={TASK_LIST_CELL}>
-        <DraftAssigneePicker assigneeIds={assigneeIds} users={users} onChange={setAssigneeIds} />
-      </div>
-      <div className={TASK_LIST_CELL}>
-        <DraftDueDatePicker value={dueDate} onChange={setDueDate} />
+        <EditableDueDate value={dueDate} overdue={false} onSave={async (next) => setDueDate(next)} />
       </div>
       <div className={cn(TASK_LIST_CELL, "justify-end")}>
         <Button

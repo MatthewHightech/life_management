@@ -5,38 +5,13 @@ import { useMealsPage } from "@/components/meals/meals-page-layout";
 import { RecipeLibrarySection } from "@/components/meals/recipe-library-section";
 
 export function MealsRecipesPane() {
-  const {
-    mealPlan,
-    recipeZoneRef,
-    visibleFolders,
-    visibleRecipes,
-    breadcrumbPath,
-    onNavigateFolder,
-    openCreate,
-    openImport,
-    openCreateFolder,
-    openView,
-    onFolderDeleted,
-  } = useMealsPage();
+  const { mealPlan, recipeZoneRef, library } = useMealsPage();
 
   if (!mealPlan) {
     return null;
   }
 
-  return (
-    <RecipeLibrarySection
-      ref={recipeZoneRef}
-      folders={visibleFolders}
-      recipes={visibleRecipes}
-      breadcrumbPath={breadcrumbPath}
-      onNavigateFolder={onNavigateFolder}
-      onCreate={openCreate}
-      onImport={openImport}
-      onCreateFolder={openCreateFolder}
-      onOpenRecipe={openView}
-      onFolderDeleted={onFolderDeleted}
-    />
-  );
+  return <RecipeLibrarySection ref={recipeZoneRef} {...library} />;
 }
 
 export function MealsGroceryPane() {

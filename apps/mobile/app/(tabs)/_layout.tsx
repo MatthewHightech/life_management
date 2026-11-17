@@ -1,7 +1,24 @@
 import { SymbolView } from "expo-symbols";
 import { Tabs } from "expo-router";
+import type { ComponentProps } from "react";
 import { StyleSheet } from "react-native";
 import { theme } from "@/constants/theme";
+
+type TabConfig = {
+  name: string;
+  title: string;
+  icon: ComponentProps<typeof SymbolView>["name"];
+  headerShown?: boolean;
+};
+
+const TABS: TabConfig[] = [
+  { name: "tasks", title: "Tasks", headerShown: false, icon: { ios: "checklist", android: "list", web: "list" } },
+  { name: "finance", title: "Finance", icon: { ios: "dollarsign.circle", android: "attach_money", web: "attach_money" } },
+  { name: "meals", title: "Meals", icon: { ios: "fork.knife", android: "restaurant", web: "restaurant" } },
+  { name: "receipts", title: "Receipts", icon: { ios: "doc.text", android: "receipt", web: "receipt" } },
+  { name: "gear", title: "Gear", icon: { ios: "backpack", android: "backpack", web: "backpack" } },
+  { name: "settings", title: "Settings", icon: { ios: "gearshape", android: "settings", web: "settings" } },
+];
 
 export default function TabLayout() {
   return (
@@ -16,61 +33,17 @@ export default function TabLayout() {
         headerTitleStyle: styles.headerTitle,
       }}
     >
-      <Tabs.Screen
-        name="tasks"
-        options={{
-          title: "Tasks",
-          headerShown: false,
-          tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: "checklist", android: "list", web: "list" }} tintColor={color} size={24} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="finance"
-        options={{
-          title: "Finance",
-          tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: "dollarsign.circle", android: "attach_money", web: "attach_money" }} tintColor={color} size={24} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="meals"
-        options={{
-          title: "Meals",
-          tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: "fork.knife", android: "restaurant", web: "restaurant" }} tintColor={color} size={24} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="receipts"
-        options={{
-          title: "Receipts",
-          tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: "doc.text", android: "receipt", web: "receipt" }} tintColor={color} size={24} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="gear"
-        options={{
-          title: "Gear",
-          tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: "backpack", android: "backpack", web: "backpack" }} tintColor={color} size={24} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: "Settings",
-          tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: "gearshape", android: "settings", web: "settings" }} tintColor={color} size={24} />
-          ),
-        }}
-      />
+      {TABS.map(({ name, title, icon, headerShown }) => (
+        <Tabs.Screen
+          key={name}
+          name={name}
+          options={{
+            title,
+            headerShown,
+            tabBarIcon: ({ color }) => <SymbolView name={icon} tintColor={color} size={24} />,
+          }}
+        />
+      ))}
     </Tabs>
   );
 }

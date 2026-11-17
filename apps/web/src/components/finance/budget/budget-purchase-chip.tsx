@@ -3,9 +3,8 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Trash2 } from "lucide-react";
-import { formatShortDate, budgetPurchaseDragId } from "@life/shared";
+import { formatShortDate, budgetPurchaseDragId, formatCadCents } from "@life/shared";
 import type { BudgetPurchase } from "@/components/finance/budget/types";
-import { formatCadCents } from "@/lib/budget-money";
 import { cn } from "@/lib/cn";
 
 type BudgetPurchaseChipProps = {

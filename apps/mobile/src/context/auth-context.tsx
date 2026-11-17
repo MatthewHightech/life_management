@@ -11,7 +11,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { MobileAuthUser } from "@life/shared";
+import type { MobileAuthUser, MobileTokenPair } from "@life/shared";
 import { ApolloProvider } from "@apollo/client/react";
 import { createApolloClient } from "@/src/lib/apollo";
 import {
@@ -21,8 +21,6 @@ import {
   logoutMobileSession,
   refreshMobileSession,
   storeRefreshToken,
-  tokenPairToSession,
-  type SessionState,
 } from "@/src/lib/auth-storage";
 import {
   getGoogleIosClientId,
@@ -62,35 +60,27 @@ function readIdToken(response: {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<SessionState | null>(null);
+  const [session, setSession] = useState<MobileTokenPair | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const sessionRef = useRef<SessionState | null>(null);
+  const sessionRef = useRef<MobileTokenPair | null>(null);
   const deviceIdRef = useRef<string | null>(null);
   const pendingSignInRef = useRef<{
     resolve: () => void;
     reject: (error: Error) => void;
   } | null>(null);
 
-  const iosClientId = getGoogleIosClientId();
-  const googleNativeRedirect = `${getGoogleIosUrlScheme()}:/oauthredirect`;
-
-  // Let Google provider pick platform client ID; native redirect must match iOS OAuth client.
   const [, response, promptAsync] = Google.useAuthRequest(
     {
-      iosClientId,
+      iosClientId: getGoogleIosClientId(),
       webClientId: getGoogleWebClientId(),
       scopes: ["openid", "profile", "email"],
     },
     {
-      native: googleNativeRedirect,
+      native: `${getGoogleIosUrlScheme()}:/oauthredirect`,
     },
   );
 
-  useEffect(() => {
-    sessionRef.current = session;
-  }, [session]);
-
-  const applySession = useCallback(async (next: SessionState) => {
+  const applySession = useCallback(async (next: MobileTokenPair) => {
     sessionRef.current = next;
     setSession(next);
     await storeRefreshToken(next.refreshToken);
@@ -103,8 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const pair = await refreshMobileSession(refreshToken);
-      const next = tokenPairToSession(pair);
+      const next = await refreshMobileSession(refreshToken);
       await applySession(next);
       return next.accessToken;
     } catch {
@@ -134,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const pair = await refreshMobileSession(refreshToken);
         if (!cancelled) {
-          await applySession(tokenPairToSession(pair));
+          await applySession(pair);
         }
       } catch {
         await clearStoredRefreshToken();
@@ -152,7 +141,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [applySession]);
 
-  // Code exchange completes async after promptAsync; wait for id_token on `response`.
   useEffect(() => {
     const pending = pendingSignInRef.current;
     if (!pending || !response) {
@@ -171,7 +159,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const idToken = readIdToken(response);
     if (!idToken) {
-      // Auto-exchange may still be in progress (code present, no token yet).
       if (response.params.code && !response.authentication) {
         return;
       }
@@ -184,9 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     void (async () => {
       try {
-        if (!deviceIdRef.current) {
-          deviceIdRef.current = Crypto.randomUUID();
-        }
+        deviceIdRef.current ??= Crypto.randomUUID();
         const pair = await exchangeGoogleCredentials({
           idToken,
           deviceId: deviceIdRef.current,
@@ -194,7 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (cancelled) {
           return;
         }
-        await applySession(tokenPairToSession(pair));
+        await applySession(pair);
         pending.resolve();
       } catch (error) {
         if (!cancelled) {

@@ -2,31 +2,26 @@
 
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { useState } from "react";
-import {
-  ShoppingListTable,
-} from "@/components/finance/shopping-list/shopping-list-table";
-import type { ShoppingItem } from "@/components/finance/shopping-list/shopping-list-row";
+import { ShoppingListTable } from "@/components/finance/shopping-list/shopping-list-table";
+import type {
+  ShoppingItem,
+  ShoppingItemActions,
+} from "@/components/finance/shopping-list/shopping-list-row";
 import { Button } from "@/components/ui/button";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
-import type { UpdateShoppingItemInput } from "@/graphql";
 import { sectionCardClass } from "@/lib/section-header";
 
-type PurchasedShoppingItemsProps = {
+type PurchasedShoppingItemsProps = ShoppingItemActions & {
   items: ShoppingItem[];
   clearing: boolean;
-  onUpdate: (id: string, input: UpdateShoppingItemInput) => Promise<void>;
-  onSetPurchased: (id: string, purchased: boolean) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
   onClear: () => Promise<void>;
 };
 
 export function PurchasedShoppingItems({
   items,
   clearing,
-  onUpdate,
-  onSetPurchased,
-  onDelete,
   onClear,
+  ...actions
 }: PurchasedShoppingItemsProps) {
   const [collapsed, setCollapsed] = useState(true);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -57,13 +52,7 @@ export function PurchasedShoppingItems({
       </div>
 
       {!collapsed ? (
-        <ShoppingListTable
-          items={items}
-          emptyMessage="No purchased items."
-          onUpdate={onUpdate}
-          onSetPurchased={onSetPurchased}
-          onDelete={onDelete}
-        />
+        <ShoppingListTable items={items} emptyMessage="No purchased items." {...actions} />
       ) : null}
 
       <ConfirmModal

@@ -4,7 +4,6 @@ export function getApiUrl() {
   return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 }
 
-/** Clear any leftover non-HttpOnly cookie from the pre-HttpOnly auth migration. */
 export function clearLegacyClientAuthCookie() {
   if (typeof document === "undefined") {
     return;
@@ -20,8 +19,6 @@ export async function signOut(): Promise<void> {
       credentials: "include",
     });
   } catch {
-    // Still send the user to sign-in even if logout request fails.
+    return;
   }
 }
-
-export { AUTH_COOKIE_NAME };

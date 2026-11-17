@@ -1,11 +1,11 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
-import { mealPlanSlotKey, type WeekDay } from "@life/shared";
+import { mealPlanSlotKey, WEEK_DAYS, type WeekDay } from "@life/shared";
 import { X } from "lucide-react";
 import { forwardRef } from "react";
 import type { MealPlanSlot as MealPlanSlotType } from "@/components/meals/types";
-import { DAY_MEAL_SLOT, WEEK_DAY_ORDER, weekDayFullLabels } from "@/lib/meal-plan-ui";
+import { DAY_MEAL_SLOT, weekDayFullLabels } from "@/lib/meal-plan-ui";
 import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
 import { cn } from "@/lib/cn";
 
@@ -77,7 +77,7 @@ export const WeekGridSection = forwardRef<HTMLElement, WeekGridSectionProps>(fun
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
-        {WEEK_DAY_ORDER.map((day) => (
+        {WEEK_DAYS.map((day) => (
           <MealDayCell key={day} day={day} assignment={assignmentForDay(slots, day)} onClear={onClear} />
         ))}
       </div>

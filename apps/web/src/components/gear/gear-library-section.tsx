@@ -6,7 +6,7 @@ import { FolderBreadcrumbs } from "@/components/folders/folder-breadcrumbs";
 import { FolderTile } from "@/components/folders/folder-tile";
 import { GearClassRow } from "@/components/gear/gear-class-row";
 import { GearItemRow } from "@/components/gear/gear-item-row";
-import type { GearFolder, GearItem, GearItemClass } from "@/components/gear/types";
+import type { GearFolder, GearItem, GearItemClass, GearVariant } from "@/components/gear/types";
 import { Button } from "@/components/ui/button";
 import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
 import { cn } from "@/lib/cn";
@@ -16,7 +16,6 @@ type GearLibrarySectionProps = {
   items: GearItem[];
   classes: GearItemClass[];
   breadcrumbPath: GearFolder[];
-  currentFolderId: string | null;
   expandedClassIds: Set<string>;
   onNavigateFolder: (folderId: string | null) => void;
   onCreateFolder: () => void;
@@ -30,7 +29,7 @@ type GearLibrarySectionProps = {
   onAddVariant: (itemClass: GearItemClass) => void;
   addingVariantClassId: string | null;
   onCancelAddVariant: () => void;
-  onDeleteVariant: (itemClass: GearItemClass, variantId: string) => void;
+  onDeleteVariant: (variant: GearVariant) => void;
   onFolderDeleted?: (folderId: string) => void;
 };
 
@@ -41,7 +40,6 @@ export const GearLibrarySection = forwardRef<HTMLElement, GearLibrarySectionProp
       items,
       classes,
       breadcrumbPath,
-      currentFolderId,
       expandedClassIds,
       onNavigateFolder,
       onCreateFolder,
@@ -99,13 +97,7 @@ export const GearLibrarySection = forwardRef<HTMLElement, GearLibrarySectionProp
                 <FolderTile
                   key={folder.id}
                   namespace="GEAR"
-                  folder={{
-                    id: folder.id,
-                    name: folder.name,
-                    color: folder.color,
-                    itemCount: folder.itemCount,
-                    childFolderCount: folder.childFolderCount,
-                  }}
+                  folder={folder}
                   onOpen={onNavigateFolder}
                   onFolderDeleted={onFolderDeleted}
                 />
@@ -126,7 +118,7 @@ export const GearLibrarySection = forwardRef<HTMLElement, GearLibrarySectionProp
                   onDelete={onDeleteClass}
                   onAddVariant={onAddVariant}
                   onCancelAddVariant={onCancelAddVariant}
-                  onDeleteVariant={(variant) => onDeleteVariant(itemClass, variant.id)}
+                  onDeleteVariant={onDeleteVariant}
                 />
               ))}
             </div>

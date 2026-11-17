@@ -1,17 +1,16 @@
 "use client";
 
 import { useMutation } from "@apollo/client";
-import { formatShortDate } from "@life/shared";
+import { formatShortDate, formatCadCents } from "@life/shared";
 import { Trash2 } from "lucide-react";
 import type { BudgetPurchaseAllocation } from "@/components/finance/budget/types";
 import { BudgetAmountCell } from "@/components/finance/budget/budget-amount-cell";
 import { EditableTextCell } from "@/components/editable-table";
 import {
-  DELETE_BUDGET_PURCHASE_ALLOCATION_MUTATION,
-  UPDATE_BUDGET_PURCHASE_MUTATION,
+  DeleteBudgetPurchaseAllocationDocument,
+  UpdateBudgetPurchaseDocument,
 } from "@/graphql";
-import { formatCadCents } from "@/lib/budget-money";
-import { BUDGET_LINE_ALLOCATIONS_REFETCH } from "@/lib/budget-queries";
+import { BUDGET_LINE_ALLOCATIONS_REFETCH } from "@/lib/refetch-queries";
 
 type BudgetAllocationRowProps = {
   allocation: BudgetPurchaseAllocation;
@@ -24,9 +23,9 @@ export function BudgetAllocationRow({ allocation, onUpdated }: BudgetAllocationR
     awaitRefetchQueries: true,
   };
 
-  const [updatePurchase] = useMutation(UPDATE_BUDGET_PURCHASE_MUTATION, mutationOptions);
+  const [updatePurchase] = useMutation(UpdateBudgetPurchaseDocument, mutationOptions);
   const [deleteAllocation, { loading: deleting }] = useMutation(
-    DELETE_BUDGET_PURCHASE_ALLOCATION_MUTATION,
+    DeleteBudgetPurchaseAllocationDocument,
     mutationOptions,
   );
 

@@ -1,45 +1,32 @@
 import type { ApolloCache } from "@apollo/client";
 import {
-  TASKS_BOARD_QUERY,
+  TasksBoardDocument,
   type BoardTask,
   type TasksBoardQuery,
   type TasksBoardQueryVariables,
 } from "@/src/graphql";
 
-/** Canonical list-view board query used by the Tasks module. */
 export const tasksBoardListQuery = {
-  query: TASKS_BOARD_QUERY,
+  query: TasksBoardDocument,
   variables: {
     filter: { view: "LIST" as const, includeDone: true },
   } satisfies TasksBoardQueryVariables,
 };
 
-export const tasksBoardRefetchQueries = [tasksBoardListQuery];
+function updateBoardTasks(cache: ApolloCache<object>, update: (tasks: BoardTask[]) => BoardTask[]) {
+  cache.updateQuery<TasksBoardQuery, TasksBoardQueryVariables>(tasksBoardListQuery, (existing) =>
+    existing ? { ...existing, tasks: update(existing.tasks) } : existing,
+  );
+}
 
 export function updateTaskInBoardCache(cache: ApolloCache<object>, updatedTask: BoardTask) {
-  cache.updateQuery<TasksBoardQuery, TasksBoardQueryVariables>(tasksBoardListQuery, (existing) => {
-    if (!existing) {
-      return existing;
-    }
-
-    return {
-      ...existing,
-      tasks: existing.tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)),
-    };
-  });
+  updateBoardTasks(cache, (tasks) =>
+    tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)),
+  );
 }
 
 export function removeTaskFromBoardCache(cache: ApolloCache<object>, taskId: string) {
-  cache.updateQuery<TasksBoardQuery, TasksBoardQueryVariables>(tasksBoardListQuery, (existing) => {
-    if (!existing) {
-      return existing;
-    }
-
-    return {
-      ...existing,
-      tasks: existing.tasks.filter((task) => task.id !== taskId),
-    };
-  });
+  updateBoardTasks(cache, (tasks) => tasks.filter((task) => task.id !== taskId));
 
   const cacheId = cache.identify({ __typename: "Task", id: taskId });
   if (cacheId) {
@@ -49,18 +36,7 @@ export function removeTaskFromBoardCache(cache: ApolloCache<object>, taskId: str
 }
 
 export function prependTaskInBoardCache(cache: ApolloCache<object>, createdTask: BoardTask) {
-  cache.updateQuery<TasksBoardQuery, TasksBoardQueryVariables>(tasksBoardListQuery, (existing) => {
-    if (!existing) {
-      return existing;
-    }
-
-    if (existing.tasks.some((task) => task.id === createdTask.id)) {
-      return existing;
-    }
-
-    return {
-      ...existing,
-      tasks: [createdTask, ...existing.tasks],
-    };
-  });
+  updateBoardTasks(cache, (tasks) =>
+    tasks.some((task) => task.id === createdTask.id) ? tasks : [createdTask, ...tasks],
+  );
 }

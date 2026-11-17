@@ -9,7 +9,6 @@ import {
   purchaseMatchesAnnualBudget,
   purchaseMatchesMonthlyBudget,
   spendComparison,
-  spendMonthKey,
 } from "@life/shared";
 import { GraphQLContext } from "../context";
 import { ForbiddenError, requireHouseholdUser } from "../auth";
@@ -630,19 +629,6 @@ export const financeResolvers = {
           amountCents: args.input.amountCents,
           type: section.scope,
         },
-      });
-
-      const period = getBudgetCalendarPeriod();
-      await context.prisma.budgetLineSpend.createMany({
-        data: [
-          {
-            lineItemId: lineItem.id,
-            year: period.year,
-            month: spendMonthKey(lineItem.type, period.year, period.month),
-            spentCents: 0,
-          },
-        ],
-        skipDuplicates: true,
       });
 
       return loadLineItemGraph(context, householdId, lineItem.id);

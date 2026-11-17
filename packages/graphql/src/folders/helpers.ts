@@ -1,6 +1,6 @@
 import { FolderNamespace, Prisma } from "@prisma/client";
 import { GraphQLContext } from "../context";
-import { ForbiddenError } from "../auth";
+import { found } from "../auth";
 
 export const folderInclude = {
   _count: {
@@ -16,18 +16,20 @@ export const folderInclude = {
 
 export async function assertFolderInHousehold(
   context: GraphQLContext,
-  folderId: string,
+  folderId: string | null | undefined,
   householdId: string,
-  namespace: FolderNamespace,
+  namespace?: FolderNamespace,
 ) {
-  const folder = await context.prisma.folder.findFirst({
-    where: { id: folderId, householdId, namespace },
-    select: { id: true },
-  });
-
-  if (!folder) {
-    throw new ForbiddenError("Folder not found in household");
+  if (!folderId) {
+    return;
   }
+  found(
+    await context.prisma.folder.findFirst({
+      where: { id: folderId, householdId, namespace },
+      select: { id: true },
+    }),
+    "Folder not found in household",
+  );
 }
 
 export async function loadFoldersForNamespace(

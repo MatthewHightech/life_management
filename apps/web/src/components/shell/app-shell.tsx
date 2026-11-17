@@ -4,7 +4,7 @@ import { useQuery } from "@apollo/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { HouseholdShellQuery } from "@/graphql";
-import { HOUSEHOLD_SHELL_QUERY } from "@/graphql";
+import { HouseholdShellDocument } from "@/graphql";
 import { signOut } from "@/lib/auth-token";
 import { readSidebarCollapsed, writeSidebarCollapsed } from "@/lib/sidebar-preference";
 import { DemoChrome } from "@/components/demo/demo-chrome";
@@ -16,7 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const demoMode = useDemoMode();
   const [collapsed, setCollapsed] = useState(false);
-  const { data } = useQuery<HouseholdShellQuery>(HOUSEHOLD_SHELL_QUERY);
+  const { data } = useQuery<HouseholdShellQuery>(HouseholdShellDocument);
 
   useEffect(() => {
     setCollapsed(readSidebarCollapsed());

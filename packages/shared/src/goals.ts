@@ -1,4 +1,4 @@
-import { endOfDay, format, startOfDay, startOfWeek } from "date-fns";
+import { format, startOfWeek } from "date-fns";
 
 export const GOAL_CADENCES = ["DAILY", "WEEKLY", "TERM"] as const;
 
@@ -16,38 +16,19 @@ export const GOAL_CADENCE_LABELS: Record<GoalCadence, string> = {
   TERM: "Term Goals",
 };
 
-export type TermWindow = {
-  startMonth: number;
-  endMonth: number;
-  label: string;
-};
-
-/** Fixed term windows: Jan–Apr, May–Aug, Sep–Dec (0-indexed months). */
-export const TERM_WINDOWS: TermWindow[] = [
+const TERM_WINDOWS = [
   { startMonth: 0, endMonth: 3, label: "Jan–Apr" },
   { startMonth: 4, endMonth: 7, label: "May–Aug" },
   { startMonth: 8, endMonth: 11, label: "Sep–Dec" },
 ];
 
-export function goalLimit(cadence: GoalCadence): number {
-  return GOAL_LIMITS[cadence];
-}
-
-export function termWindowForDate(date: Date = new Date()): TermWindow & { year: number } {
+export function termWindowForDate(date: Date = new Date()) {
   const month = date.getMonth();
   const window = TERM_WINDOWS.find((term) => month >= term.startMonth && month <= term.endMonth);
   if (!window) {
     throw new Error("Date is outside known term windows");
   }
   return { ...window, year: date.getFullYear() };
-}
-
-export function termBounds(date: Date = new Date()) {
-  const term = termWindowForDate(date);
-  const start = startOfDay(new Date(term.year, term.startMonth, 1));
-  const endMonthLastDay = new Date(term.year, term.endMonth + 1, 0);
-  const end = endOfDay(endMonthLastDay);
-  return { start, end, term };
 }
 
 export function goalPeriodLabel(cadence: GoalCadence, date: Date = new Date()): string {
@@ -64,44 +45,17 @@ export function goalPeriodLabel(cadence: GoalCadence, date: Date = new Date()): 
   return `${term.label} ${term.year}`;
 }
 
-export type GoalCompletionInput = {
+type GoalCompletionInput = {
   totalCount: number;
   completedCount: number;
 };
 
-export function setHitRate(set: GoalCompletionInput): number {
-  if (set.totalCount <= 0) {
-    return 0;
-  }
-  return set.completedCount / set.totalCount;
-}
-
-export function isSetFullyComplete(set: GoalCompletionInput): boolean {
-  return set.totalCount > 0 && set.completedCount >= set.totalCount;
-}
-
-/** Overall hit-rate across archived sets (completed ÷ total). */
 export function archiveHitRate(sets: GoalCompletionInput[]): number {
-  const totals = sets.reduce(
-    (acc, set) => {
-      acc.total += set.totalCount;
-      acc.completed += set.completedCount;
-      return acc;
-    },
-    { total: 0, completed: 0 },
-  );
-
-  if (totals.total <= 0) {
-    return 0;
-  }
-
-  return totals.completed / totals.total;
+  const total = sets.reduce((sum, set) => sum + set.totalCount, 0);
+  const completed = sets.reduce((sum, set) => sum + set.completedCount, 0);
+  return total > 0 ? completed / total : 0;
 }
 
-/**
- * Consecutive fully-complete archived sets from newest → older.
- * Empty sets are skipped (do not break or extend the streak).
- */
 export function archiveStreak(setsNewestFirst: GoalCompletionInput[]): number {
   let streak = 0;
 
@@ -109,7 +63,7 @@ export function archiveStreak(setsNewestFirst: GoalCompletionInput[]): number {
     if (set.totalCount <= 0) {
       continue;
     }
-    if (!isSetFullyComplete(set)) {
+    if (set.completedCount < set.totalCount) {
       break;
     }
     streak += 1;

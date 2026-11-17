@@ -1,10 +1,11 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
-import { calendarDayKey, formatLongDate, GEAR_LEND_ZONE, startOfDay } from "@life/shared";
+import { calendarDayKey, formatLongDate, GEAR_LEND_ZONE, parseOptionalDate } from "@life/shared";
 import { X } from "lucide-react";
 import { FormEvent, forwardRef, useState } from "react";
 import type { StagedGearEntry } from "@/components/gear/types";
+import { GearTextField } from "@/components/gear/gear-form";
 import { GearPhotoThumb } from "@/components/gear/gear-photo-thumb";
 import { Button } from "@/components/ui/button";
 import { CalendarPicker } from "@/components/ui/calendar-picker";
@@ -13,22 +14,19 @@ import { usePopoverAnchor } from "@/hooks/use-popover-anchor";
 import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
 import { cn } from "@/lib/cn";
 
+export type GearLoanDraft = {
+  borrowerName: string;
+  borrowerEmail: string;
+  lentAt: string;
+  returnBy: string;
+};
+
 type GearLendStagingProps = {
   staged: StagedGearEntry[];
   lending: boolean;
   onRemove: (entry: StagedGearEntry) => void;
-  onLend: (input: {
-    borrowerName: string;
-    borrowerEmail: string;
-    lentAt: string;
-    returnBy: string;
-  }) => Promise<void>;
+  onLend: (draft: GearLoanDraft) => Promise<void>;
 };
-
-function parseDateOnly(value: string) {
-  const [year, month, day] = value.split("-").map(Number);
-  return startOfDay(new Date(year, month - 1, day));
-}
 
 function LoanDateField({
   label,
@@ -44,7 +42,7 @@ function LoanDateField({
   allowClear?: boolean;
 }) {
   const { open, anchorRef, toggle, close, triggerClassName } = usePopoverAnchor();
-  const selectedDate = value ? parseDateOnly(value) : null;
+  const selectedDate = parseOptionalDate(value);
 
   return (
     <div className="block text-sm">
@@ -181,25 +179,14 @@ export const GearLendStaging = forwardRef<HTMLElement, GearLendStagingProps>(fun
         </div>
 
         <form onSubmit={(event) => void handleSubmit(event)} className="grid gap-3 md:grid-cols-2">
-          <label className="block text-sm">
-            <span className="mb-1 block text-text-muted">Borrower name</span>
-            <input
-              required
-              value={borrowerName}
-              onChange={(event) => setBorrowerName(event.target.value)}
-              className="w-full rounded-lg border border-border-subtle bg-background px-3 py-2"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block text-text-muted">Borrower email</span>
-            <input
-              required
-              type="email"
-              value={borrowerEmail}
-              onChange={(event) => setBorrowerEmail(event.target.value)}
-              className="w-full rounded-lg border border-border-subtle bg-background px-3 py-2"
-            />
-          </label>
+          <GearTextField label="Borrower name" required value={borrowerName} onChange={setBorrowerName} />
+          <GearTextField
+            label="Borrower email"
+            required
+            type="email"
+            value={borrowerEmail}
+            onChange={setBorrowerEmail}
+          />
           <LoanDateField label="Lent date" value={lentAt} onChange={setLentAt} />
           <LoanDateField
             label="Return by"

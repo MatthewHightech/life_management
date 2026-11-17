@@ -1,26 +1,26 @@
 import type { ApolloCache } from "@apollo/client";
 import type { TasksBoardQuery, TasksBoardQueryVariables } from "@/graphql";
-import { TASK_PROJECTS_QUERY, TASKS_BOARD_QUERY } from "@/graphql";
+import { TaskProjectsDocument, TasksBoardDocument } from "@/graphql";
 
 export const tasksBoardListQuery = {
-  query: TASKS_BOARD_QUERY,
+  query: TasksBoardDocument,
   variables: { filter: { view: "LIST" as const, includeDone: true } },
 };
 
 export const tasksBoardKanbanQuery = {
-  query: TASKS_BOARD_QUERY,
+  query: TasksBoardDocument,
   variables: { filter: { view: "KANBAN" as const, includeDone: true } },
 };
 
 export const tasksBoardCalendarQuery = {
-  query: TASKS_BOARD_QUERY,
+  query: TasksBoardDocument,
   variables: { filter: { view: "CALENDAR" as const, includeDone: true } },
 };
 
 const taskListCaches = [tasksBoardListQuery, tasksBoardKanbanQuery, tasksBoardCalendarQuery];
 
 /** Refetch list, kanban, calendar, and board tabs after a task mutation so counts stay current. */
-export const tasksBoardRefetchQueries = [...taskListCaches, TASK_PROJECTS_QUERY];
+export const tasksBoardRefetchQueries = [...taskListCaches, TaskProjectsDocument];
 
 type BoardTask = TasksBoardQuery["tasks"][number];
 

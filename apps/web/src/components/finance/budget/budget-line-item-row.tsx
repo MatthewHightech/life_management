@@ -3,20 +3,18 @@
 import { useMutation } from "@apollo/client";
 import { useDroppable } from "@dnd-kit/core";
 import { PanelRightOpen, Trash2 } from "lucide-react";
-import { budgetLineDropId } from "@life/shared";
+import { budgetLineDropId, formatBudgetRemainingLabel, formatCadCents } from "@life/shared";
 import { useState } from "react";
-import type { BudgetLineItem } from "@/components/finance/budget/types";
-import type { BudgetScope } from "@/components/finance/budget/budget-scope";
+import type { BudgetLineItem, BudgetScope } from "@/components/finance/budget/types";
 import { useBudgetPurchases } from "@/components/finance/budget/budget-purchases-context";
 import { BudgetAmountCell } from "@/components/finance/budget/budget-amount-cell";
 import { BudgetProgressBar } from "@/components/finance/budget/budget-progress-bar";
 import { EditableTextCell } from "@/components/editable-table";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
-import { formatBudgetRemainingLabel, formatCadCents } from "@/lib/budget-money";
-import { BUDGET_PAGE_REFETCH } from "@/lib/budget-queries";
+import { BUDGET_PAGE_REFETCH } from "@/lib/refetch-queries";
 import {
-  DELETE_BUDGET_LINE_ITEM_MUTATION,
-  UPDATE_BUDGET_LINE_ITEM_MUTATION,
+  DeleteBudgetLineItemDocument,
+  UpdateBudgetLineItemDocument,
 } from "@/graphql";
 import { cn } from "@/lib/cn";
 
@@ -30,8 +28,8 @@ export function BudgetLineItemRow({ item, scope }: BudgetLineItemRowProps) {
   const { openPurchases } = useBudgetPurchases();
   const mutationOptions = { refetchQueries: [...BUDGET_PAGE_REFETCH], awaitRefetchQueries: true };
 
-  const [updateLineItem] = useMutation(UPDATE_BUDGET_LINE_ITEM_MUTATION, mutationOptions);
-  const [deleteLineItem, { loading: deleting }] = useMutation(DELETE_BUDGET_LINE_ITEM_MUTATION, {
+  const [updateLineItem] = useMutation(UpdateBudgetLineItemDocument, mutationOptions);
+  const [deleteLineItem, { loading: deleting }] = useMutation(DeleteBudgetLineItemDocument, {
     ...mutationOptions,
     onCompleted: () => setConfirmOpen(false),
   });

@@ -43,16 +43,16 @@ export function Avatar({ user, size = 28, selected }: AvatarProps) {
 type AvatarStackProps = {
   users: AvatarUser[];
   size?: number;
-  max?: number;
-  showEmpty?: boolean;
 };
 
-export function AvatarStack({ users, size = 28, max = 3, showEmpty = true }: AvatarStackProps) {
+const MAX_STACKED_AVATARS = 3;
+
+export function AvatarStack({ users, size = 28 }: AvatarStackProps) {
   if (users.length === 0) {
-    return showEmpty ? <Text style={styles.empty}>Unassigned</Text> : null;
+    return null;
   }
 
-  const visible = users.slice(0, max);
+  const visible = users.slice(0, MAX_STACKED_AVATARS);
   const overflow = users.length - visible.length;
 
   return (
@@ -84,10 +84,6 @@ const styles = StyleSheet.create({
   stack: {
     flexDirection: "row",
     alignItems: "center",
-  },
-  empty: {
-    fontSize: 12,
-    color: theme.textMuted,
   },
   overflow: {
     marginLeft: 6,

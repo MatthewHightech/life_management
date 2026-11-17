@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { sectionCardClass, sectionHeaderClass } from "@/lib/section-header";
 import { cn } from "@/lib/cn";
 
-type RecipeLibrarySectionProps = {
+export type RecipeLibrarySectionProps = {
   folders: MealFolder[];
   recipes: MealRecipe[];
   breadcrumbPath: MealFolder[];

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { folderDropId, parseFolderDropId, parseRecipeFolderDropId, recipeFolderDropId } from "@life/shared";
+import { folderDropId, parseFolderDropId } from "@life/shared";
 
 describe("folder drop ids", () => {
   it("builds namespace-aware drop ids", () => {
@@ -14,10 +14,5 @@ describe("folder drop ids", () => {
       folderId: "folder-1",
     });
     expect(parseFolderDropId("SUNDAY_BREAKFAST")).toBeUndefined();
-  });
-
-  it("keeps meal-plan aliases working", () => {
-    expect(recipeFolderDropId("folder-1")).toBe("folder:MEALS:folder-1");
-    expect(parseRecipeFolderDropId("folder:MEALS:folder-1")).toBe("folder-1");
   });
 });

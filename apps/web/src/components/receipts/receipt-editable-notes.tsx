@@ -2,10 +2,10 @@
 
 import { useMutation } from "@apollo/client";
 import { useEffect, useRef } from "react";
-import { UPDATE_RECEIPT_NOTES_MUTATION } from "@/graphql";
+import { UpdateReceiptNotesDocument } from "@/graphql";
 import { useTextInlineEdit } from "@/hooks/use-text-inline-edit";
 import { inlineFieldTriggerClass, inlineTextareaClass } from "@/lib/inline-edit-styles";
-import { RECEIPT_LIBRARY_REFETCH } from "@/lib/receipt-queries";
+import { RECEIPT_LIBRARY_REFETCH } from "@/lib/refetch-queries";
 import { cn } from "@/lib/cn";
 
 type ReceiptEditableNotesProps = {
@@ -14,7 +14,7 @@ type ReceiptEditableNotesProps = {
 };
 
 export function ReceiptEditableNotes({ receiptId, notes }: ReceiptEditableNotesProps) {
-  const [updateNotes] = useMutation(UPDATE_RECEIPT_NOTES_MUTATION, {
+  const [updateNotes] = useMutation(UpdateReceiptNotesDocument, {
     refetchQueries: [...RECEIPT_LIBRARY_REFETCH],
     awaitRefetchQueries: true,
   });

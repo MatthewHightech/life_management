@@ -8,17 +8,17 @@ import {
   type CommentsTarget,
 } from "@/components/comments/comments-context";
 import {
-  ADD_SHOPPING_ITEM_COMMENT_MUTATION,
-  DELETE_SHOPPING_ITEM_COMMENT_MUTATION,
-  MARK_SHOPPING_ITEM_COMMENTS_READ_MUTATION,
-  SHOPPING_ITEM_COMMENTS_QUERY,
-  SHOPPING_LIST_QUERY,
+  AddShoppingItemCommentDocument,
+  DeleteShoppingItemCommentDocument,
+  MarkShoppingItemCommentsReadDocument,
+  ShoppingItemCommentsDocument,
+  ShoppingListDocument,
   type ShoppingItemCommentsQuery,
   type ShoppingItemCommentsQueryVariables,
 } from "@/graphql";
 
 const refetchOptions = {
-  refetchQueries: [{ query: SHOPPING_LIST_QUERY }],
+  refetchQueries: [{ query: ShoppingListDocument }],
   awaitRefetchQueries: true,
 };
 
@@ -27,22 +27,22 @@ export function ShoppingCommentsSidebar() {
   const { data, loading, refetch } = useQuery<
     ShoppingItemCommentsQuery,
     ShoppingItemCommentsQueryVariables
-  >(SHOPPING_ITEM_COMMENTS_QUERY, {
+  >(ShoppingItemCommentsDocument, {
     skip: !activeTarget,
     variables: { shoppingItemId: activeTarget?.id ?? "" },
     fetchPolicy: "network-only",
   });
 
   const [markRead] = useMutation(
-    MARK_SHOPPING_ITEM_COMMENTS_READ_MUTATION,
+    MarkShoppingItemCommentsReadDocument,
     refetchOptions,
   );
   const [addComment, { loading: posting }] = useMutation(
-    ADD_SHOPPING_ITEM_COMMENT_MUTATION,
+    AddShoppingItemCommentDocument,
     refetchOptions,
   );
   const [deleteComment] = useMutation(
-    DELETE_SHOPPING_ITEM_COMMENT_MUTATION,
+    DeleteShoppingItemCommentDocument,
     refetchOptions,
   );
 

@@ -4,12 +4,12 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { formatDueDate } from "@life/shared";
 import { GripVertical } from "lucide-react";
+import { CommentsButton } from "@/components/comments/comments-button";
+import { EditableTextCell } from "@/components/editable-table";
 import { DeleteTaskButton } from "@/components/tasks/delete-task-button";
-import { TaskCommentsButton } from "@/components/tasks/task-comments-button";
 import { AssigneeAvatars } from "@/components/ui/avatar";
 import { EditableAssignees } from "@/components/tasks/task-table/editable-assignees";
 import { EditableDueDate } from "@/components/tasks/task-table/editable-due-date";
-import { EditableText } from "@/components/tasks/task-table/editable-text-cells";
 import type { BoardTask, HouseholdUser, TaskUpdateInput } from "@/components/tasks/task-table/types";
 import { cn } from "@/lib/cn";
 
@@ -60,12 +60,7 @@ export function KanbanCard({
     >
       {editable && onDelete ? (
         <div className="absolute right-1 top-1">
-          <DeleteTaskButton
-            taskTitle={task.title}
-            onConfirm={onDelete}
-            variant="icon"
-            className="rounded p-0.5 text-text-muted hover:text-error"
-          />
+          <DeleteTaskButton taskTitle={task.title} onConfirm={onDelete} />
         </div>
       ) : null}
 
@@ -88,7 +83,7 @@ export function KanbanCard({
 
         <div className="min-w-0 flex-1 space-y-1">
           {editable ? (
-            <EditableText
+            <EditableTextCell
               value={task.title}
               onSave={(title) => onUpdate!({ title })}
               wrap
@@ -162,9 +157,9 @@ export function KanbanCard({
 
             {editable ? (
               <div className="shrink-0">
-                <TaskCommentsButton
-                  taskId={task.id}
-                  taskTitle={task.title}
+                <CommentsButton
+                  targetId={task.id}
+                  targetTitle={task.title}
                   commentCount={task.commentCount}
                   unreadCommentCount={task.unreadCommentCount}
                 />

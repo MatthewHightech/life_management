@@ -4,10 +4,10 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useMutation } from "@apollo/client";
 import { GripVertical, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 import {
-  CREATE_GEAR_VARIANT_MUTATION,
-  UPDATE_GEAR_VARIANT_MUTATION,
+  CreateGearVariantDocument,
+  UpdateGearVariantDocument,
 } from "@/graphql";
 import type { GearCondition, GearItemClass, GearVariant } from "@/components/gear/types";
 import { gearConditionSelectOptions } from "@/components/gear/gear-condition-select";
@@ -22,8 +22,8 @@ import {
   EditableTableRow,
   EditableTextCell,
 } from "@/components/editable-table";
-import { GEAR_PAGE_REFETCH } from "@/lib/gear-queries";
-import { uploadGearVariantPhoto } from "@/lib/gear-photo";
+import { GEAR_PAGE_REFETCH } from "@/lib/refetch-queries";
+import { uploadGearPhoto } from "@/lib/file-api";
 import { focusLeavesRow } from "@/lib/focus-utils";
 import { inlineFieldInputClass } from "@/lib/inline-edit-styles";
 import { canLendGearCondition, gearVariantDragId } from "@life/shared";
@@ -67,9 +67,11 @@ type GearVariantTableProps = {
   onDeleteVariant: (variant: GearVariant) => void;
 };
 
+type GearVariantUpdate = { name?: string; size?: string | null; condition?: GearCondition };
+
 type GearVariantRowProps = {
   variant: GearVariant;
-  onUpdate: (input: { name?: string; size?: string | null; condition?: GearCondition }) => Promise<void>;
+  onUpdate: (input: GearVariantUpdate) => Promise<void>;
   onDelete: () => void;
   overlay?: boolean;
 };
@@ -118,7 +120,7 @@ function GearVariantRow({ variant, onUpdate, onDelete, overlay = false }: GearVa
           alt={variant.name}
           interactive={!overlay}
           disabled={onLoan}
-          onPhotoSelect={(file) => void uploadGearVariantPhoto(variant.id, file)}
+          onPhotoSelect={(file) => void uploadGearPhoto("variant", variant.id, file)}
         />
       </EditableTableCell>
       <EditableTableCell>
@@ -177,7 +179,7 @@ function NewVariantRow({ classId, onCreated, onCancel }: NewVariantRowProps) {
   const [size, setSize] = useState("");
   const [condition, setCondition] = useState<GearCondition>("GOOD");
 
-  const [createVariant, { loading }] = useMutation(CREATE_GEAR_VARIANT_MUTATION, {
+  const [createVariant, { loading }] = useMutation(CreateGearVariantDocument, {
     refetchQueries: [...GEAR_PAGE_REFETCH],
     awaitRefetchQueries: true,
   });
@@ -207,6 +209,23 @@ function NewVariantRow({ classId, onCreated, onCancel }: NewVariantRowProps) {
   }
 
   const draftInputClass = cn(inlineFieldInputClass, "max-w-full min-w-0");
+  const draftInputProps = {
+    disabled: loading,
+    onBlur: (event: FocusEvent<HTMLInputElement>) => {
+      if (focusLeavesRow(event, rowRef.current)) {
+        void commitCreate();
+      }
+    },
+    onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        void commitCreate();
+      }
+      if (event.key === "Escape") {
+        onCancel();
+      }
+    },
+  };
 
   return (
     <EditableTableRow ref={rowRef} className="bg-background/80">
@@ -223,23 +242,9 @@ function NewVariantRow({ classId, onCreated, onCancel }: NewVariantRowProps) {
           <input
             ref={nameRef}
             value={name}
-            disabled={loading}
             placeholder="Variant name"
             onChange={(event) => setName(event.target.value)}
-            onBlur={(event) => {
-              if (focusLeavesRow(event, rowRef.current)) {
-                void commitCreate();
-              }
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                void commitCreate();
-              }
-              if (event.key === "Escape") {
-                onCancel();
-              }
-            }}
+            {...draftInputProps}
             className={cn(draftInputClass, "font-medium")}
           />
         </div>
@@ -248,23 +253,9 @@ function NewVariantRow({ classId, onCreated, onCancel }: NewVariantRowProps) {
         <div className="min-w-0 max-w-full overflow-hidden">
           <input
             value={size}
-            disabled={loading}
             placeholder="Size"
             onChange={(event) => setSize(event.target.value)}
-            onBlur={(event) => {
-              if (focusLeavesRow(event, rowRef.current)) {
-                void commitCreate();
-              }
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                void commitCreate();
-              }
-              if (event.key === "Escape") {
-                onCancel();
-              }
-            }}
+            {...draftInputProps}
             className={draftInputClass}
           />
         </div>
@@ -296,15 +287,12 @@ export function GearVariantTable({
   onCancelAddNew,
   onDeleteVariant,
 }: GearVariantTableProps) {
-  const [updateVariant] = useMutation(UPDATE_GEAR_VARIANT_MUTATION, {
+  const [updateVariant] = useMutation(UpdateGearVariantDocument, {
     refetchQueries: [...GEAR_PAGE_REFETCH],
     awaitRefetchQueries: true,
   });
 
-  async function handleUpdate(
-    variantId: string,
-    input: { name?: string; size?: string | null; condition?: GearCondition },
-  ) {
+  async function handleUpdate(variantId: string, input: GearVariantUpdate) {
     await updateVariant({ variables: { id: variantId, input } });
   }
 

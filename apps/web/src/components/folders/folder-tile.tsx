@@ -1,6 +1,7 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
+import type { DragEvent } from "react";
 import type { FolderColor, FolderNamespace } from "@life/shared";
 import { folderDropId } from "@life/shared";
 import { FolderActionsMenu } from "@/components/folders/folder-actions-menu";
@@ -15,6 +16,33 @@ export type FolderTileData = {
   childFolderCount: number;
 };
 
+export function useFolderDropTarget(
+  namespace: FolderNamespace,
+  folderId: string | null,
+  onFileDrop?: (files: FileList) => void,
+) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: folderDropId(namespace, folderId),
+    data: { namespace, folderId, zone: "library" },
+  });
+
+  const fileDropHandlers = {
+    onDragOver: (event: DragEvent<HTMLElement>) => {
+      if (onFileDrop && event.dataTransfer.types.includes("Files")) {
+        event.preventDefault();
+      }
+    },
+    onDrop: (event: DragEvent<HTMLElement>) => {
+      if (onFileDrop && event.dataTransfer.files.length) {
+        event.preventDefault();
+        onFileDrop(event.dataTransfer.files);
+      }
+    },
+  };
+
+  return { isOver, setNodeRef, fileDropHandlers };
+}
+
 type FolderTileProps = {
   namespace: FolderNamespace;
   folder: FolderTileData;
@@ -25,10 +53,11 @@ type FolderTileProps = {
 
 export function FolderTile({ namespace, folder, onOpen, onFileDrop, onFolderDeleted }: FolderTileProps) {
   const colors = getFolderColorOption(folder.color);
-  const { isOver, setNodeRef } = useDroppable({
-    id: folderDropId(namespace, folder.id),
-    data: { namespace, folderId: folder.id, zone: "library" },
-  });
+  const { isOver, setNodeRef, fileDropHandlers } = useFolderDropTarget(
+    namespace,
+    folder.id,
+    onFileDrop && ((files) => onFileDrop(folder.id, files)),
+  );
 
   const itemCount = folder.itemCount + folder.childFolderCount;
   const itemLabel = itemCount === 1 ? "1 item" : `${itemCount} items`;
@@ -41,19 +70,7 @@ export function FolderTile({ namespace, folder, onOpen, onFileDrop, onFolderDele
         colors.swatch,
         isOver ? "ring-2 ring-primary/50" : "hover:brightness-[0.97]",
       )}
-      onDragOver={(event) => {
-        if (!onFileDrop || !event.dataTransfer.types.includes("Files")) {
-          return;
-        }
-        event.preventDefault();
-      }}
-      onDrop={(event) => {
-        if (!onFileDrop || !event.dataTransfer.files.length) {
-          return;
-        }
-        event.preventDefault();
-        onFileDrop(folder.id, event.dataTransfer.files);
-      }}
+      {...fileDropHandlers}
     >
       <span
         className={cn("absolute -top-1 left-0 h-1.5 w-5 rounded-t-sm border border-black/10 border-b-0", colors.swatch)}

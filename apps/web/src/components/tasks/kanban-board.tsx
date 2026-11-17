@@ -1,31 +1,21 @@
 "use client";
 
 import { DragOverlay, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
-import { useMutation, useQuery } from "@apollo/client";
+import { useMutation } from "@apollo/client";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { TaskStatus, TasksBoardQuery, TasksBoardQueryVariables, UpdateTaskMutationVariables } from "@/graphql";
-import {
-  CREATE_TASK_MUTATION,
-  CLEAR_DONE_TASKS_MUTATION,
-  DELETE_TASK_MUTATION,
-  MOVE_TASK_MUTATION,
-  TASK_PROJECTS_QUERY,
-  TASKS_BOARD_QUERY,
-  UPDATE_TASK_MUTATION,
-} from "@/graphql";
+import type { TaskStatus } from "@/graphql";
+import { CreateTaskDocument, ClearDoneTasksDocument, MoveTaskDocument, TaskProjectsDocument } from "@/graphql";
 import { KanbanCard } from "@/components/tasks/kanban-card";
 import { KanbanColumnView } from "@/components/tasks/kanban-column";
 import { useRegisterTaskDragHandlers } from "@/components/tasks/task-board-dnd";
 import { useTaskBoards } from "@/components/tasks/task-boards-context";
+import type { BoardTask } from "@/components/tasks/task-table/types";
 import { TasksPageLayout } from "@/components/tasks/tasks-page-layout";
+import { useBoardTasks, useTaskActions } from "@/components/tasks/use-board-tasks";
 import { tasksOnBoard } from "@/lib/task-boards";
-import { kanbanColumns } from "@/lib/task-status";
+import { kanbanColumnByStatus, kanbanColumns } from "@/lib/task-status";
 import { tasksBoardKanbanQuery, tasksBoardRefetchQueries, updateTaskInBoardCaches } from "@/lib/task-board-queries";
 import { cn } from "@/lib/cn";
-
-type BoardTask = TasksBoardQuery["tasks"][number];
-
-const kanbanQuery = tasksBoardKanbanQuery;
 
 function KanbanDragRegistration({
   onDragStart,
@@ -56,13 +46,11 @@ function groupTasks(tasks: BoardTask[]) {
 }
 
 export function KanbanBoard() {
-  const {
-    boards,
-    boardsLoading,
-    activeBoardId,
-    previewBoardId,
-    setActiveBoardId,
-  } = useTaskBoards();
+  const { boards, activeBoardId, previewBoardId, setActiveBoardId } = useTaskBoards();
+  const { tasks, boardTasks, fallbackBoardId, users, currentUserId, waiting, error } = useBoardTasks(
+    tasksBoardKanbanQuery.variables,
+  );
+  const { onUpdate, onDelete } = useTaskActions();
   const [collapsedByStatus, setCollapsedByStatus] = useState<Partial<Record<TaskStatus, boolean>>>({
     DONE: true,
   });
@@ -74,16 +62,12 @@ export function KanbanBoard() {
     setPendingTitleEditTaskId(null);
   }, [activeBoardId]);
 
-  const { data, loading, error } = useQuery<TasksBoardQuery, TasksBoardQueryVariables>(TASKS_BOARD_QUERY, {
-    variables: kanbanQuery.variables,
-  });
-
-  const [createTask] = useMutation(CREATE_TASK_MUTATION, {
+  const [createTask] = useMutation(CreateTaskDocument, {
     refetchQueries: tasksBoardRefetchQueries,
   });
 
-  const [moveTask] = useMutation(MOVE_TASK_MUTATION, {
-    refetchQueries: [TASK_PROJECTS_QUERY],
+  const [moveTask] = useMutation(MoveTaskDocument, {
+    refetchQueries: [TaskProjectsDocument],
     update(cache, { data: result }) {
       if (result?.moveTask) {
         updateTaskInBoardCaches(cache, result.moveTask);
@@ -91,55 +75,15 @@ export function KanbanBoard() {
     },
   });
 
-  const [updateTask] = useMutation(UPDATE_TASK_MUTATION, {
+  const [clearDoneTasks, { loading: clearingDone }] = useMutation(ClearDoneTasksDocument, {
     refetchQueries: tasksBoardRefetchQueries,
   });
 
-  const [deleteTask] = useMutation(DELETE_TASK_MUTATION, {
-    refetchQueries: tasksBoardRefetchQueries,
-  });
-
-  const [clearDoneTasks, { loading: clearingDone }] = useMutation(CLEAR_DONE_TASKS_MUTATION, {
-    refetchQueries: tasksBoardRefetchQueries,
-  });
-
-  const handleUpdate = useCallback(
-    async (id: string, input: UpdateTaskMutationVariables["input"]) => {
-      await updateTask({ variables: { id, input } });
-    },
-    [updateTask],
-  );
-
-  const handleDelete = useCallback(
-    (id: string) => {
-      void deleteTask({ variables: { id } });
-    },
-    [deleteTask],
-  );
-
-  const handleClearDone = useCallback(
-    async (boardId: string) => {
-      await clearDoneTasks({ variables: { projectId: boardId } });
-    },
-    [clearDoneTasks],
-  );
-
-  const fallbackBoardId = boards[0]?.id ?? null;
-  const activeTasks = useMemo(
-    () => tasksOnBoard(data?.tasks ?? [], activeBoardId, fallbackBoardId),
-    [activeBoardId, data?.tasks, fallbackBoardId],
-  );
   const previewTasks = useMemo(
-    () => tasksOnBoard(data?.tasks ?? [], previewBoardId, fallbackBoardId),
-    [data?.tasks, fallbackBoardId, previewBoardId],
+    () => tasksOnBoard(tasks, previewBoardId, fallbackBoardId),
+    [tasks, fallbackBoardId, previewBoardId],
   );
 
-  const accentByStatus = Object.fromEntries(
-    kanbanColumns.map((column) => [column.status, column.accentClass]),
-  ) as Record<TaskStatus, string>;
-
-  const users = data?.household?.users ?? [];
-  const currentUserId = data?.me?.id;
   const previewingOther = Boolean(previewBoardId && activeBoardId && previewBoardId !== activeBoardId);
 
   const handleAddTask = useCallback(
@@ -167,7 +111,6 @@ export function KanbanBoard() {
   );
 
   const handleTitleAutoEditApplied = useCallback(() => {
-    // Defer so React Strict Mode remounts still see the pending intent on the first paint.
     queueMicrotask(() => {
       setPendingTitleEditTaskId(null);
     });
@@ -178,11 +121,11 @@ export function KanbanBoard() {
       if (event.active.data.current?.type !== "task") {
         return;
       }
-      const task = data?.tasks.find((item: BoardTask) => item.id === event.active.id);
+      const task = tasks.find((item) => item.id === event.active.id);
       setActiveTask(task ?? null);
       setActiveWidth(event.active.rect.current.initial?.width ?? null);
     },
-    [data?.tasks],
+    [tasks],
   );
 
   const handleDragEnd = useCallback(
@@ -198,7 +141,7 @@ export function KanbanBoard() {
 
       const newStatus = overData.status as TaskStatus;
       const destinationBoardId = overData.boardId;
-      const task = data?.tasks.find((item) => item.id === String(active.id));
+      const task = tasks.find((item) => item.id === String(active.id));
       if (!task || !destinationBoardId) {
         return;
       }
@@ -228,7 +171,7 @@ export function KanbanBoard() {
         setActiveBoardId(destinationBoardId);
       }
     },
-    [activeBoardId, boards, data?.tasks, moveTask, setActiveBoardId],
+    [activeBoardId, boards, tasks, moveTask, setActiveBoardId],
   );
 
   const handleDragCancel = useCallback(() => {
@@ -236,8 +179,8 @@ export function KanbanBoard() {
     setActiveWidth(null);
   }, []);
 
-  function renderColumns(boardId: string, tasks: BoardTask[], dropDisabled: boolean) {
-    const tasksByStatus = groupTasks(tasks);
+  function renderColumns(boardId: string, columnTasks: BoardTask[], dropDisabled: boolean) {
+    const tasksByStatus = groupTasks(columnTasks);
     return kanbanColumns.map((column) => (
       <KanbanColumnView
         key={`${boardId}:${column.status}`}
@@ -254,31 +197,31 @@ export function KanbanBoard() {
           }))
         }
         onAddTask={(status) => void handleAddTask(status, boardId)}
-        onUpdateTask={handleUpdate}
-        onDeleteTask={handleDelete}
+        onUpdateTask={onUpdate}
+        onDeleteTask={onDelete}
         pendingTitleEditTaskId={pendingTitleEditTaskId}
         onTitleAutoEditApplied={handleTitleAutoEditApplied}
-        onClearTasks={column.status === "DONE" ? () => handleClearDone(boardId) : undefined}
+        onClearTasks={
+          column.status === "DONE"
+            ? async () => {
+                await clearDoneTasks({ variables: { projectId: boardId } });
+              }
+            : undefined
+        }
         clearingTasks={column.status === "DONE" ? clearingDone : false}
       />
     ));
   }
 
-  const waiting = loading || (boardsLoading && !activeBoardId);
-
   return (
-    <TasksPageLayout>
-      {waiting && <p className="text-sm text-text-muted">Loading project…</p>}
-      {error && <p className="text-sm text-error">Could not load tasks: {error.message}</p>}
-
-      {!waiting && !error && activeBoardId && (
+    <TasksPageLayout waiting={waiting} error={error} loadingLabel="Loading project…">
+      {activeBoardId && (
         <>
           <KanbanDragRegistration
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onDragCancel={handleDragCancel}
           />
-          {/* Keep the origin columns mounted while a drag previews another board so the card stays draggable. */}
           <div
             className={cn(
               "flex gap-2 pb-4",
@@ -286,7 +229,7 @@ export function KanbanBoard() {
             )}
             aria-hidden={previewingOther}
           >
-            {renderColumns(activeBoardId, activeTasks, previewingOther)}
+            {renderColumns(activeBoardId, boardTasks, previewingOther)}
           </div>
           {previewingOther && previewBoardId ? (
             <div className="flex gap-2 pb-4">{renderColumns(previewBoardId, previewTasks, false)}</div>
@@ -296,7 +239,7 @@ export function KanbanBoard() {
               <div style={activeWidth ? { width: activeWidth } : undefined}>
                 <KanbanCard
                   task={activeTask}
-                  accentClass={accentByStatus[activeTask.status]}
+                  accentClass={kanbanColumnByStatus[activeTask.status].accentClass}
                   users={users}
                   overlay
                 />

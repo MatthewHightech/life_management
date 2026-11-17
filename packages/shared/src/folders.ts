@@ -37,20 +37,6 @@ export function parseFolderDropId(
   };
 }
 
-/** @deprecated Use folderDropId("MEALS", folderId) */
-export function recipeFolderDropId(folderId: string | null): string {
-  return folderDropId("MEALS", folderId);
-}
-
-/** @deprecated Use parseFolderDropId */
-export function parseRecipeFolderDropId(value: string): string | null | undefined {
-  const parsed = parseFolderDropId(value);
-  if (!parsed || parsed.namespace !== "MEALS") {
-    return parsed === undefined ? undefined : null;
-  }
-  return parsed.folderId;
-}
-
 export const RECEIPT_MAX_BYTE_SIZE = 10 * 1024 * 1024;
 
 export const RECEIPT_ALLOWED_MIME_TYPES = [

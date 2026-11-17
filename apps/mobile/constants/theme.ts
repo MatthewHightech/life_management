@@ -1,4 +1,3 @@
-/** Kinship design tokens — light mode only for MVP. */
 export const theme = {
   background: "#f8f9fa",
   surface: "#ffffff",
@@ -17,5 +16,3 @@ export const theme = {
   tabIconDefault: "#717976",
   tabIconSelected: "#16342d",
 } as const;
-
-export type Theme = typeof theme;

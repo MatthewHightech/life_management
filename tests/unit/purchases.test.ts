@@ -2,14 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   budgetLineDropId,
   budgetPurchaseDragId,
-  getPurchaseBudgetYearMonth,
   parseBudgetLineDropId,
   parseBudgetPurchaseDragId,
   purchaseDateOutsideBudgetMonthNotice,
   purchaseMatchesAnnualBudget,
   purchaseMatchesMonthlyBudget,
 } from "../../packages/shared/src/purchases";
-import { formatBudgetRemainingLabel } from "../../packages/shared/src/budget";
+import { formatBudgetRemainingLabel, getPurchaseBudgetYearMonth } from "../../packages/shared/src/budget";
 
 describe("budget purchases", () => {
   it("builds and parses drag/drop ids", () => {

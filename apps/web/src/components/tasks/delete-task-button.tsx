@@ -2,55 +2,38 @@
 
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Modal } from "@/components/ui/modal";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 
 type DeleteTaskButtonProps = {
   taskTitle: string;
   onConfirm: () => void;
-  className?: string;
-  variant?: "text" | "icon";
 };
 
-export function DeleteTaskButton({
-  taskTitle,
-  onConfirm,
-  className,
-  variant = "text",
-}: DeleteTaskButtonProps) {
+export function DeleteTaskButton({ taskTitle, onConfirm }: DeleteTaskButtonProps) {
   const [open, setOpen] = useState(false);
-
-  function handleConfirm() {
-    onConfirm();
-    setOpen(false);
-  }
 
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={className}
+        className="rounded p-0.5 text-text-muted hover:text-error"
         aria-label={`Delete ${taskTitle}`}
       >
-        {variant === "icon" ? <Trash2 className="h-3.5 w-3.5" /> : "Delete"}
+        <Trash2 className="h-3.5 w-3.5" />
       </button>
 
-      <Modal
+      <ConfirmModal
         open={open}
         onOpenChange={setOpen}
         title="Delete task?"
         description={`"${taskTitle}" will be permanently removed.`}
-      >
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button type="button" onClick={handleConfirm}>
-            Delete
-          </Button>
-        </div>
-      </Modal>
+        confirmLabel="Delete"
+        onConfirm={() => {
+          onConfirm();
+          setOpen(false);
+        }}
+      />
     </>
   );
 }

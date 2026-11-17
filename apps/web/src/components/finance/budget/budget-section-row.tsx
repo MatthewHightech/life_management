@@ -3,16 +3,15 @@
 import { useMutation } from "@apollo/client";
 import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import type { BudgetScope } from "@/components/finance/budget/budget-scope";
-import type { BudgetSection } from "@/components/finance/budget/types";
+import type { BudgetScope, BudgetSection } from "@/components/finance/budget/types";
 import { BudgetLineDraftRow } from "@/components/finance/budget/budget-line-draft-row";
 import { BudgetLineItemRow } from "@/components/finance/budget/budget-line-item-row";
 import { BudgetProgressBar } from "@/components/finance/budget/budget-progress-bar";
 import { EditableTextCell } from "@/components/editable-table";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
-import { formatBudgetRemainingLabel, formatCadCents } from "@/lib/budget-money";
-import { BUDGET_PAGE_REFETCH } from "@/lib/budget-queries";
-import { DELETE_BUDGET_SECTION_MUTATION, UPDATE_BUDGET_SECTION_MUTATION } from "@/graphql";
+import { formatBudgetRemainingLabel, formatCadCents } from "@life/shared";
+import { BUDGET_PAGE_REFETCH } from "@/lib/refetch-queries";
+import { DeleteBudgetSectionDocument, UpdateBudgetSectionDocument } from "@/graphql";
 import { cn } from "@/lib/cn";
 
 type BudgetSectionRowProps = {
@@ -37,8 +36,8 @@ export function BudgetSectionRow({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const mutationOptions = { refetchQueries: [...BUDGET_PAGE_REFETCH], awaitRefetchQueries: true };
 
-  const [updateSection] = useMutation(UPDATE_BUDGET_SECTION_MUTATION, mutationOptions);
-  const [deleteSection, { loading: deleting }] = useMutation(DELETE_BUDGET_SECTION_MUTATION, {
+  const [updateSection] = useMutation(UpdateBudgetSectionDocument, mutationOptions);
+  const [deleteSection, { loading: deleting }] = useMutation(DeleteBudgetSectionDocument, {
     ...mutationOptions,
     onCompleted: () => setConfirmOpen(false),
   });

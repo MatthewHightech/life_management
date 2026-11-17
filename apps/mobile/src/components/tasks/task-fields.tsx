@@ -14,15 +14,41 @@ import { ActionSheetIOS, Alert, Platform, Pressable, StyleSheet, Text, View } fr
 import { Avatar } from "@/src/components/avatar";
 import { Chip } from "@/src/components/chip";
 import { Field } from "@/src/components/field";
-import type { HouseholdUser } from "@/src/graphql";
+import type { HouseholdUser, TaskProject } from "@/src/graphql";
 import { theme } from "@/constants/theme";
+
+export type TaskFieldValues = {
+  status: TaskStatus;
+  assigneeIds: string[];
+  dueDate: string | null;
+};
+
+type TaskFieldsProps = {
+  values: TaskFieldValues;
+  users: HouseholdUser[];
+  onChange: (patch: Partial<TaskFieldValues>) => void;
+};
+
+export function TaskFields({ values, users, onChange }: TaskFieldsProps) {
+  return (
+    <>
+      <StatusPicker value={values.status} onChange={(status) => onChange({ status })} />
+      <AssigneePicker
+        users={users}
+        selectedIds={values.assigneeIds}
+        onChange={(assigneeIds) => onChange({ assigneeIds })}
+      />
+      <DueDateField value={values.dueDate} onChange={(dueDate) => onChange({ dueDate })} />
+    </>
+  );
+}
 
 type StatusPickerProps = {
   value: TaskStatus;
   onChange: (status: TaskStatus) => void;
 };
 
-export function StatusPicker({ value, onChange }: StatusPickerProps) {
+function StatusPicker({ value, onChange }: StatusPickerProps) {
   return (
     <Field label="Status">
       <View style={styles.wrap}>
@@ -46,7 +72,7 @@ type AssigneePickerProps = {
   onChange: (ids: string[]) => void;
 };
 
-export function AssigneePicker({ users, selectedIds, onChange }: AssigneePickerProps) {
+function AssigneePicker({ users, selectedIds, onChange }: AssigneePickerProps) {
   return (
     <Field label="Assignees">
       <View style={styles.assignees}>
@@ -73,13 +99,8 @@ export function AssigneePicker({ users, selectedIds, onChange }: AssigneePickerP
   );
 }
 
-type ProjectOption = {
-  id: string;
-  name: string;
-};
-
 type ProjectPickerProps = {
-  projects: ProjectOption[];
+  projects: TaskProject[];
   value: string | null;
   onChange: (projectId: string) => void;
 };
@@ -137,11 +158,11 @@ export function ProjectPicker({ projects, value, onChange }: ProjectPickerProps)
 }
 
 type DueDateFieldProps = {
-  value: string | null | undefined;
+  value: string | null;
   onChange: (iso: string | null) => void;
 };
 
-export function DueDateField({ value, onChange }: DueDateFieldProps) {
+function DueDateField({ value, onChange }: DueDateFieldProps) {
   const [showPicker, setShowPicker] = useState(false);
   const selected = value ? parseDueDate(value) : new Date();
 

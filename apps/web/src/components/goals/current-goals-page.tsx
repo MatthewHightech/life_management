@@ -2,20 +2,26 @@
 
 import { useMutation, useQuery } from "@apollo/client/react";
 import type { GoalCadence } from "@life/shared";
+import type { ComponentProps } from "react";
 import { GoalsPageLayout } from "@/components/goals/goals-page-layout";
 import {
   MemberGoalsColumn,
   type MemberCadenceSet,
 } from "@/components/goals/member-goals-column";
 import {
-  CREATE_GOAL_MUTATION,
-  CURRENT_GOALS_QUERY,
-  DELETE_GOAL_MUTATION,
-  RESET_GOALS_MUTATION,
-  SET_GOAL_COMPLETED_MUTATION,
-  UPDATE_GOAL_MUTATION,
+  CreateGoalDocument,
+  CurrentGoalsDocument,
+  DeleteGoalDocument,
+  ResetGoalsDocument,
+  SetGoalCompletedDocument,
+  UpdateGoalDocument,
   type CurrentGoalsQuery,
 } from "@/graphql";
+
+type OwnerActions = Pick<
+  ComponentProps<typeof MemberGoalsColumn>,
+  "onAdd" | "onToggleComplete" | "onRename" | "onDelete" | "onReset"
+>;
 
 function setsForMember(
   sets: CurrentGoalsQuery["currentGoals"]["sets"],
@@ -36,15 +42,38 @@ function setsForMember(
 }
 
 export function CurrentGoalsPage() {
-  const { data, loading, error, refetch } = useQuery(CURRENT_GOALS_QUERY);
-  const [createGoal] = useMutation(CREATE_GOAL_MUTATION);
-  const [updateGoal] = useMutation(UPDATE_GOAL_MUTATION);
-  const [setCompleted] = useMutation(SET_GOAL_COMPLETED_MUTATION);
-  const [deleteGoal] = useMutation(DELETE_GOAL_MUTATION);
-  const [resetGoals] = useMutation(RESET_GOALS_MUTATION);
+  const { data, loading, error, refetch } = useQuery(CurrentGoalsDocument);
+  const [createGoal] = useMutation(CreateGoalDocument);
+  const [updateGoal] = useMutation(UpdateGoalDocument);
+  const [setCompleted] = useMutation(SetGoalCompletedDocument);
+  const [deleteGoal] = useMutation(DeleteGoalDocument);
+  const [resetGoals] = useMutation(ResetGoalsDocument);
 
   const board = data?.currentGoals;
   const meId = data?.me?.id;
+
+  const ownerActions: OwnerActions = {
+    onAdd: async (cadence, title) => {
+      await createGoal({ variables: { cadence, title } });
+      await refetch();
+    },
+    onToggleComplete: async (id, completed) => {
+      await setCompleted({ variables: { id, completed } });
+      await refetch();
+    },
+    onRename: async (id, title) => {
+      await updateGoal({ variables: { id, title } });
+      await refetch();
+    },
+    onDelete: async (id) => {
+      await deleteGoal({ variables: { id } });
+      await refetch();
+    },
+    onReset: async (cadence) => {
+      await resetGoals({ variables: { cadence } });
+      await refetch();
+    },
+  };
 
   return (
     <GoalsPageLayout>
@@ -61,46 +90,7 @@ export function CurrentGoalsPage() {
                 member={member}
                 isOwner={isOwner}
                 setsByCadence={setsForMember(board.sets, member.id)}
-                onAdd={
-                  isOwner
-                    ? async (cadence, title) => {
-                        await createGoal({ variables: { cadence, title } });
-                        await refetch();
-                      }
-                    : undefined
-                }
-                onToggleComplete={
-                  isOwner
-                    ? async (id, completed) => {
-                        await setCompleted({ variables: { id, completed } });
-                        await refetch();
-                      }
-                    : undefined
-                }
-                onRename={
-                  isOwner
-                    ? async (id, title) => {
-                        await updateGoal({ variables: { id, title } });
-                        await refetch();
-                      }
-                    : undefined
-                }
-                onDelete={
-                  isOwner
-                    ? async (id) => {
-                        await deleteGoal({ variables: { id } });
-                        await refetch();
-                      }
-                    : undefined
-                }
-                onReset={
-                  isOwner
-                    ? async (cadence) => {
-                        await resetGoals({ variables: { cadence } });
-                        await refetch();
-                      }
-                    : undefined
-                }
+                {...(isOwner ? ownerActions : {})}
               />
             );
           })}

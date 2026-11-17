@@ -4,8 +4,9 @@ import { useLazyQuery } from "@apollo/client";
 import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
-import { IMPORT_RECIPE_FROM_URL_QUERY } from "@/graphql";
+import { ImportRecipeFromUrlDocument } from "@/graphql";
 import type { ImportRecipeFromUrlQuery, ImportRecipeFromUrlQueryVariables } from "@/graphql";
+import { toRecipeFormValues } from "@/components/meals/recipe-form-modal";
 import type { RecipeFormValues } from "@/components/meals/types";
 
 type ImportRecipeUrlModalProps = {
@@ -21,7 +22,7 @@ export function ImportRecipeUrlModal({ open, onOpenChange, onImported }: ImportR
   const [importRecipe, { loading }] = useLazyQuery<
     ImportRecipeFromUrlQuery,
     ImportRecipeFromUrlQueryVariables
-  >(IMPORT_RECIPE_FROM_URL_QUERY, {
+  >(ImportRecipeFromUrlDocument, {
     fetchPolicy: "network-only",
   });
 
@@ -46,19 +47,7 @@ export function ImportRecipeUrlModal({ open, onOpenChange, onImported }: ImportR
         throw new Error("Could not import that recipe.");
       }
 
-      onImported({
-        name: draft.name,
-        instructions: draft.instructions ?? "",
-        servings: draft.servings?.toString() ?? "",
-        ingredients:
-          draft.ingredients.length > 0
-            ? draft.ingredients.map((ingredient) => ({
-                name: ingredient.name,
-                quantity: ingredient.quantity ?? "",
-                unit: ingredient.unit ?? "",
-              }))
-            : [{ name: "", quantity: "", unit: "" }],
-      });
+      onImported(toRecipeFormValues(draft));
       setUrl("");
       onOpenChange(false);
     } catch (err) {

@@ -20,11 +20,14 @@ import { cn } from "@/lib/cn";
 
 export type ShoppingItem = ShoppingListQuery["shoppingItems"][number];
 
-type ShoppingListRowProps = {
-  item: ShoppingItem;
+export type ShoppingItemActions = {
   onUpdate: (id: string, input: UpdateShoppingItemInput) => Promise<void>;
   onSetPurchased: (id: string, purchased: boolean) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+};
+
+type ShoppingListRowProps = ShoppingItemActions & {
+  item: ShoppingItem;
 };
 
 export function ShoppingListRow({

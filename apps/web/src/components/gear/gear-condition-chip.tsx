@@ -24,10 +24,3 @@ export function GearConditionChip({ condition, className }: GearConditionChipPro
     </Chip>
   );
 }
-
-export const GEAR_CONDITION_OPTIONS: { value: GearCondition; label: string }[] = (
-  ["LIKE_NEW", "GOOD", "FAIR", "RETIRED"] as const
-).map((value) => ({
-  value,
-  label: GEAR_CONDITION_LABELS[value],
-}));

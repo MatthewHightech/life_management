@@ -20,7 +20,6 @@ export function getGoogleIosClientId(): string {
   return id;
 }
 
-/** Native redirect scheme registered for the Google iOS OAuth client. */
 export function getGoogleIosUrlScheme(): string {
   const clientId = getGoogleIosClientId();
   const prefix = clientId.replace(/\.apps\.googleusercontent\.com$/i, "");

@@ -1,5 +1,5 @@
 import type { SpendComparison } from "@life/shared";
-import { formatCadCents } from "@/lib/budget-money";
+import { formatCadCents } from "@life/shared";
 import { cn } from "@/lib/cn";
 
 type MonthlyReportComparisonProps = {

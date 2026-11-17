@@ -12,12 +12,8 @@ type EditableTextCellProps = {
   inputClassName?: string;
   placeholder?: string;
   displayPlaceholder?: string;
-  /** Enter edit mode on mount / when this becomes true (e.g. newly created row). */
   startInEditMode?: boolean;
-  /** Fired when startInEditMode is honored so parents can treat it as a one-shot intent. */
   onStartInEditModeApplied?: () => void;
-  /** Select the full value when focusing (defaults to true when startInEditMode). */
-  selectAllOnFocus?: boolean;
   allowClear?: boolean;
   disabled?: boolean;
   wrap?: boolean;
@@ -32,7 +28,6 @@ export function EditableTextCell({
   displayPlaceholder,
   startInEditMode = false,
   onStartInEditModeApplied,
-  selectAllOnFocus = false,
   allowClear = false,
   disabled = false,
   wrap = false,
@@ -58,7 +53,7 @@ export function EditableTextCell({
 
   const isEditing = !disabled && editing;
   const inputRef = useRef<HTMLInputElement>(null);
-  const selectAllPendingRef = useRef(startInEditMode || selectAllOnFocus);
+  const selectAllPendingRef = useRef(startInEditMode);
 
   useEffect(() => {
     if (!startInEditMode) {
@@ -78,14 +73,14 @@ export function EditableTextCell({
       return;
     }
     input.focus();
-    if (selectAllPendingRef.current || selectAllOnFocus) {
+    if (selectAllPendingRef.current) {
       selectAllPendingRef.current = false;
       input.select();
     } else {
       const end = input.value.length;
       input.setSelectionRange(end, end);
     }
-  }, [isEditing, selectAllOnFocus]);
+  }, [isEditing]);
 
   const fieldShellClass = cn("w-full min-w-0", !wrap && "overflow-hidden");
   const displayTextClass = wrap ? "whitespace-normal break-words" : "truncate";

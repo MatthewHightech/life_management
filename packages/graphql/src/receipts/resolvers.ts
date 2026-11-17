@@ -1,36 +1,28 @@
-import { FolderNamespace, Prisma } from "@prisma/client";
+import { FolderNamespace } from "@prisma/client";
 import { GraphQLContext } from "../context";
-import { ForbiddenError, requireHouseholdUser } from "../auth";
+import { found, requireHouseholdUser } from "../auth";
+import { optionalText, requireText, timestampFields } from "../fields";
 import { assertFolderInHousehold, loadFoldersForNamespace } from "../folders/helpers";
 
-async function assertReceiptInHousehold(context: GraphQLContext, receiptId: string, householdId: string) {
-  const receipt = await context.prisma.receipt.findFirst({
-    where: { id: receiptId, householdId },
-    select: { id: true },
-  });
-
-  if (!receipt) {
-    throw new ForbiddenError("Receipt not found in household");
-  }
-}
-
-async function loadReceiptLibrary(context: GraphQLContext, householdId: string) {
-  const [folders, receipts] = await Promise.all([
-    loadFoldersForNamespace(context, householdId, FolderNamespace.RECEIPTS),
-    context.prisma.receipt.findMany({
-      where: { householdId },
-      orderBy: [{ fileName: "asc" }],
-    }),
-  ]);
-
-  return { folders, receipts };
+async function findReceipt(context: GraphQLContext, receiptId: string, householdId: string) {
+  return found(
+    await context.prisma.receipt.findFirst({ where: { id: receiptId, householdId } }),
+    "Receipt not found in household",
+  );
 }
 
 export const receiptResolvers = {
   Query: {
     receiptLibrary: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
-      return loadReceiptLibrary(context, householdId);
+      const [folders, receipts] = await Promise.all([
+        loadFoldersForNamespace(context, householdId, FolderNamespace.RECEIPTS),
+        context.prisma.receipt.findMany({
+          where: { householdId },
+          orderBy: [{ fileName: "asc" }],
+        }),
+      ]);
+      return { folders, receipts };
     },
   },
 
@@ -41,16 +33,11 @@ export const receiptResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
-      await assertReceiptInHousehold(context, args.id, householdId);
-
-      const fileName = args.fileName.trim();
-      if (!fileName) {
-        throw new ForbiddenError("File name is required");
-      }
+      await findReceipt(context, args.id, householdId);
 
       return context.prisma.receipt.update({
         where: { id: args.id },
-        data: { fileName },
+        data: { fileName: requireText(args.fileName, "File name is required") },
       });
     },
 
@@ -60,27 +47,20 @@ export const receiptResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
-      await assertReceiptInHousehold(context, args.id, householdId);
+      await findReceipt(context, args.id, householdId);
 
-      const trimmed = args.notes?.trim() ?? "";
       return context.prisma.receipt.update({
         where: { id: args.id },
-        data: { notes: trimmed || null },
+        data: { notes: optionalText(args.notes) },
       });
     },
 
     deleteReceipt: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
       const { householdId } = await requireHouseholdUser(context);
-      const receipt = await context.prisma.receipt.findFirst({
-        where: { id: args.id, householdId },
-      });
-
-      if (!receipt) {
-        throw new ForbiddenError("Receipt not found in household");
-      }
+      const receipt = await findReceipt(context, args.id, householdId);
 
       await context.prisma.receipt.delete({ where: { id: args.id } });
-      await context.deleteReceiptFile?.(receipt.storageKey);
+      await context.deleteStoredFile?.(receipt.storageKey);
       return true;
     },
 
@@ -90,16 +70,8 @@ export const receiptResolvers = {
       context: GraphQLContext,
     ) => {
       const { householdId } = await requireHouseholdUser(context);
-      await assertReceiptInHousehold(context, args.receiptId, householdId);
-
-      if (args.folderId) {
-        await assertFolderInHousehold(
-          context,
-          args.folderId,
-          householdId,
-          FolderNamespace.RECEIPTS,
-        );
-      }
+      await findReceipt(context, args.receiptId, householdId);
+      await assertFolderInHousehold(context, args.folderId, householdId, FolderNamespace.RECEIPTS);
 
       return context.prisma.receipt.update({
         where: { id: args.receiptId },
@@ -108,8 +80,5 @@ export const receiptResolvers = {
     },
   },
 
-  Receipt: {
-    createdAt: (parent: { createdAt: Date }) => parent.createdAt.toISOString(),
-    updatedAt: (parent: { updatedAt: Date }) => parent.updatedAt.toISOString(),
-  },
+  Receipt: timestampFields,
 };

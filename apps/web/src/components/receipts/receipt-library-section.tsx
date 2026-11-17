@@ -45,6 +45,7 @@ export const ReceiptLibrarySection = forwardRef<HTMLElement, ReceiptLibrarySecti
     ref,
   ) {
     const isEmpty = folders.length === 0 && receipts.length === 0;
+    const handleFileDrop = (folderId: string | null, files: FileList) => void onUpload(files, folderId);
 
     return (
       <section ref={ref} className={sectionCardClass}>
@@ -67,7 +68,7 @@ export const ReceiptLibrarySection = forwardRef<HTMLElement, ReceiptLibrarySecti
           rootLabel="Receipts"
           path={breadcrumbPath}
           onNavigate={onNavigateFolder}
-          onFileDrop={(folderId, files) => void onUpload(files, folderId)}
+          onFileDrop={handleFileDrop}
         />
 
         <div className="space-y-3 p-3">
@@ -77,15 +78,9 @@ export const ReceiptLibrarySection = forwardRef<HTMLElement, ReceiptLibrarySecti
                 <FolderTile
                   key={folder.id}
                   namespace="RECEIPTS"
-                  folder={{
-                    id: folder.id,
-                    name: folder.name,
-                    color: folder.color,
-                    itemCount: folder.itemCount,
-                    childFolderCount: folder.childFolderCount,
-                  }}
+                  folder={folder}
                   onOpen={onNavigateFolder}
-                  onFileDrop={(folderId, files) => void onUpload(files, folderId)}
+                  onFileDrop={handleFileDrop}
                   onFolderDeleted={onFolderDeleted}
                 />
               ))}

@@ -23,10 +23,6 @@ export function dayBounds(date: Date = new Date()) {
   return { start: startOfDay(date), end: endOfDay(date) };
 }
 
-/**
- * Until per-household TZ exists, "today" for date-only dues uses Pacific
- * (same convention as budget / meal plan).
- */
 const DUE_DATE_TIMEZONE = "America/Los_Angeles";
 
 function calendarDayKeyInTimeZone(date: Date, timeZone: string): string {
@@ -38,23 +34,16 @@ function calendarDayKeyInTimeZone(date: Date, timeZone: string): string {
   }).format(date);
 }
 
-/**
- * Due dates are date-only. We persist UTC noon on the picked calendar day
- * (and historically local midnights like 07:00Z/08:00Z). The intended day is
- * always the UTC calendar date of that timestamp.
- */
 export function dueCalendarDayKey(dueDate: Date): string {
   return dueDate.toISOString().slice(0, 10);
 }
 
-/** Persist a date-only due date as UTC noon on the picker's local calendar day. */
 export function toDueDateIso(date: Date): string {
   return new Date(
     Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12),
   ).toISOString();
 }
 
-/** Local midnight for the due calendar day — for pickers and display. */
 export function parseDueDate(value: string): Date {
   const date = parseISO(value);
   if (!isValid(date)) {
@@ -65,11 +54,9 @@ export function parseDueDate(value: string): Date {
 }
 
 export function formatDueDate(value: Date | string): string {
-  const date = typeof value === "string" ? parseDueDate(value) : parseDueDate(value.toISOString());
-  return format(date, "MMM d");
+  return format(parseDueDate(typeof value === "string" ? value : value.toISOString()), "MMM d");
 }
 
-/** True only after the due calendar day has ended (from 12:00am the next day). */
 export function isPastDueDate(dueDate: Date, now: Date = new Date()): boolean {
   return calendarDayKeyInTimeZone(now, DUE_DATE_TIMEZONE) > dueCalendarDayKey(dueDate);
 }
@@ -87,7 +74,9 @@ export function parseOptionalDate(value?: string | null): Date | null {
   return date;
 }
 
-export function toIsoString(value: Date | null | undefined): string | null {
+export function toIsoString(value: Date): string;
+export function toIsoString(value: Date | null | undefined): string | null;
+export function toIsoString(value: Date | null | undefined) {
   return value?.toISOString() ?? null;
 }
 
@@ -107,23 +96,6 @@ export function formatDateTime(value: Date | string): string {
     throw new Error("Invalid date value");
   }
   return format(date, "MMM d, h:mm a");
-}
-
-export function formatCalendarGroupLabel(value: Date | string): string {
-  const date = typeof value === "string" ? parseDisplayDate(value) : value;
-  return format(date, "EEE, MMM d");
-}
-
-export function toDateInputValue(value?: string | null): string {
-  if (!value) {
-    return "";
-  }
-
-  try {
-    return format(parseDisplayDate(value), "yyyy-MM-dd");
-  } catch {
-    return "";
-  }
 }
 
 export function buildMonthGrid(month: Date, weekStartsOn: 0 | 1 = 0): Date[] {

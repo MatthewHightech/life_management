@@ -1,8 +1,4 @@
-import {
-  TASK_STATUS_LABELS,
-  TASK_STATUSES,
-  type TaskStatus,
-} from "@life/shared";
+import { TASK_STATUS_LABELS, type TaskStatus } from "@life/shared";
 
 export type KanbanColumn = {
   status: TaskStatus;
@@ -50,16 +46,17 @@ export const kanbanColumns: KanbanColumn[] = [
   },
 ];
 
-export const taskStatuses = TASK_STATUSES;
+export const kanbanColumnByStatus = Object.fromEntries(
+  kanbanColumns.map((column) => [column.status, column]),
+) as Record<TaskStatus, KanbanColumn>;
 
-export function statusLabel(status: string) {
-  if (status in TASK_STATUS_LABELS) {
-    return TASK_STATUS_LABELS[status as TaskStatus];
-  }
-  return status.replaceAll("_", " ").toLowerCase().replace(/^\w/, (character) => character.toUpperCase());
-}
+export const statusSelectOptions = kanbanColumns.map((column) => ({
+  value: column.status,
+  label: column.label,
+  chipClassName: column.chipClass,
+}));
 
-export function statusChipClass(status: string) {
-  const column = kanbanColumns.find((item) => item.status === status);
-  return column?.chipClass ?? "bg-status-todo text-on-primary";
+export function statusTriggerDisplay(status: TaskStatus) {
+  const column = kanbanColumnByStatus[status] ?? kanbanColumns[1];
+  return { label: column.label, chipClassName: column.chipClass };
 }

@@ -1,12 +1,13 @@
 "use client";
 
 import { Camera, Package } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { fetchGearItemPhotoBlob, fetchGearVariantPhotoBlob } from "@/lib/gear-photo";
+import { useCallback, useRef } from "react";
+import { useBlobUrl } from "@/hooks/use-blob-url";
+import { fetchGearPhotoBlob, type GearPhotoKind } from "@/lib/file-api";
 import { cn } from "@/lib/cn";
 
 type GearPhotoThumbProps = {
-  kind: "item" | "variant";
+  kind: GearPhotoKind;
   id: string;
   hasPhoto: boolean;
   alt: string;
@@ -27,40 +28,8 @@ export function GearPhotoThumb({
   onPhotoSelect,
 }: GearPhotoThumbProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!hasPhoto) {
-      setThumbUrl(null);
-      return;
-    }
-
-    let active = true;
-    let objectUrl: string | null = null;
-
-    const load = kind === "item" ? fetchGearItemPhotoBlob(id) : fetchGearVariantPhotoBlob(id);
-
-    void load
-      .then((blob) => {
-        if (!active) {
-          return;
-        }
-        objectUrl = URL.createObjectURL(blob);
-        setThumbUrl(objectUrl);
-      })
-      .catch(() => {
-        if (active) {
-          setThumbUrl(null);
-        }
-      });
-
-    return () => {
-      active = false;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
-  }, [hasPhoto, id, kind]);
+  const loadPhoto = useCallback(() => fetchGearPhotoBlob(kind, id), [kind, id]);
+  const { url: thumbUrl } = useBlobUrl(hasPhoto ? loadPhoto : null);
 
   const content = (
     <>

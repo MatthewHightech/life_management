@@ -22,23 +22,3 @@ export type StagedGearEntry =
       condition: GearCondition;
       className: string;
     };
-
-export type GearItemFormValues = {
-  name: string;
-  description: string;
-  size: string;
-  careInstructions: string;
-  condition: GearCondition;
-};
-
-export type GearClassFormValues = {
-  name: string;
-  description: string;
-  careInstructions: string;
-};
-
-export type GearVariantFormValues = {
-  name: string;
-  size: string;
-  condition: GearCondition;
-};
